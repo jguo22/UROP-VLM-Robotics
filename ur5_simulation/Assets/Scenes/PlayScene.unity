@@ -2309,7 +2309,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d204cd577faa4f4db1bce239f33bf9e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UR5TCPServer
-  port: 65432
+  port: 5000
   robotCamera: {fileID: 963194227}
   imageWidth: 224
   imageHeight: 224

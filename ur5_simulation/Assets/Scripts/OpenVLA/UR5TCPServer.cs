@@ -1,33 +1,51 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
+[RequireComponent(typeof(UR5Controller))]
 public class UR5TCPServer : MonoBehaviour
 {
     [Header("Settings")]
-    public int port = 65432;
+    public int port = 5000;
     public Camera robotCamera;
     public int imageWidth = 224;
     public int imageHeight = 224;
-    
+
+    [Header("Action Scaling")]
+    [Tooltip("Control frequency in Hz (BridgeData V2 training freq = 5 Hz)")]
+    private float controlFrequency = 5.0f;
+    [Tooltip("BridgeData V2 was collected at 5 Hz")]
+    private float trainingFrequency = 5.0f;
+    [Tooltip("Additional workspace scale factor (adjust empirically, 1.0 = no scaling)")]
+    private float workspaceScale = 2.0f;
+
     private TcpListener server;
     private Thread serverThread;
     private bool isRunning = true;
     private RenderTexture renderTexture;
     private Texture2D cameraImage;
-    
+
     // Thread-safe queue for main thread actions
     private static readonly Queue<Action> _executionQueue = new Queue<Action>();
     private static readonly object _lock = new object();
 
+    private UR5Controller robotController;
+
     void Start()
     {
+        // Get UR5Controller component
+        robotController = GetComponent<UR5Controller>();
+        if (robotController == null)
+        {
+            Debug.LogError("VLAServer: UR5Controller component not found!");
+            enabled = false;
+            return;
+        }
+
         // Initialize camera and render texture on the main thread
         if (robotCamera == null)
             robotCamera = Camera.main;
@@ -59,7 +77,7 @@ public class UR5TCPServer : MonoBehaviour
             Priority = System.Threading.ThreadPriority.BelowNormal
         };
         serverThread.Start();
-        
+
         Debug.Log($"UR5 TCP Server started on port {port}");
     }
 
@@ -70,7 +88,7 @@ public class UR5TCPServer : MonoBehaviour
         networkCamObj.transform.SetParent(robotCamera.transform);
         networkCamObj.transform.localPosition = Vector3.zero;
         networkCamObj.transform.localRotation = Quaternion.identity;
-        
+
         var networkCam = networkCamObj.AddComponent<Camera>();
         networkCam.CopyFrom(robotCamera);
         networkCam.depth = robotCamera.depth - 1;
@@ -95,7 +113,7 @@ public class UR5TCPServer : MonoBehaviour
     public static void RunOnMainThread(Action action)
     {
         if (action == null) return;
-        
+
         lock (_lock)
         {
             _executionQueue.Enqueue(action);
@@ -108,7 +126,7 @@ public class UR5TCPServer : MonoBehaviour
         {
             server = new TcpListener(IPAddress.Any, port);
             server.Start();
-            
+
             while (isRunning)
             {
                 if (server.Pending())
@@ -117,7 +135,7 @@ public class UR5TCPServer : MonoBehaviour
                     using (NetworkStream stream = client.GetStream())
                     {
                         Debug.Log("Client connected");
-                        
+
                         while (client.Connected && isRunning)
                         {
                             try
@@ -161,8 +179,9 @@ public class UR5TCPServer : MonoBehaviour
         try
         {
             var tcs = new TaskCompletionSource<bool>();
-            
-            RunOnMainThread(() => {
+
+            RunOnMainThread(() =>
+            {
                 try
                 {
                     if (renderTexture == null || cameraImage == null)
@@ -180,7 +199,7 @@ public class UR5TCPServer : MonoBehaviour
 
                     // Encode to JPG
                     byte[] imageBytes = cameraImage.EncodeToJPG();
-                    
+
                     if (imageBytes == null || imageBytes.Length == 0)
                     {
                         Debug.LogError("Failed to encode image to JPG");
@@ -189,15 +208,15 @@ public class UR5TCPServer : MonoBehaviour
                     }
 
                     Debug.Log($"Sending {imageBytes.Length} bytes of image data");
-                    
+
                     // Send image size (4 bytes, big-endian)
                     byte[] sizeBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(imageBytes.Length));
                     stream.Write(sizeBytes, 0, 4);
-                    
+
                     // Send image data
                     stream.Write(imageBytes, 0, imageBytes.Length);
                     stream.Flush();
-                    
+
                     tcs.SetResult(true);
                 }
                 catch (Exception e)
@@ -206,7 +225,7 @@ public class UR5TCPServer : MonoBehaviour
                     tcs.SetResult(false);
                 }
             });
-            
+
             // Wait for the main thread to complete
             if (!tcs.Task.Wait(TimeSpan.FromSeconds(5))) // 5 second timeout
             {
@@ -227,32 +246,53 @@ public class UR5TCPServer : MonoBehaviour
             byte[] sizeBytes = new byte[4];
             if (stream.Read(sizeBytes, 0, 4) != 4)
                 throw new Exception("Failed to read action size");
-                
+
             int actionSize = IPAddress.NetworkToHostOrder(BitConverter.ToInt32(sizeBytes, 0));
-            
+
             // Read action data
             byte[] buffer = new byte[actionSize];
             int bytesRead = 0;
             while (bytesRead < actionSize)
             {
                 int read = stream.Read(buffer, bytesRead, actionSize - bytesRead);
-                if (read == 0) 
+                if (read == 0)
                     throw new Exception("Connection closed while reading action");
                 bytesRead += read;
             }
-            
+
             // Convert to float array
             if (bytesRead == actionSize && actionSize % 4 == 0)
             {
                 float[] action = new float[actionSize / 4];
                 Buffer.BlockCopy(buffer, 0, action, 0, actionSize);
-                
+
                 // Process on main thread
-                RunOnMainThread(() => {
-                    Debug.Log($"Received action: {string.Join(", ", action)}");
-                    // TODO: Apply action to your robot/character
+                RunOnMainThread(() =>
+                {
+                    // Actions received from OpenVLA's predict_action() are already unnormalized
+                    // (in physical units: meters for position, radians for rotation)
+                    Debug.Log($"Received action (raw): {string.Join(", ", action)}");
+
+                    // Scale actions for control frequency and workspace differences
+                    float[] scaledAction = new float[action.Length];
+
+                    // Frequency scaling: adjust for dt difference
+                    // If running faster than training freq, take smaller steps
+                    float frequencyScale = trainingFrequency / controlFrequency;
+
+                    // Apply scaling to position and rotation deltas (first 6 dimensions)
+                    for (int i = 0; i < 6; i++)
+                    {
+                        scaledAction[i] = action[i] * frequencyScale * workspaceScale;
+                    }
+
+                    // Gripper action (last dimension) - no scaling needed
+                    scaledAction[6] = action[6];
+
+                    Debug.Log($"Scaled action (freq={controlFrequency}Hz, workspace={workspaceScale}x): {string.Join(", ", scaledAction)}");
+                    robotController.ApplyDeltaAction(scaledAction);
                 });
-                
+
                 // Send success ACK
                 stream.WriteByte(1);
                 return;
@@ -262,9 +302,9 @@ public class UR5TCPServer : MonoBehaviour
         {
             Debug.LogError($"Error processing action: {e}");
         }
-        
+
         // Send failure ACK
-        try { stream.WriteByte(0); } catch {}
+        try { stream.WriteByte(0); } catch { }
     }
 
     void OnDestroy()
@@ -272,7 +312,7 @@ public class UR5TCPServer : MonoBehaviour
         isRunning = false;
         server?.Stop();
         serverThread?.Join(1000);
-        
+
         if (renderTexture != null)
         {
             renderTexture.Release();

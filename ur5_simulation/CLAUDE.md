@@ -44,7 +44,7 @@ This is a Unity-based simulation of two UR5 robotic arms controlled by Agentic A
 ```bash
 # Edit socket.env in project root
 HOST="127.0.0.1"
-PORT=65432
+PORT=5000
 ```
 
 **Run Python Client:**

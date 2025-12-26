@@ -1,5 +1,4 @@
 ﻿using System;
-using Unity.Robotics;
 using UnityEngine;
 
 using System.Text.RegularExpressions;
@@ -14,7 +13,7 @@ namespace Unity.Robotics.UrdfImporter.Control
     [DefaultExecutionOrder(-1)]  // Ensures this runs after RobotArmSetup
     [RequireComponent(typeof(SuctionController))]
     public class ManualController : MonoBehaviour
-    {        
+    {
         // Stores original colors of the part being highlighted
         private Color[] prevColor;
         private int previousIndex;
@@ -64,7 +63,7 @@ namespace Unity.Robotics.UrdfImporter.Control
             previousIndex = selectedIndex = 0;
             this.gameObject.AddComponent<FKRobot>();
             articulationChain = this.GetComponentsInChildren<ArticulationBody>();
-            
+
             foreach (ArticulationBody joint in articulationChain)
             {
                 if (JointNames.ContainsKey(joint.name))
@@ -80,7 +79,7 @@ namespace Unity.Robotics.UrdfImporter.Control
 
             robotJoints = new ArticulationBody[JointCount + 1];
             Array.Copy(articulationChain, BaseIndex, robotJoints, 0, JointCount);
-            
+
             suctionController = GetComponent<SuctionController>();
 
             DisplaySelectedJoint(selectedIndex);
@@ -89,7 +88,7 @@ namespace Unity.Robotics.UrdfImporter.Control
 
         void SetSelectedJointIndex(int index)
         {
-            if (robotJoints.Length > 0) 
+            if (robotJoints.Length > 0)
             {
                 selectedIndex = (index + JointCount) % JointCount;
             }
@@ -115,15 +114,16 @@ namespace Unity.Robotics.UrdfImporter.Control
                 {
                     SetSelectedJointIndex(selectedIndex + 1);
                     Highlight(selectedIndex);
-                } else if (targetAngleInput)
+                }
+                else if (targetAngleInput)
                 {
                     PromptForTargetAngle();
                 }
 
                 if (isWaitingForAngleInput) HandleAngleInput();
-                
+
             }
-            
+
             if (isChangingAngle) UpdateDirectionWithInput(robotJoints, targetAngleInputValue, selectedIndex);
             else UpdateDirection(selectedIndex);
         }
@@ -371,7 +371,7 @@ namespace Unity.Robotics.UrdfImporter.Control
         /// <param name="selectedIndex">Index of the link selected in the Articulation Chain</param>
         private void Highlight(int selectedIndex)
         {
-            if (selectedIndex == previousIndex || selectedIndex < 0 || selectedIndex >= JointCount) 
+            if (selectedIndex == previousIndex || selectedIndex < 0 || selectedIndex >= JointCount)
             {
                 return;
             }
@@ -394,7 +394,7 @@ namespace Unity.Robotics.UrdfImporter.Control
 
         void DisplaySelectedJoint(int selectedIndex)
         {
-            if (selectedIndex < 0 || selectedIndex > JointCount) 
+            if (selectedIndex < 0 || selectedIndex > JointCount)
             {
                 return;
             }
@@ -408,7 +408,7 @@ namespace Unity.Robotics.UrdfImporter.Control
         /// <param name="jointIndex">Index of the link selected in the Articulation Chain</param>
         private void UpdateDirection(int jointIndex)
         {
-            if (jointIndex < 0 || jointIndex >= JointCount) 
+            if (jointIndex < 0 || jointIndex >= JointCount)
             {
                 return;
             }
@@ -490,22 +490,22 @@ namespace Unity.Robotics.UrdfImporter.Control
             if (isWaitingForAngleInput)
             {
                 GUI.Label(new Rect(Screen.width / 2 - 200, 70, 400, 20), "Enter target angle (degrees):", centeredStyle);
-                
+
                 // Create input field
                 GUI.SetNextControlName("AngleInputField");
                 //GUI.TextField(new Rect(Screen.width / 2 - 100, 90, 200, 20), targetAngleInputString);
                 targetAngleInputString = GUI.TextField(new Rect(Screen.width / 2 - 100, 90, 200, 20), targetAngleInputString);
                 targetAngleInputString = Regex.Replace(targetAngleInputString, "[^0-9.-]", "");
-                
+
                 // Instructions
                 GUI.Label(new Rect(Screen.width / 2 - 200, 110, 400, 20), "Press Enter to confirm, 'E' to exit", centeredStyle);
-                
+
                 // Show current input
                 if (!string.IsNullOrEmpty(targetAngleInputString))
                 {
                     GUI.Label(new Rect(Screen.width / 2 - 200, 130, 400, 20), $"Input: {targetAngleInputString}°", centeredStyle);
                 }
-                
+
                 // Focus the input field
                 GUI.FocusControl("AngleInputField");
             }
