@@ -132,12 +132,15 @@ class UR5IKServer:
 
             # Solve IK using Levenberg-Marquardt method
             # q0 is the initial guess (current configuration)
-            solution = self.ur5.ik_LM(T_target, q0=current_angles, tol=1e-6)
+            # ik_LM returns tuple: (q, success, iterations, searches, residual)
+            result = self.ur5.ik_LM(T_target, q0=current_angles, tol=1e-6)
 
-            if solution.success:
-                return solution.q
+            # result is a tuple: (q, success, iterations, searches, residual)
+            # success: 1 = success, 0 = failure
+            if bool(result[1]):
+                return result[0]  # Return joint angles
             else:
-                print(f"IK solution failed: {solution.reason}")
+                print(f"IK solution failed (residual: {result[4]})")
                 return None
 
         except Exception as e:

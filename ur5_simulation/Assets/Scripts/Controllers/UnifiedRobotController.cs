@@ -9,6 +9,7 @@ using static ConstantsUR5;
 /// <summary>
 /// Unified Robot Controller - Provides easy access to all robot control methods
 /// </summary>
+[RequireComponent(typeof(UR5Controller))]
 public class UnifiedRobotController : MonoBehaviour
 {
     [HideInInspector]
@@ -21,8 +22,8 @@ public class UnifiedRobotController : MonoBehaviour
     public CSVTrajectoryController csvTrajectoryController;
     [HideInInspector]
     public SuctionController suctionController;
-    [HideInInspector]
-    public UR5IKSolver ikSolver;
+
+    private UR5Controller uR5Controller;
 
     [Header("Control Settings")]
     public ControlMode currentMode = ControlMode.Start;
@@ -89,9 +90,6 @@ public class UnifiedRobotController : MonoBehaviour
         if (suctionController == null)
             suctionController = GetComponent<SuctionController>();
 
-        if (ikSolver == null)
-            ikSolver = GetComponent<UR5IKSolver>();
-
         // Get joints from robotArmSetup
         if (robotArmSetup != null && robotArmSetup.articulationChain != null)
         {
@@ -124,6 +122,8 @@ public class UnifiedRobotController : MonoBehaviour
                 Debug.LogError("Unified Robot Controller - no joints found!");
             }
         }
+
+        uR5Controller = GetComponent<UR5Controller>();
     }
 
     void Update()
@@ -194,32 +194,6 @@ public class UnifiedRobotController : MonoBehaviour
 
     void HandleIKControl()
     {
-        // Initialize IK target to current end-effector pose on first entry to IK mode
-        if (!ikInitialized || endEffector == null)
-        {
-            if (endEffector != null)
-            {
-                ikTargetPosition = endEffector.position;
-                ikTargetRotation = endEffector.rotation;
-                ikInitialized = true;
-                Debug.Log($"IK Control initialized at position: {ikTargetPosition}");
-            }
-            return;
-        }
-
-        // Check if IK solver is available
-        if (ikSolver == null)
-        {
-            Debug.LogError("UR5IKSolver component not found! Add UR5IKSolver to this GameObject.");
-            return;
-        }
-
-        // Skip input if movement is in progress
-        if (ikMovementInProgress)
-        {
-            return;
-        }
-
         // Handle keyboard input for end-effector movement
         bool movementRequested = false;
         Vector3 deltaPosition = Vector3.zero;
@@ -301,44 +275,7 @@ public class UnifiedRobotController : MonoBehaviour
         // If movement was requested, solve IK and move robot
         if (movementRequested)
         {
-            // Update target pose
-            ikTargetPosition += deltaPosition;
-            ikTargetRotation *= Quaternion.Euler(deltaRotation);
-
-            // Get current joint angles
-            float[] currentAngles = new float[6];
-            for (int i = 0; i < 6 && i < robotJoints.Length; i++)
-            {
-                currentAngles[i] = robotJoints[i].jointPosition[0]; // Already in radians
-            }
-
-            // Solve IK for target pose
-            float[] solution = ikSolver.SolveIK(ikTargetPosition, ikTargetRotation, currentAngles);
-
-            if (solution != null && solution.Length == 6)
-            {
-                // Convert radians to degrees and apply solution
-                float[] solutionDegrees = new float[6];
-                for (int i = 0; i < 6; i++)
-                {
-                    solutionDegrees[i] = solution[i] * Mathf.Rad2Deg;
-                }
-
-                // Start smooth movement to target
-                StartCoroutine(MoveToJointAnglesSmooth(solutionDegrees));
-
-                if (ikSolver.debugMode)
-                {
-                    Debug.Log($"IK target: pos={ikTargetPosition}, rot={ikTargetRotation.eulerAngles}");
-                }
-            }
-            else
-            {
-                // IK failed - revert target to current position
-                Debug.LogWarning("IK solution failed - target pose may be unreachable");
-                ikTargetPosition -= deltaPosition;
-                ikTargetRotation *= Quaternion.Euler(-deltaRotation);
-            }
+            uR5Controller.ApplyDeltaAction(deltaPosition, Quaternion.Euler(deltaRotation));
         }
     }
 

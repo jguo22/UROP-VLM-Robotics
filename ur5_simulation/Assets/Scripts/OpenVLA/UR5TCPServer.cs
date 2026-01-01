@@ -289,7 +289,9 @@ public class UR5TCPServer : MonoBehaviour
                     scaledAction[6] = action[6];
 
                     Debug.Log($"Scaled action (freq={controlFrequency}Hz, workspace={workspaceScale}x): {string.Join(", ", scaledAction)}");
-                    robotController.ApplyDeltaAction(scaledAction);
+                    Vector3 deltaPosition = new Vector3(scaledAction[0], scaledAction[1], scaledAction[2]);
+                    Quaternion deltaRotation = Quaternion.Euler(scaledAction[3], scaledAction[4], scaledAction[5]);
+                    robotController.ApplyDeltaAction(deltaPosition, deltaRotation);
                 });
 
                 // Send success ACK
