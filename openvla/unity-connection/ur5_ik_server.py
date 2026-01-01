@@ -172,59 +172,46 @@ class UR5IKServer:
                     print("Socket timeout, client may have disconnected")
                     break
 
-                     # Read data: 3d + 4d + 6d = 13 doubles = 104 bytes
-                     data = b''
-                      remaining = 104
-                       while remaining > 0:
-                            chunk = client_socket.recv(remaining)
-                            if not chunk:
-                                break
-                            data += chunk
-                            remaining -= len(chunk)
+                # Read data: 3d + 4d + 6d = 13 doubles = 104 bytes
+                data = b''
+                remaining = 104
+                while remaining > 0:
+                    chunk = client_socket.recv(remaining)
+                    if not chunk:
+                        break
+                    data += chunk
+                    remaining -= len(chunk)
 
-                        if len(data) != 104:
-                            print(
-                                f"Invalid data length for SolveIK: {len(data)}, expected 104")
-                            break
+                if len(data) != 104:
+                    print(
+                        f"Invalid data length for SolveIK: {len(data)}, expected 104")
+                    break
 
-                        # Unpack: target_pos(3) + target_rot(4) + current_angles(6)
-                        values = struct.unpack('<13d', data)
-                        target_pos = np.array(values[0:3])
-                        target_rot = np.array(values[3:7])
-                        current_angles = np.array(values[7:13])
+                # Unpack: target_pos(3) + target_rot(4) + current_angles(6)
+                values = struct.unpack('<13d', data)
+                target_pos = np.array(values[0:3])
+                target_rot = np.array(values[3:7])
+                current_angles = np.array(values[7:13])
 
-                        print(
-                            f"SolveIK request: pos={target_pos}, rot={target_rot}")
+                print(
+                    f"SolveIK request: pos={target_pos}, rot={target_rot}")
 
-                        # Solve IK
-                        solution = self.solve_ik(
-                            target_pos, target_rot, current_angles)
+                # Solve IK
+                solution = self.solve_ik(
+                    target_pos, target_rot, current_angles)
 
-                        # Send response
-                        if solution is not None:
-                            # Success: send 1 + 6 doubles
-                            response = struct.pack(
-                                'B', 1) + struct.pack('<6d', *solution)
-                            client_socket.sendall(response)
-                            print(f"Solution sent: {solution}")
-                        else:
-                            # Failure: send 0
-                            response = struct.pack('B', 0)
-                            client_socket.sendall(response)
-                            print("No solution found, sent failure response")
-
-                        # Send response
-                        if solution is not None:
-                            # Success: send 1 + 6 doubles
-                            response = struct.pack(
-                                'B', 1) + struct.pack('<6d', *solution)
-                            client_socket.sendall(response)
-                            print(f"Solution sent: {solution}")
-                        else:
-                            # Failure: send 0
-                            response = struct.pack('B', 0)
-                            client_socket.sendall(response)
-                            print("No solution found, sent failure response")
+                # Send response
+                if solution is not None:
+                    # Success: send 1 + 6 doubles
+                    response = struct.pack(
+                        'B', 1) + struct.pack('<6d', *solution)
+                    client_socket.sendall(response)
+                    print(f"Solution sent: {solution}")
+                else:
+                    # Failure: send 0
+                    response = struct.pack('B', 0)
+                    client_socket.sendall(response)
+                    print("No solution found, sent failure response")
 
         except socket.timeout as e:
             print(f"Socket timeout: {e}")
