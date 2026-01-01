@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
-[RequireComponent(typeof(UR5Controller))]
 public class UR5TCPServer : MonoBehaviour
 {
     [Header("Settings")]

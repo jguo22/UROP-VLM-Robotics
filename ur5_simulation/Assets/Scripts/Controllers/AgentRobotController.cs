@@ -103,7 +103,7 @@ public class AgentRobotController : MonoBehaviour
         // Switch modes with number keys
         if (Input.GetKeyDown(KeyCode.Alpha1)) SetControlMode(ControlMode.CSVTrajectory);
         if (Input.GetKeyDown(KeyCode.Alpha2)) SetControlMode(ControlMode.AgenticAI);
-        
+
     }
 
     void HandleCurrentMode()
@@ -189,7 +189,7 @@ public class AgentRobotController : MonoBehaviour
 
     public void MoveEndEffectorTo(Vector3 targetPosition)
     {
-        
+
     }
 
     #endregion
@@ -313,7 +313,7 @@ public class AgentRobotController : MonoBehaviour
         RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
 
         if (robotArmSetup != null && angles != null)
-        {   
+        {
             ArticulationBody[] robotJoints = robotArmSetup.robotJoints;
             //Debug.Log($"RobotArmSetup found, joints array length: {robotJoints?.Length ?? 0}");
 
@@ -349,46 +349,6 @@ public class AgentRobotController : MonoBehaviour
             if (angles == null) Debug.LogError("UnifiedRobotController: angles array is null!");
         }
     }
-
-    public Vector3 GetEndEffectorPosition()
-    {
-        return endEffector != null ? endEffector.position : Vector3.zero;
-    }
-
-    public Quaternion GetEndEffectorRotation()
-    {
-        return endEffector != null ? endEffector.rotation : Quaternion.identity;
-    }
-
-    #endregion
-
-    #region Coroutines
-
-    // private IEnumerator MoveToPosition(float[] targetAngles)
-    // {
-    //     float[] startAngles = GetCurrentJointAngles(robotJoints);
-    //     float duration = 2f; // seconds
-    //     float elapsed = 0f;
-
-    //     while (elapsed < duration)
-    //     {
-    //         elapsed += Time.deltaTime;
-    //         float t = elapsed / duration;
-    //         t = Mathf.SmoothStep(0f, 1f, t); // Smooth interpolation
-
-    //         float[] currentAngles = new float[targetAngles.Length];
-    //         for (int i = 0; i < targetAngles.Length; i++)
-    //         {
-    //             currentAngles[i] = Mathf.Lerp(startAngles[i], targetAngles[i], t);
-    //         }
-
-    //         SetJointAngles(currentAngles);
-    //         yield return null;
-    //     }
-
-    //     // Ensure final position
-    //     SetJointAngles(targetAngles);
-    // }
 
     #endregion
 
@@ -520,7 +480,7 @@ public class AgentRobotController : MonoBehaviour
                     GUI.Label(new Rect(210, jointAngle_y, 400, 20), $"Status: {statusText}", statusStyle); //y=185
                 }
             }
-            
+
             jointAngle_y += 25;
         }
     }

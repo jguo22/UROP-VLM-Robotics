@@ -21,7 +21,7 @@ public class RobotArmSetup : MonoBehaviour
                                               "wrist2_PosX,wrist2_PosY,wrist2_PosZ,wrist2_RotX,wrist2_RotY,wrist2_RotZ,wrist2_RotW,wrist2_jointAngle," +
                                               "wrist3_PosX,wrist3_PosY,wrist3_PosZ,wrist3_RotX,wrist3_RotY,wrist3_RotZ,wrist3_RotW,wrist3_jointAngle," +
                                               "ee_PosX,ee_PosY,ee_PosZ,ee_RotX,ee_RotY,ee_RotZ,ee_RotW,suctionOn,blockAttracted"; //+
-                                              //"block_PosX,block_PosY,block_PosZ,block_RotX,block_RotY,block_RotZ,block_RotW";
+                                                                                                                                  //"block_PosX,block_PosY,block_PosZ,block_RotX,block_RotY,block_RotZ,block_RotW";
 
     [HideInInspector]
     public ArticulationBody[] articulationChain; // Automatically populated articulation chain
@@ -110,26 +110,6 @@ public class RobotArmSetup : MonoBehaviour
             nextSampleTime = Time.time + samplingRate;
         }
     }
-
-    // private void FixedUpdate()
-    // {
-    //     // Ensure joints maintain their positions
-    //     if (articulationChain != null)
-    //     {
-    //         for (int i = 0; i < usedJointsCount; i++)
-    //         {
-    //             var joint = articulationChain[i];
-    //             if (joint.jointType != ArticulationJointType.FixedJoint)
-    //             {
-    //                 var drive = joint.xDrive;
-    //                 if (Mathf.Abs(drive.target - joint.jointPosition[0]) > 0.1f)
-    //                 {
-    //                     joint.xDrive = drive;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 
     // Structure to store joint coordinate data
     private struct JointCoordinateRecord
@@ -277,7 +257,7 @@ public class RobotArmSetup : MonoBehaviour
             StopRecording();
         }
     }
-    
+
     private void Start()
     {
         coordinates = new List<JointCoordinateRecord>();
