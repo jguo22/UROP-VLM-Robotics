@@ -195,73 +195,24 @@ public class UnifiedRobotController : MonoBehaviour
     void HandleIKControl()
     {
         // Handle keyboard input for end-effector movement
-        bool movementRequested = false;
         Vector3 deltaPosition = Vector3.zero;
         Vector3 deltaRotation = Vector3.zero; // Euler angles in degrees
 
         // Translation controls (WASDQE) - hold for continuous movement
-        if (Input.GetKey(KeyCode.W))
-        {
-            deltaPosition.z += ikStepSize; // Forward
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.S))
-        {
-            deltaPosition.z -= ikStepSize; // Backward
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.A))
-        {
-            deltaPosition.x -= ikStepSize; // Left
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            deltaPosition.x += ikStepSize; // Right
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.Q))
-        {
-            deltaPosition.y -= ikStepSize; // Down
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.E))
-        {
-            deltaPosition.y += ikStepSize; // Up
-            movementRequested = true;
-        }
+        if (Input.GetKey(KeyCode.W)) deltaPosition.z += ikStepSize; // Forward
+        if (Input.GetKey(KeyCode.S)) deltaPosition.z -= ikStepSize; // Backward
+        if (Input.GetKey(KeyCode.A)) deltaPosition.x -= ikStepSize; // Left
+        if (Input.GetKey(KeyCode.D)) deltaPosition.x += ikStepSize; // Right
+        if (Input.GetKey(KeyCode.Q)) deltaPosition.y -= ikStepSize; // Down
+        if (Input.GetKey(KeyCode.E)) deltaPosition.y += ikStepSize; // Up
 
         // Rotation controls (Arrow keys + Page Up/Down) - hold for continuous rotation
-        if (Input.GetKey(KeyCode.UpArrow))
-        {
-            deltaRotation.x += ikRotationStep; // Pitch up
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.DownArrow))
-        {
-            deltaRotation.x -= ikRotationStep; // Pitch down
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.LeftArrow))
-        {
-            deltaRotation.y -= ikRotationStep; // Yaw left
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.RightArrow))
-        {
-            deltaRotation.y += ikRotationStep; // Yaw right
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.PageUp))
-        {
-            deltaRotation.z += ikRotationStep; // Roll CCW
-            movementRequested = true;
-        }
-        if (Input.GetKey(KeyCode.PageDown))
-        {
-            deltaRotation.z -= ikRotationStep; // Roll CW
-            movementRequested = true;
-        }
+        if (Input.GetKey(KeyCode.UpArrow)) deltaRotation.x += ikRotationStep; // Pitch up
+        if (Input.GetKey(KeyCode.DownArrow)) deltaRotation.x -= ikRotationStep; // Pitch down
+        if (Input.GetKey(KeyCode.LeftArrow)) deltaRotation.y -= ikRotationStep; // Yaw left
+        if (Input.GetKey(KeyCode.RightArrow)) deltaRotation.y += ikRotationStep; // Yaw right
+        if (Input.GetKey(KeyCode.PageUp)) deltaRotation.z += ikRotationStep; // Roll CCW
+        if (Input.GetKey(KeyCode.PageDown)) deltaRotation.z -= ikRotationStep; // Roll CW
 
         // Reset to current position
         if (Input.GetKeyDown(KeyCode.R))
@@ -272,8 +223,8 @@ public class UnifiedRobotController : MonoBehaviour
             return;
         }
 
-        // If movement was requested, solve IK and move robot
-        if (movementRequested)
+        // If movement was requested (delta is non-zero), solve IK and move robot
+        if (deltaPosition != Vector3.zero || deltaRotation != Vector3.zero)
         {
             uR5Controller.ApplyDeltaAction(deltaPosition, Quaternion.Euler(deltaRotation));
         }
