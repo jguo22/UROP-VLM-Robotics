@@ -15,6 +15,7 @@ import struct
 import numpy as np
 import roboticstoolbox as rtb
 from spatialmath import SE3, UnitQuaternion
+from typing import Tuple
 import os
 
 from constants import (
@@ -25,9 +26,8 @@ from constants import (
     DEFAULT_ROTATION_TOLERANCE,
     DEFAULT_JOINT_TOLERANCE,
     UR5_URDF_FILENAME,
-    JOINT_ANGLES_COUNT,
 )
-from coordinate_transforms import transform_coordinates, transform_quaternion
+from ik_server.coordinate_transforms import unity_to_ros_position, unity_to_ros_quaternion
 
 
 class UR5FKValidator:
@@ -73,7 +73,6 @@ class UR5FKValidator:
         print(self.ur5)
 
         print(rtb.models.UR5())
-
 
     def connect(self):
         """Establish TCP connection to the server"""
@@ -128,15 +127,16 @@ class UR5FKValidator:
             print(f"Error receiving data: {e}")
             return None, None, None
 
-    def calculate_forward_kinematics(self, joint_angles):
+    def calculate_forward_kinematics(
+            self, joint_angles: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculate forward kinematics for given joint angles.
 
         Args:
-                                        joint_angles (np.ndarray): Array of 6 joint angles in radians
+            joint_angles: Array of 6 joint angles in radians
 
         Returns:
-                                        tuple: (position, quaternion) where position is [x, y, z] and quaternion is [x, y, z, w]
+            tuple: (position, quaternion) where position is [x, y, z] and quaternion is [x, y, z, w]
         """
         # Calculate forward kinematics using built-in UR5 model
         T = self.ur5.fkine(joint_angles)
@@ -144,18 +144,11 @@ class UR5FKValidator:
         # Extract position (translation vector)
         position = T.t
 
-        # Extract rotation as quaternion [x, y, z, w]
         # Convert rotation matrix to unit quaternion
         unit_quat = UnitQuaternion(T.R)
 
-        # Debug: Check what we're getting
-        # .vec returns [w, x, y, z], .v returns [x, y, z], .s returns w
-        # We want to output [x, y, z, w]
-        quat_v = unit_quat.v  # Vector part [x, y, z]
-        quat_s = unit_quat.s  # Scalar part w
-
-        # Construct [x, y, z, w]
-        quaternion = np.concatenate([quat_v, [quat_s]])
+        # Return quaternion in [x, y, z, w] format
+        quaternion = np.concatenate([unit_quat.v, [unit_quat.s]])
 
         return position, quaternion
 
@@ -207,57 +200,72 @@ class UR5FKValidator:
             traceback.print_exc()
             return False, None, 0
 
-    def validate(self, reported_position, calculated_position):
+    def validate(self,
+                 reported_position: np.ndarray,
+                 calculated_position: np.ndarray) -> Tuple[bool,
+                                                           float,
+                                                           np.ndarray]:
         """
         Validate that reported and calculated positions match within tolerance.
 
         Args:
-                                        reported_position (np.ndarray): Reported end effector position
-                                        calculated_position (np.ndarray): Calculated end effector position
+            reported_position: Reported end effector position [x, y, z]
+            calculated_position: Calculated end effector position [x, y, z]
 
         Returns:
-                                        tuple: (bool: is_valid, float: error_magnitude, np.ndarray: error_vector)
+            tuple: (is_valid: bool, error_magnitude: float, error_vector: np.ndarray)
         """
-        # Calculate error
-        error = calculated_position - reported_position
-        error_magnitude = np.linalg.norm(error)
+        try:
+            # Ensure inputs are numpy arrays
+            reported = np.asarray(reported_position, dtype=float)
+            calculated = np.asarray(calculated_position, dtype=float)
 
-        # Check if within tolerance
-        is_valid = error_magnitude <= self.tolerance
+            # Calculate error
+            error = calculated - reported
+            error_magnitude = float(np.linalg.norm(error))
 
-        return is_valid, error_magnitude, error
+            # Check if within tolerance
+            is_valid = error_magnitude <= self.tolerance
+
+            return is_valid, error_magnitude, error
+
+        except Exception as e:
+            print(f"Error in position validation: {e}")
+            return False, float('inf'), np.zeros(3)
 
     def validate_rotation(self, reported_quat, calculated_quat):
         """
         Validate that reported and calculated rotations match within tolerance.
 
-        Uses quaternion distance metric to compute angular difference.
+        Uses spatialmath's UnitQuaternion for accurate angle calculation.
 
         Args:
-                                        reported_quat (np.ndarray): Reported quaternion [x, y, z, w]
-                                        calculated_quat (np.ndarray): Calculated quaternion [x, y, z, w]
+            reported_quat (np.ndarray or UnitQuaternion): Reported quaternion [x, y, z, w] or UnitQuaternion
+            calculated_quat (np.ndarray or UnitQuaternion): Calculated quaternion [x, y, z, w] or UnitQuaternion
 
         Returns:
-                                        tuple: (bool: is_valid, float: angular_error_rad)
+            tuple: (bool: is_valid, float: angular_error_rad)
         """
-        # Normalize quaternions
-        q1 = reported_quat / np.linalg.norm(reported_quat)
-        q2 = calculated_quat / np.linalg.norm(calculated_quat)
+        try:
+            # Convert input to UnitQuaternion if they're numpy arrays
+            if isinstance(reported_quat, np.ndarray):
+                reported_quat = UnitQuaternion(
+                    reported_quat[3], reported_quat[:3])  # [w, x, y, z]
+            if isinstance(calculated_quat, np.ndarray):
+                calculated_quat = UnitQuaternion(
+                    calculated_quat[3], calculated_quat[:3])  # [w, x, y, z]
 
-        # Calculate quaternion dot product (cosine of half the angle between
-        # them)
-        dot_product = np.abs(np.dot(q1, q2))
+            # Calculate the angle between the two quaternions
+            angular_error = reported_quat.angle_between(calculated_quat)
 
-        # Clamp to [-1, 1] to avoid numerical errors in arccos
-        dot_product = np.clip(dot_product, -1.0, 1.0)
+            # Check if within tolerance
+            is_valid = angular_error <= self.rotation_tolerance
 
-        # Angular error = 2 * arccos(|q1 · q2|)
-        angular_error = 2.0 * np.arccos(dot_product)
+            return is_valid, float(angular_error)
 
-        # Check if within tolerance
-        is_valid = angular_error <= self.rotation_tolerance
-
-        return is_valid, angular_error
+        except Exception as e:
+            print(f"Error in rotation validation: {e}")
+            return False, float('inf')
 
     def validate_joint_angles(self, original_angles, calculated_angles):
         """
@@ -324,10 +332,9 @@ class UR5FKValidator:
                     joint_angles)
 
                 # Transform position and rotation coordinates
-                transformed_ee_pos = transform_coordinates(
-                    reported_ee_pos, self.coordinate_mode)
-                transformed_ee_quat = transform_quaternion(
-                    reported_ee_quat, self.coordinate_mode)
+                transformed_ee_pos = unity_to_ros_position(reported_ee_pos)
+                transformed_ee_quat = unity_to_ros_quaternion(
+                    reported_ee_quat)
 
                 # Validate position
                 pos_valid, pos_error_mag, pos_error_vector = self.validate(
@@ -453,8 +460,11 @@ def main():
     # FK options
     parser.add_argument('--host', type=str, default=DEFAULT_HOST,
                         help=f'Unity FK server host (default: {DEFAULT_HOST})')
-    parser.add_argument('--port', type=int, default=FK_VALIDATOR_PORT,
-                        help=f'Unity FK server port (default: {FK_VALIDATOR_PORT})')
+    parser.add_argument(
+        '--port',
+        type=int,
+        default=FK_VALIDATOR_PORT,
+        help=f'Unity FK server port (default: {FK_VALIDATOR_PORT})')
     parser.add_argument(
         '--tolerance',
         type=float,

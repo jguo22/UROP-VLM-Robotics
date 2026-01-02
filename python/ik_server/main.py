@@ -20,15 +20,13 @@ import socket
 import struct
 import numpy as np
 import roboticstoolbox as rtb
-from spatialmath import SE3
+from spatialmath import SE3, UnitQuaternion
 import os
 
 from constants import (
     DEFAULT_HOST,
     IK_SERVER_PORT,
     IK_REQUEST_BYTES,
-    IK_RESPONSE_HEADER_BYTES,
-    IK_RESPONSE_JOINTS_BYTES,
     IK_SOLVER_TOLERANCE,
     UR5_URDF_FILENAME,
     JOINT_ANGLES_COUNT,
@@ -60,7 +58,6 @@ class UR5IKServer:
         print(f"Loaded UR5 robot model from: {urdf_path}")
         print(self.ur5)
 
-
     def solve_ik(self, target_position, target_rotation, current_angles):
         """
         Solve inverse kinematics for target pose.
@@ -76,7 +73,8 @@ class UR5IKServer:
         try:
             # Convert Unity coordinates to ROS
             ros_position = unity_to_ros_position(target_position)
-            ros_rotation = unity_to_ros_quaternion(target_rotation)
+            ros_rotation = UnitQuaternion(
+                unity_to_ros_quaternion(target_rotation), norm=True)
 
             # Create SE3 transform from position and quaternion
             T_target = SE3.Rt(ros_rotation.R, ros_position)
@@ -84,7 +82,10 @@ class UR5IKServer:
             # Solve IK using Levenberg-Marquardt with strict tolerance
             # Strict tolerance ensures accurate solutions and prevents getting stuck
             # q0 is the initial guess (current configuration)
-            result = self.ur5.ik_LM(T_target, q0=current_angles, tol=IK_SOLVER_TOLERANCE)
+            result = self.ur5.ik_LM(
+                T_target,
+                q0=current_angles,
+                tol=IK_SOLVER_TOLERANCE)
 
             # result is a tuple: (q, success, iterations, searches, residual)
             if bool(result[1]):
