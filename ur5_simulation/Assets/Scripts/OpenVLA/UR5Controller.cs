@@ -7,7 +7,7 @@ using System.Collections;
 public class UR5Controller : MonoBehaviour
 {
     [Header("IK Settings")]
-    public float moveDuration = 0.3f; // Faster for continuous movement
+    public float moveDuration = 0.3f;
     public float stiffness = 10000f;
     public float damping = 100f;
 
