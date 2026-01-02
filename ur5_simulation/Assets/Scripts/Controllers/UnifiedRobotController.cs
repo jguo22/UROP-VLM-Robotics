@@ -226,7 +226,7 @@ public class UnifiedRobotController : MonoBehaviour
         // If movement was requested (delta is non-zero), solve IK and move robot
         if (deltaPosition != Vector3.zero || deltaRotation != Vector3.zero)
         {
-            uR5Controller.ApplyDeltaAction(deltaPosition, Quaternion.Euler(deltaRotation));
+            uR5Controller.MoveDelta(deltaPosition, Quaternion.Euler(deltaRotation));
         }
     }
 
@@ -524,16 +524,6 @@ public class UnifiedRobotController : MonoBehaviour
             if (robotArmSetup == null) Debug.LogError("UnifiedRobotController: robotArmSetup is null!");
             if (angles == null) Debug.LogError("UnifiedRobotController: angles array is null!");
         }
-    }
-
-    public Vector3 GetEndEffectorPosition()
-    {
-        return endEffector != null ? endEffector.position : Vector3.zero;
-    }
-
-    public Quaternion GetEndEffectorRotation()
-    {
-        return endEffector != null ? endEffector.rotation : Quaternion.identity;
     }
 
     #endregion

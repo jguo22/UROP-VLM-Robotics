@@ -106,7 +106,7 @@ class UR5IKServer:
 
     def solve_ik(self, target_position, target_rotation, current_angles):
         """
-        Solve inverse kinematics for target pose using analytical solution.
+        Solve inverse kinematics for target pose.
 
         Args:
             target_position: np.array([x, y, z]) in Unity coordinates
@@ -124,45 +124,20 @@ class UR5IKServer:
             # Create SE3 transform from position and quaternion
             T_target = SE3.Rt(ros_rotation.R, ros_position)
 
-            # Try analytical IK first (fast, deterministic)
-            try:
-                # ikine_a returns all analytical solutions
-                solutions = self.ur5.ikine_a(T_target, config="")
+            # Solve IK using Levenberg-Marquardt with strict tolerance
+            # Strict tolerance (1e-6) ensures accurate solutions and prevents getting stuck
+            # q0 is the initial guess (current configuration)
+            result = self.ur5.ik_LM(T_target, q0=current_angles, tol=1e-6)
 
-                if solutions is not None and len(solutions) > 0:
-                    # Find solution closest to current configuration
-                    best_solution = None
-                    min_distance = float('inf')
-
-                    for sol in solutions:
-                        if sol.success:
-                            # Calculate joint space distance
-                            distance = np.sum(np.abs(sol.q - current_angles))
-                            if distance < min_distance:
-                                min_distance = distance
-                                best_solution = sol.q
-
-                    if best_solution is not None:
-                        # Normalize angles to be close to current configuration
-                        solution = np.array(best_solution)
-                        for i in range(len(solution)):
-                            while solution[i] - current_angles[i] > np.pi:
-                                solution[i] -= 2 * np.pi
-                            while solution[i] - current_angles[i] < -np.pi:
-                                solution[i] += 2 * np.pi
-
-                        return solution
-            except Exception as e:
-                print(f"Analytical IK failed, falling back to numerical: {e}")
-
-            # Fallback to numerical IK if analytical fails
-            result = self.ur5.ik_LM(T_target, q0=current_angles, tol=1e-4)
-
+            # result is a tuple: (q, success, iterations, searches, residual)
             if bool(result[1]):
                 solution = result[0]
 
-                # Normalize solution to be close to current angles
+                # Normalize solution to be close to current angles (minimize joint movement)
+                # This prevents jumping between equivalent solutions (e.g.,
+                # +180 vs -180)
                 for i in range(len(solution)):
+                    # Wrap angles to be within ±π of current angle
                     while solution[i] - current_angles[i] > np.pi:
                         solution[i] -= 2 * np.pi
                     while solution[i] - current_angles[i] < -np.pi:

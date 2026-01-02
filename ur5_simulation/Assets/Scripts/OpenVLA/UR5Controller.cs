@@ -39,8 +39,6 @@ public class UR5Controller : MonoBehaviour
         // Get articulation chain from RobotArmSetup
         articulationChain = robotArmSetup.articulationChain;
         robotJoints = robotArmSetup.robotJoints; // This is already set up by RobotArmSetup (6 joints + end effector)
-        foreach (ArticulationBody joint in robotJoints)
-            print(joint);
 
         Debug.Log($"UR5Controller: Found {articulationChain.Length} articulation bodies");
         Debug.Log($"UR5Controller: Robot joints array has {robotJoints.Length} elements");
@@ -84,7 +82,7 @@ public class UR5Controller : MonoBehaviour
     /// <summary>
     /// Move to target position and rotation using IK
     /// </summary>
-    public void MoveToTarget(Vector3 targetPosition, Quaternion targetRotation)
+    void MoveToTarget(Vector3 targetPosition, Quaternion targetRotation)
     {
         // Don't start a new movement if one is already in progress
         if (isMoving)
@@ -114,15 +112,8 @@ public class UR5Controller : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Apply delta action from VLA model
-    /// </summary>
-    public void ApplyDeltaAction(Vector3 deltaPosition, Quaternion deltaRotation)
-    {
-        MoveToTarget(endEffector.position + deltaPosition, endEffector.rotation * deltaRotation);
-    }
 
-    public void MoveToAngles(float[] targetAngles)
+    void MoveToAngles(float[] targetAngles)
     {
         if (moveCoroutine != null)
         {
@@ -134,7 +125,7 @@ public class UR5Controller : MonoBehaviour
     /// <summary>
     /// Set joint angles directly (in radians)
     /// </summary>
-    public void SetJointAngles(float[] angles)
+    void SetJointAngles(float[] angles)
     {
         for (int i = 0; i < Mathf.Min(6, angles.Length); i++)
         {
@@ -143,12 +134,11 @@ public class UR5Controller : MonoBehaviour
                 ArticulationDrive drive = robotJoints[i].xDrive;
                 drive.target = angles[i] * Mathf.Rad2Deg;
                 robotJoints[i].xDrive = drive;
-                Debug.Log($"Joint {i}: Setting target to {drive.target} degrees ({angles[i]} radians)");
             }
         }
     }
 
-    private IEnumerator MoveToAnglesCoroutine(float[] targetAngles)
+    IEnumerator MoveToAnglesCoroutine(float[] targetAngles)
     {
         float[] startAngles = GetJointAngles();
         float elapsed = 0f;
@@ -174,11 +164,26 @@ public class UR5Controller : MonoBehaviour
         isMoving = false;
     }
 
-    private (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(Vector3 inputPosition, Quaternion inputRotation)
+    (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(Vector3 inputPosition, Quaternion inputRotation)
     {
         Vector3 position = originTransform.InverseTransformPoint(inputPosition);
         Quaternion rotation = Quaternion.Inverse(originTransform.rotation) * inputRotation;
         return (position, rotation);
+    }
+    /// <summary>
+    /// Move by a delta position and rotation
+    /// </summary>
+    public void MoveDelta(Vector3 deltaPosition, Quaternion deltaRotation)
+    {
+        if (isMoving)
+            return;
+
+        Vector3 targetPos = endEffector.position + deltaPosition;
+        Quaternion targetRot = endEffector.rotation * deltaRotation;
+
+        Debug.Log($"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})");
+
+        MoveToTarget(targetPos, targetRot);
     }
 
     /// <summary>
@@ -224,7 +229,7 @@ public class UR5Controller : MonoBehaviour
             if (i < robotJoints.Length)
             {
                 // Get the angle from the joint controller
-                angles[i] = robotJoints[i].jointPosition[0]; // Convert to radians
+                angles[i] = robotJoints[i].jointPosition[0];
             }
         }
 
