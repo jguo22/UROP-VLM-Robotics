@@ -86,9 +86,7 @@ public class UR5Controller : MonoBehaviour
     {
         // Don't start a new movement if one is already in progress
         if (isMoving)
-        {
             return;
-        }
 
         (Vector3 relativePosition, Quaternion relativeRotation) = ConvertToRobotCoordinates(targetPosition, targetRotation);
         float[] currentAngles = GetJointAngles();
@@ -136,7 +134,6 @@ public class UR5Controller : MonoBehaviour
                 robotJoints[i].xDrive = drive;
             }
         }
-        print(endEffector.rotation);
     }
 
     IEnumerator MoveToAnglesCoroutine(float[] targetAngles)
@@ -184,7 +181,10 @@ public class UR5Controller : MonoBehaviour
 
         Debug.Log($"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})");
 
+        print(endEffector.rotation);
+        print(targetRot);
         MoveToTarget(targetPos, targetRot);
+        print(endEffector.rotation);
     }
 
     /// <summary>

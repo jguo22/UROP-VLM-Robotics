@@ -100,7 +100,7 @@ class UR5IKServer:
         # Convert to ROS convention: swap and negate components
         # This accounts for the coordinate system change
         ros_quat = UnitQuaternion(
-            [w, z, -x, y], norm=True)  # [w, x, y, z] format
+            [w, -z, x, -y], norm=True)  # [w, x, y, z] format
 
         return ros_quat
 

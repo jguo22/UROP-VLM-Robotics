@@ -47,8 +47,7 @@ public class UR5IKSolver : MonoBehaviour
 
     void Start()
     {
-        // Don't connect on startup - connect lazily on first use
-        Debug.Log("UR5IKSolver: Initialized. Will connect on first IK request.");
+        EnsureConnection();
     }
 
     void OnDestroy()
@@ -182,10 +181,7 @@ public class UR5IKSolver : MonoBehaviour
     public float[] SolveIK(Vector3 targetPosition, Quaternion targetRotation, float[] currentAngles)
     {
         if (currentAngles == null || currentAngles.Length != 6)
-        {
-            Debug.LogError("UR5IKSolver.SolveIK: currentAngles must be an array of 6 floats");
-            return null;
-        }
+            throw new Exception("UR5IKSolver.SolveIK: currentAngles must be an array of 6 floats");
 
         if (!EnsureConnection())
         {
@@ -194,7 +190,7 @@ public class UR5IKSolver : MonoBehaviour
             {
                 Debug.LogWarning("UR5IKSolver.SolveIK: Not connected to Python server");
             }
-            return currentAngles; // Return current angles as fallback
+            return currentAngles;
         }
 
         try
