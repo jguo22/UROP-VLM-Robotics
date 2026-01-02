@@ -136,6 +136,7 @@ public class UR5Controller : MonoBehaviour
                 robotJoints[i].xDrive = drive;
             }
         }
+        print(endEffector.rotation);
     }
 
     IEnumerator MoveToAnglesCoroutine(float[] targetAngles)
@@ -234,5 +235,31 @@ public class UR5Controller : MonoBehaviour
         }
 
         return angles;
+    }
+
+    void OnGUI()
+    {
+        if (endEffector == null) return;
+
+        string displayText = $"End Effector Position: ({endEffector.position.x:F5}, {endEffector.position.y:F5}, {endEffector.position.z:F5})\n";
+        displayText += $"End Effector Rotation: ({endEffector.rotation.x:F5}, {endEffector.rotation.y:F5}, {endEffector.rotation.z:F5}, {endEffector.rotation.w:F5})\n";
+        displayText += $"Euler Angles: ({endEffector.rotation.eulerAngles.x:F2}, {endEffector.rotation.eulerAngles.y:F2}, {endEffector.rotation.eulerAngles.z:F2})";
+
+        float width = 650;
+        float height = 80;
+        Rect rect = new Rect(Screen.width / 2 - width / 2, 10, width, height);
+
+        // Draw black background
+        Texture2D blackTexture = new Texture2D(1, 1);
+        blackTexture.SetPixel(0, 0, Color.black);
+        blackTexture.Apply();
+        GUI.DrawTexture(rect, blackTexture);
+
+        // Draw white text
+        GUIStyle style = new GUIStyle(GUI.skin.label);
+        style.fontSize = 14;
+        style.normal.textColor = Color.white;
+        style.alignment = TextAnchor.UpperCenter;
+        GUI.Label(rect, displayText, style);
     }
 }
