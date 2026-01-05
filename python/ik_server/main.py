@@ -31,7 +31,7 @@ from constants import (
     UR5_URDF_FILENAME,
     JOINT_ANGLES_COUNT,
 )
-from coordinate_transforms import unity_to_ros_position, unity_to_ros_quaternion
+from coordinate_transforms import unity_to_ros_position, unity_to_ros_quaternion, arrayToQuaternion
 
 
 class UR5IKServer:
@@ -73,8 +73,8 @@ class UR5IKServer:
         try:
             # Convert Unity coordinates to ROS
             ros_position = unity_to_ros_position(target_position)
-            ros_rotation = UnitQuaternion(
-                unity_to_ros_quaternion(target_rotation), norm=True)
+            ros_quat = unity_to_ros_quaternion(target_rotation)  # Returns [w, x, y, z]
+            ros_rotation = arrayToQuaternion(ros_quat)
 
             # Create SE3 transform from position and quaternion
             T_target = SE3.Rt(ros_rotation.R, ros_position)
@@ -90,16 +90,6 @@ class UR5IKServer:
             # result is a tuple: (q, success, iterations, searches, residual)
             if bool(result[1]):
                 solution = result[0]
-
-                # Normalize solution to be close to current angles (minimize joint movement)
-                # This prevents jumping between equivalent solutions (e.g.,
-                # +180 vs -180)
-                for i in range(len(solution)):
-                    # Wrap angles to be within ±π of current angle
-                    while solution[i] - current_angles[i] > np.pi:
-                        solution[i] -= 2 * np.pi
-                    while solution[i] - current_angles[i] < -np.pi:
-                        solution[i] += 2 * np.pi
 
                 return solution
             else:

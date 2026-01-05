@@ -27,7 +27,7 @@ from constants import (
     DEFAULT_JOINT_TOLERANCE,
     UR5_URDF_FILENAME,
 )
-from ik_server.coordinate_transforms import unity_to_ros_position, unity_to_ros_quaternion
+from coordinate_transforms import arrayToQuaternion, quaternion_angle_between, unity_to_ros_position, unity_to_ros_quaternion
 
 
 class UR5FKValidator:
@@ -46,14 +46,14 @@ class UR5FKValidator:
         Initialize the validator.
 
         Args:
-                                        host (str): TCP server host
-                                        port (int): TCP server port
-                                        tolerance (float): Maximum allowable position error in meters
-                                        rotation_tolerance (float): Maximum allowable rotation error in radians
-                                        joint_tolerance (float): Maximum allowable joint angle error in radians
-                                        coordinate_mode (str): Coordinate transformation mode:
-                                                                        - 'none': No transformation
-                                                                        - 'unity_to_ros': Unity (Y-up) to ROS (Z-up)
+                host (str): TCP server host
+                port (int): TCP server port
+                tolerance (float): Maximum allowable position error in meters
+                rotation_tolerance (float): Maximum allowable rotation error in radians
+                joint_tolerance (float): Maximum allowable joint angle error in radians
+                coordinate_mode (str): Coordinate transformation mode:
+                                                        - 'none': No transformation
+                                                        - 'unity_to_ros': Unity (Y-up) to ROS (Z-up)
         """
         self.host = host
         self.port = port
@@ -96,11 +96,11 @@ class UR5FKValidator:
         Receive data from TCP server in binary format.
 
         Binary format (104 bytes total):
-                                        13 doubles: [ee_x, ee_y, ee_z, quat_x, quat_y, quat_z, quat_w, j1, j2, j3, j4, j5, j6]
-                                        All values are float64 (double precision, little-endian)
+                13 doubles: [ee_x, ee_y, ee_z, quat_x, quat_y, quat_z, quat_w, j1, j2, j3, j4, j5, j6]
+                All values are float64 (double precision, little-endian)
 
         Returns:
-                                        tuple: (end_effector_position, end_effector_rotation, joint_angles) as numpy arrays, or (None, None, None) if error
+                tuple: (end_effector_position, end_effector_rotation, joint_angles) as numpy arrays, or (None, None, None) if error
         """
         try:
             # Binary protocol: 13 doubles
@@ -133,10 +133,10 @@ class UR5FKValidator:
         Calculate forward kinematics for given joint angles.
 
         Args:
-            joint_angles: Array of 6 joint angles in radians
+                joint_angles: Array of 6 joint angles in radians
 
         Returns:
-            tuple: (position, quaternion) where position is [x, y, z] and quaternion is [x, y, z, w]
+                tuple: (position, quaternion) where position is [x, y, z] and quaternion is [w, x, y, z]
         """
         # Calculate forward kinematics using built-in UR5 model
         T = self.ur5.fkine(joint_angles)
@@ -147,8 +147,8 @@ class UR5FKValidator:
         # Convert rotation matrix to unit quaternion
         unit_quat = UnitQuaternion(T.R)
 
-        # Return quaternion in [x, y, z, w] format
-        quaternion = np.concatenate([unit_quat.v, [unit_quat.s]])
+        # Return quaternion in [w, x, y, z] format
+        quaternion = np.concatenate([[unit_quat.s], unit_quat.v])
 
         return position, quaternion
 
@@ -162,12 +162,12 @@ class UR5FKValidator:
         Calculate inverse kinematics for target pose.
 
         Args:
-                        target_position (np.ndarray): Target position [x, y, z]
-                        target_rotation (np.ndarray or UnitQuaternion, optional): Target rotation
-                        q0 (np.ndarray, optional): Initial guess for joint angles
+                target_position (np.ndarray): Target position [x, y, z]
+                target_rotation (np.ndarray, optional): Target rotation [w, x, y, z]
+                q0 (np.ndarray, optional): Initial guess for joint angles
 
         Returns:
-                        tuple: (success: bool, solution: np.ndarray or None, iterations: int)
+                tuple: (success: bool, solution: np.ndarray or None, iterations: int)
         """
         try:
             # Create SE3 transform
@@ -209,11 +209,11 @@ class UR5FKValidator:
         Validate that reported and calculated positions match within tolerance.
 
         Args:
-            reported_position: Reported end effector position [x, y, z]
-            calculated_position: Calculated end effector position [x, y, z]
+                reported_position: Reported end effector position [x, y, z]
+                calculated_position: Calculated end effector position [x, y, z]
 
         Returns:
-            tuple: (is_valid: bool, error_magnitude: float, error_vector: np.ndarray)
+                tuple: (is_valid: bool, error_magnitude: float, error_vector: np.ndarray)
         """
         try:
             # Ensure inputs are numpy arrays
@@ -240,23 +240,22 @@ class UR5FKValidator:
         Uses spatialmath's UnitQuaternion for accurate angle calculation.
 
         Args:
-            reported_quat (np.ndarray or UnitQuaternion): Reported quaternion [x, y, z, w] or UnitQuaternion
-            calculated_quat (np.ndarray or UnitQuaternion): Calculated quaternion [x, y, z, w] or UnitQuaternion
+                reported_quat (np.ndarray): Reported quaternion [w, x, y, z]
+                calculated_quat (np.ndarray): Calculated quaternion [w, x, y, z]
 
         Returns:
-            tuple: (bool: is_valid, float: angular_error_rad)
+                tuple: (bool: is_valid, float: angular_error_rad)
         """
         try:
             # Convert input to UnitQuaternion if they're numpy arrays
             if isinstance(reported_quat, np.ndarray):
-                reported_quat = UnitQuaternion(
-                    reported_quat[3], reported_quat[:3])  # [w, x, y, z]
+                reported_quat = arrayToQuaternion(reported_quat)
             if isinstance(calculated_quat, np.ndarray):
-                calculated_quat = UnitQuaternion(
-                    calculated_quat[3], calculated_quat[:3])  # [w, x, y, z]
+                calculated_quat = arrayToQuaternion(calculated_quat)
 
             # Calculate the angle between the two quaternions
-            angular_error = reported_quat.angle_between(calculated_quat)
+            angular_error = quaternion_angle_between(
+                reported_quat, calculated_quat)
 
             # Check if within tolerance
             is_valid = angular_error <= self.rotation_tolerance
@@ -272,11 +271,11 @@ class UR5FKValidator:
         Validate that original and calculated joint angles match within tolerance.
 
         Args:
-                                        original_angles (np.ndarray): Original joint angles in radians
-                                        calculated_angles (np.ndarray): Calculated joint angles from IK in radians
+                original_angles (np.ndarray): Original joint angles in radians
+                calculated_angles (np.ndarray): Calculated joint angles from IK in radians
 
         Returns:
-                                        tuple: (bool: is_valid, float: max_error_rad, np.ndarray: error_vector)
+                tuple: (bool: is_valid, float: max_error_rad, np.ndarray: error_vector)
         """
         # Calculate error for each joint
         error = calculated_angles - original_angles
@@ -346,9 +345,7 @@ class UR5FKValidator:
 
                 # Test inverse kinematics (round-trip test)
                 # Convert calculated quaternion to UnitQuaternion for IK
-                calc_unit_quat = UnitQuaternion(
-                    calculated_ee_quat[3], calculated_ee_quat[:3]
-                )
+                calc_unit_quat = arrayToQuaternion(calculated_ee_quat)
                 ik_success, ik_joint_angles, ik_iterations = self.calculate_inverse_kinematics(
                     calculated_ee_pos,
                     calc_unit_quat,
@@ -390,11 +387,11 @@ class UR5FKValidator:
 
                 print(f"\nForward Kinematics - Rotation Validation:")
                 print(
-                    f"	Unity Quat:		  [{reported_ee_quat[0]:.6f}, {reported_ee_quat[1]:.6f}, {reported_ee_quat[2]:.6f}, {reported_ee_quat[3]:.6f}]")
+                    f"	Unity Quat [x,y,z,w]:       [{reported_ee_quat[0]:.6f}, {reported_ee_quat[1]:.6f}, {reported_ee_quat[2]:.6f}, {reported_ee_quat[3]:.6f}]")
                 print(
-                    f"	Transformed Quat: [{transformed_ee_quat[0]:.6f}, {transformed_ee_quat[1]:.6f}, {transformed_ee_quat[2]:.6f}, {transformed_ee_quat[3]:.6f}]")
+                    f"	Transformed Quat [w,x,y,z]: [{transformed_ee_quat[0]:.6f}, {transformed_ee_quat[1]:.6f}, {transformed_ee_quat[2]:.6f}, {transformed_ee_quat[3]:.6f}]")
                 print(
-                    f"	Calculated Quat:  [{calculated_ee_quat[0]:.6f}, {calculated_ee_quat[1]:.6f}, {calculated_ee_quat[2]:.6f}, {calculated_ee_quat[3]:.6f}]")
+                    f"	Calculated Quat [w,x,y,z]:  [{calculated_ee_quat[0]:.6f}, {calculated_ee_quat[1]:.6f}, {calculated_ee_quat[2]:.6f}, {calculated_ee_quat[3]:.6f}]")
                 print(
                     f"	Angular error: {rot_error:.6f} rad ({np.degrees(rot_error):.2f}°)")
                 print(
@@ -428,8 +425,8 @@ class UR5FKValidator:
         Run a single validation without TCP connection (for testing).
 
         Args:
-                                        end_effector (list or np.ndarray): End effector position [x, y, z]
-                                        joint_angles (list or np.ndarray): 6 joint angles in radians
+                end_effector (list or np.ndarray): End effector position [x, y, z]
+                joint_angles (list or np.ndarray): 6 joint angles in radians
         """
         end_effector = np.asarray(end_effector)
         joint_angles = np.asarray(joint_angles)

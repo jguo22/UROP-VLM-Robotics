@@ -16,10 +16,13 @@ Coordinate Systems:
         - Z-axis: Up
 
 Unity Quaternions are in [x, y, z, w] format.
-ROS quaternions are in [w, x, y, z] format.
+ROS Quaternions are in [w, x, y, z] format.
+
+Internal functions use [w, x, y, z] format.
 """
 
 import numpy as np
+from spatialmath import UnitQuaternion
 
 
 def unity_to_ros_position(unity_pos: np.ndarray) -> np.ndarray:
@@ -63,7 +66,7 @@ def unity_to_ros_quaternion(q_unity: np.ndarray) -> np.ndarray:
     Convert quaternion from Unity to ROS coordinate system.
 
     Args:
-        q_unity: Quaternion in Unity coordinates [w, x, y, z]
+        q_unity: Quaternion in Unity coordinates [x, y, z, w]
 
     Returns:
         Quaternion in ROS coordinates [w, x, y, z]
@@ -80,10 +83,40 @@ def ros_to_unity_quaternion(q_ros: np.ndarray) -> np.ndarray:
         q_ros: Quaternion in ROS coordinates [w, x, y, z]
 
     Returns:
-        Quaternion in Unity coordinates [w, x, y, z]
+        Quaternion in Unity coordinates [x, y, z, w]
     """
     w, x, y, z = q_ros
     return np.array([y, -z, -x, w])
+
+# quaternion helper functions
+
+
+def arrayToQuaternion(arr: np.ndarray) -> UnitQuaternion:
+    """Convert array in [w, x, y, z] format to UnitQuaternion."""
+    return UnitQuaternion(arr[0], arr[1:4])  # w is arr[0], [x,y,z] is arr[1:4]
+
+
+def quaternion_angle_between(q1, q2) -> float:
+    """
+    Calculate the angle between two quaternions in radians.
+
+    Args:
+        q1: Either UnitQuaternion or np.ndarray in [w, x, y, z] format
+        q2: Either UnitQuaternion or np.ndarray in [w, x, y, z] format
+
+    Returns:
+        Angular difference in radians
+    """
+    # Convert to UnitQuaternion if needed
+    if isinstance(q1, np.ndarray):
+        q1 = arrayToQuaternion(q1)
+    if isinstance(q2, np.ndarray):
+        q2 = arrayToQuaternion(q2)
+
+    # UnitQuaternion objects can be used with angdist method
+    return float(q1.angdist(q2))
+
+# validation functions
 
 
 def validate_position_transform(
@@ -106,13 +139,6 @@ def validate_position_transform(
     return bool(error <= tolerance)
 
 
-def quaternion_angle_between(q1: np.ndarray, q2: np.ndarray) -> float:
-    """Calculate the angle between two quaternions in radians."""
-    dot = np.abs(np.dot(q1, q2))  # Absolute value to handle double cover
-    dot = np.clip(dot, -1.0, 1.0)  # Ensure numerical stability
-    return 2 * np.arccos(dot)
-
-
 def validate_quaternion_transform(
     unity_quat: np.ndarray,
     tolerance: float = 1e-10
@@ -121,7 +147,7 @@ def validate_quaternion_transform(
     Validate that quaternion transformation is invertible (round-trip test).
 
     Args:
-        unity_quat: Test quaternion in Unity format [w, x, y, z]
+        unity_quat: Test quaternion in Unity format [x, y, z, w]
         tolerance: Acceptable angular error in radians
 
     Returns:

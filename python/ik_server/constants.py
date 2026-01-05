@@ -78,7 +78,8 @@ QUATERNION_DOUBLES: Final[int] = 4
 JOINT_ANGLES_COUNT: Final[int] = 6
 """Number of joint angles for UR5 robot"""
 
-IK_REQUEST_DOUBLES: Final[int] = POSITION_DOUBLES + QUATERNION_DOUBLES + JOINT_ANGLES_COUNT
+IK_REQUEST_DOUBLES: Final[int] = POSITION_DOUBLES + \
+    QUATERNION_DOUBLES + JOINT_ANGLES_COUNT
 """Total doubles in IK request: pos(3) + quat(4) + joints(6) = 13"""
 
 IK_REQUEST_BYTES: Final[int] = IK_REQUEST_DOUBLES * BYTES_PER_DOUBLE
@@ -90,11 +91,13 @@ IK_RESPONSE_HEADER_BYTES: Final[int] = 1
 IK_RESPONSE_JOINTS_BYTES: Final[int] = JOINT_ANGLES_COUNT * BYTES_PER_DOUBLE
 """Size of joint angles in IK response: 6 * 8 = 48 bytes"""
 
-IK_RESPONSE_TOTAL_BYTES: Final[int] = IK_RESPONSE_HEADER_BYTES + IK_RESPONSE_JOINTS_BYTES
+IK_RESPONSE_TOTAL_BYTES: Final[int] = IK_RESPONSE_HEADER_BYTES + \
+    IK_RESPONSE_JOINTS_BYTES
 """Total IK response size: 1 + 48 = 49 bytes"""
 
 # FK Protocol
-FK_DATA_DOUBLES: Final[int] = POSITION_DOUBLES + QUATERNION_DOUBLES + JOINT_ANGLES_COUNT
+FK_DATA_DOUBLES: Final[int] = POSITION_DOUBLES + \
+    QUATERNION_DOUBLES + JOINT_ANGLES_COUNT
 """Total doubles in FK data packet: pos(3) + quat(4) + joints(6) = 13"""
 
 FK_DATA_BYTES: Final[int] = FK_DATA_DOUBLES * BYTES_PER_DOUBLE
@@ -123,7 +126,7 @@ DEFAULT_ROTATION_TOLERANCE: Final[float] = 0.05
 DEFAULT_JOINT_TOLERANCE: Final[float] = 0.01
 """Default joint angle error tolerance in radians (~0.57 degrees)"""
 
-IK_SOLVER_TOLERANCE: Final[float] = 1e-6
+IK_SOLVER_TOLERANCE: Final[float] = 1e-10
 """Tolerance for IK solver convergence"""
 
 # ============================================================================
