@@ -6,3 +6,9 @@ torchvision>=0.16.0
 transformers==4.40.1
 roboticstoolbox-python
 accelerate
+
+# agentic requirements
+openai>=1.0.0
+numpy>=1.24.0,<2
+roboticstoolbox-python==1.1.1
+python-dotenv>=1.0.0
