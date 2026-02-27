@@ -33,6 +33,8 @@ public class AgentRobotController : MonoBehaviour
 
     [HideInInspector]
     public GameObject[] robots;
+    [HideInInspector]
+    public int defaultJointAngleY = 35;
 
     void Start()
     {
@@ -103,7 +105,7 @@ public class AgentRobotController : MonoBehaviour
         // Switch modes with number keys
         if (Input.GetKeyDown(KeyCode.Alpha1)) SetControlMode(ControlMode.CSVTrajectory);
         if (Input.GetKeyDown(KeyCode.Alpha2)) SetControlMode(ControlMode.AgenticAI);
-
+        
     }
 
     void HandleCurrentMode()
@@ -151,15 +153,24 @@ public class AgentRobotController : MonoBehaviour
     #endregion
 
     #region Public Control Methods
-    public float[] GetCurrentJointAngles(ArticulationBody[] robotJoints)
+    public float[] GetJointAngles(GameObject robot)
     {
-        if (robotJoints == null) return null;
+        RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
+        if (robotArmSetup == null) return null;
 
-        float[] angles = new float[JointCount]; // UR5 has 6 joints
-        for (int i = 0; i < angles.Length && i < robotJoints.Length; i++)
+        ArticulationBody[] robotJoints = robotArmSetup.robotJoints;
+        float[] angles = new float[JointCount]; // Assuming 6-DOF UR5 robot
+
+        // Get the current joint angles from the joint controllers
+        for (int i = 0; i < JointCount; i++)
         {
-            angles[i] = robotJoints[i].jointPosition[0] * Mathf.Rad2Deg;
+            if (i < robotJoints.Length)
+            {
+                // Get the angle from the joint controller
+                angles[i] = robotJoints[i].jointPosition[0]; // Convert to radians
+            }
         }
+
         return angles;
     }
 
@@ -172,14 +183,17 @@ public class AgentRobotController : MonoBehaviour
         // The CSVTrajectoryController handles its own playback state
     }
 
-    // public void ResetToHomePosition()
-    // {
-    //     if (robotArmSetup != null)
-    //     {
-    //         robotArmSetup.ResetArmPosition();
-    //         Debug.Log("Robot reset to home position");
-    //     }
-    // }
+    public bool ResetToHomePosition(GameObject robot)
+    {
+        RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
+        if (robotArmSetup != null)
+        {
+            robotArmSetup.ResetArmPosition();
+            Debug.Log("Robot reset to home position");
+            return true;
+        }
+        return false;
+    }
 
     // public void MoveToHomePosition()
     // {
@@ -189,7 +203,7 @@ public class AgentRobotController : MonoBehaviour
 
     public void MoveEndEffectorTo(Vector3 targetPosition)
     {
-
+        
     }
 
     #endregion
@@ -306,49 +320,69 @@ public class AgentRobotController : MonoBehaviour
 
     #region Public Control Methods
 
-    public void SetJointAngles(GameObject robot, float[] angles)
+    public bool SetJointAngles(GameObject robot, float[] angles)
     {
-        //Debug.Log($"UnifiedRobotController.SetJointAngles called with {angles?.Length ?? 0} angles");
-
         RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
+        if (robotArmSetup == null || angles == null) return false;
 
-        if (robotArmSetup != null && angles != null)
+        ArticulationBody[] robotJoints = robotArmSetup.robotJoints;
+        for (int i = 0; i < Mathf.Min(6, angles.Length); i++)
         {
-            ArticulationBody[] robotJoints = robotArmSetup.robotJoints;
-            //Debug.Log($"RobotArmSetup found, joints array length: {robotJoints?.Length ?? 0}");
-
-            for (int i = 0; i < Mathf.Min(angles.Length, StableStartingRotations.Length); i++)
+            if (robotJoints[i] != null)
             {
-                if (i < robotJoints.Length)
-                {
-                    //Debug.Log($"Setting joint {i} to angle {angles[i] * Mathf.Rad2Deg:F2} degrees");
-                    //Debug.Log($"Setting {robot.name} joint {i} to angle {angles[i]:F2} degrees");
+                ArticulationDrive drive = robotJoints[i].xDrive;
+                drive.target = angles[i] * Mathf.Rad2Deg;
 
-                    ArticulationDrive drive = robotJoints[i].xDrive;
-                    drive.target = angles[i];
-                    //drive.target = angles[i] * Mathf.Rad2Deg;
+                drive.stiffness = JointStiffness;
+                drive.damping = JointDamping;
+                drive.forceLimit = ForceLimit;
 
-                    // Ensure proper drive settings for movement
-                    drive.stiffness = 10000f;
-                    drive.damping = 100f;
-                    drive.forceLimit = 1000f;
-
-                    robotJoints[i].xDrive = drive;
-
-                    //Debug.Log($"Joint {i} drive updated: target={drive.target:F2}, stiffness={drive.stiffness}");
-                }
-                else
-                {
-                    Debug.LogWarning($"Joint index {i} is out of bounds (joints array length: {robotJoints.Length})");
-                }
+                robotJoints[i].xDrive = drive;
+                // Debug.Log($"Joint {i}: Setting target to {drive.target} degrees ({angles[i]} radians)");
             }
         }
-        else
-        {
-            if (robotArmSetup == null) Debug.LogError("UnifiedRobotController: robotArmSetup is null!");
-            if (angles == null) Debug.LogError("UnifiedRobotController: angles array is null!");
-        }
+        return true;
     }
+
+    public Vector3 GetEndEffectorPosition()
+    {
+        return endEffector != null ? endEffector.position : Vector3.zero;
+    }
+
+    public Quaternion GetEndEffectorRotation()
+    {
+        return endEffector != null ? endEffector.rotation : Quaternion.identity;
+    }
+
+    #endregion
+
+    #region Coroutines
+
+    // private IEnumerator MoveToPosition(float[] targetAngles)
+    // {
+    //     float[] startAngles = GetCurrentJointAngles(robotJoints);
+    //     float duration = 2f; // seconds
+    //     float elapsed = 0f;
+
+    //     while (elapsed < duration)
+    //     {
+    //         elapsed += Time.deltaTime;
+    //         float t = elapsed / duration;
+    //         t = Mathf.SmoothStep(0f, 1f, t); // Smooth interpolation
+
+    //         float[] currentAngles = new float[targetAngles.Length];
+    //         for (int i = 0; i < targetAngles.Length; i++)
+    //         {
+    //             currentAngles[i] = Mathf.Lerp(startAngles[i], targetAngles[i], t);
+    //         }
+
+    //         SetJointAngles(currentAngles);
+    //         yield return null;
+    //     }
+
+    //     // Ensure final position
+    //     SetJointAngles(targetAngles);
+    // }
 
     #endregion
 
@@ -415,7 +449,7 @@ public class AgentRobotController : MonoBehaviour
 
         //string modeText = currentMode == ControlMode.Start ? "Control Mode: <Select>" : $"Control Mode: {currentMode}";
         string modeText = "Control Mode: Agentic AI";
-        string instructionText = "Load trajectory [F1] | Play trajectory [Space]";
+        // string instructionText = "Load trajectory [F1] | Play trajectory [Space]";
 
         // switch (currentMode)
         // {
@@ -431,12 +465,11 @@ public class AgentRobotController : MonoBehaviour
         // }
 
         GUI.Label(new Rect(10, 10, 400, 30), modeText, style);
-        GUI.Label(new Rect(10, 35, 400, 30), instructionText, style);
+        // GUI.Label(new Rect(10, 35, 400, 30), instructionText, style);
         //GUI.Label(new Rect(10, 60, 400, 20), "Press 1-2 to switch modes", style);
         //GUI.Label(new Rect(10, 85, 400, 20), "Space: Toggle suction", style);
 
-        int defaultJointAngle_y = 60;
-        int jointAngle_y = defaultJointAngle_y;
+        int jointAngle_y = defaultJointAngleY;
 
         for (int robotIdx = 0; robotIdx < robots.Length; robotIdx++)
         {
@@ -480,7 +513,7 @@ public class AgentRobotController : MonoBehaviour
                     GUI.Label(new Rect(210, jointAngle_y, 400, 20), $"Status: {statusText}", statusStyle); //y=185
                 }
             }
-
+            
             jointAngle_y += 25;
         }
     }

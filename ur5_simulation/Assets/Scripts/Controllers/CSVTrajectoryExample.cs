@@ -53,7 +53,7 @@ public class CSVTrajectoryExample : MonoBehaviour
         // Define search folders (both Exports and Imports)
         string[] searchFolders = new string[]
         {
-            Path.Combine(Application.dataPath, "..", "Exports"),
+            // Path.Combine(Application.dataPath, "..", "Exports"),
             Path.Combine(Application.dataPath, "..", "Imports")
         };
 

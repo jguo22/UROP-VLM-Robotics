@@ -18,11 +18,11 @@ public class SimulAgenticSocketSetup : MonoBehaviour
     private byte[] receiveBuffer = new byte[4096]; // Increased buffer size
 
     //for socket connection
-    private static string unityAssetsFilePath = "ur5_simulation/Assets";
+    private static string unityAssetsFilePath = "agentic_unity/Assets";
     private string envFilePath = Application.dataPath.Replace(unityAssetsFilePath, "");
     private string hostAddress;
     private int portNumber;
-    
+
     // AI Agent Integration
     private AgentRobotController agentController;
     private SimulIKResponse ik_response;
@@ -111,7 +111,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             Debug.LogError("Socket error: " + e.Message);
         }
     }
-    
+
     void Update()
     {
         lock (lockObject)
@@ -177,7 +177,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
 
                 // // Process AI command
                 // string response = ProcessAICommand(receivedData);
-                
+
                 // // Send response back to Python
                 // byte[] responseData = Encoding.UTF8.GetBytes(response);
                 // stream.Write(responseData, 0, responseData.Length);
@@ -192,19 +192,19 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             if (isSocketActive) Debug.LogError("Receive callback error: " + e.Message);
         }
     }
-    
+
     private string ProcessAICommand(string commandJson)
     {
         try
         {
             // Parse JSON command
             var command = JsonUtility.FromJson<SimulAICommand>(commandJson);
-            
+
             switch (command.type)
             {
                 case "get_scene_state":
                     return GetSceneStateJson();
-                    
+
                 default: // simultaenous AI command
                     return ExecuteActionJson(command);
             }
@@ -212,14 +212,14 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError("Error processing AI command: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse 
-            { 
-                success = false, 
-                message = "Error processing command: " + e.Message 
+            return JsonUtility.ToJson(new AIResponse
+            {
+                success = false,
+                message = "Error processing command: " + e.Message
             });
         }
     }
-    
+
     private string GetSceneStateJson()
     {
         try
@@ -230,16 +230,16 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 // objects = GetObjectStates(),
                 timestamp = Time.time
             };
-            
+
             return JsonUtility.ToJson(sceneState);
         }
         catch (Exception e)
         {
             Debug.LogError("Error getting scene state: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse 
-            { 
-                success = false, 
-                message = "Error getting scene state: " + e.Message 
+            return JsonUtility.ToJson(new AIResponse
+            {
+                success = false,
+                message = "Error getting scene state: " + e.Message
             });
         }
     }
@@ -251,7 +251,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         RobotStateData[] robotStates = new RobotStateData[robotCount];
 
         //List<RobotStateData> robotStates = new List<RobotStateData>();
-        
+
         for (int i = 0; i < robotCount; i++)
         {
             var robot = robots[i];
@@ -268,7 +268,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 robotTargets[j] = new ObjectStateData
                 {
                     name = target.name,
-                    position = new float[] { 
+                    position = new float[] {
                         targetPosition.x,
                         targetPosition.y,
                         targetPosition.z
@@ -292,13 +292,13 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 suction_active = suctionController != null && suctionController.enableSuction,
                 //is_moving = unifiedController != null && unifiedController.currentMode != UnifiedRobotController.ControlMode.Start
             };
-            
+
             //robotStates[i] = robotState;
         }
-        
+
         return robotStates;
     }
-    
+
     private float[] GetJointAngles(ArticulationBody[] robotJoints)
     {
         float[] angles = new float[JointCount]; //UR5 has 6 joints
@@ -309,7 +309,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         }
         return angles;
     }
-    
+
     private ObjectStateData[] GetObjectStates()
     {
         //List<ObjectStateData> objects = new List<ObjectStateData>();
@@ -333,7 +333,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
 
         return objects;
     }
-    
+
     private string ExecuteActionJson(SimulAICommand command)
     {
         try
@@ -353,7 +353,8 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             {
                 ur5_left_robot = robots[0];
                 ur5_right_robot = robots[1];
-            } else
+            }
+            else
             {
                 ur5_left_robot = robots[1];
                 ur5_right_robot = robots[0];
@@ -375,17 +376,17 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     break;
                 case "stationary":
                     break;
-                    
+
                 case "activate_suction":
                     leftSuccess = ExecuteActivateSuction(ur5_left_robot);
                     message = leftSuccess ? "Left Suction activated" : "Left Suction activation failed";
                     break;
-                    
+
                 case "deactivate_suction":
                     leftSuccess = ExecuteDeactivateSuction(ur5_left_robot);
                     message = leftSuccess ? "Left Suction deactivated" : "Left Suction deactivation failed";
                     break;
-                    
+
                 default:
                     message = "Unknown action type: " + command.ur5_left.action_type;
                     break;
@@ -409,17 +410,17 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     break;
                 case "stationary":
                     break;
-                    
+
                 case "activate_suction":
                     rightSuccess = ExecuteActivateSuction(ur5_right_robot);
                     message += rightSuccess ? "Right Suction activated" : "Right Suction activation failed";
                     break;
-                    
+
                 case "deactivate_suction":
                     rightSuccess = ExecuteDeactivateSuction(ur5_right_robot);
                     message += rightSuccess ? "Right Suction deactivated" : "Right Suction deactivation failed";
                     break;
-                    
+
                 default:
                     message += "Unknown action type: " + command.ur5_right.action_type;
                     break;
@@ -441,13 +442,15 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     parameterArray = new ActionParameters[robots.Length];
                     parameterArray[0] = command.ur5_left.parameters;
                     parameterArray[1] = command.ur5_right.parameters;
-                } else if (toSendIKLeft)
+                }
+                else if (toSendIKLeft)
                 {
                     ikRobots = new GameObject[1];
                     ikRobots[0] = ur5_left_robot;
                     parameterArray = new ActionParameters[1];
                     parameterArray[0] = command.ur5_left.parameters;
-                } else
+                }
+                else
                 {
                     ikRobots = new GameObject[1];
                     ikRobots[0] = ur5_right_robot;
@@ -473,13 +476,15 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     parameterArray = new ActionParameters[robots.Length];
                     parameterArray[0] = command.ur5_left.parameters;
                     parameterArray[1] = command.ur5_right.parameters;
-                } else if (toMoveLeftArm)
+                }
+                else if (toMoveLeftArm)
                 {
                     ikRobots = new GameObject[1];
                     ikRobots[0] = ur5_left_robot;
                     parameterArray = new ActionParameters[1];
                     parameterArray[0] = command.ur5_left.parameters;
-                } else
+                }
+                else
                 {
                     ikRobots = new GameObject[1];
                     ikRobots[0] = ur5_right_robot;
@@ -502,10 +507,10 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError("Error executing action: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse 
-            { 
-                success = false, 
-                message = "Error executing action: " + e.Message 
+            return JsonUtility.ToJson(new AIResponse
+            {
+                success = false,
+                message = "Error executing action: " + e.Message
             });
         }
     }
@@ -523,13 +528,14 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             }
             moveArmsNow = true;
             return true;
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             Debug.LogError("Error in ExecuteSolveIK: " + e.Message);
             return false;
         }
     }
-    
+
     private void ExecuteMoveRobot(GameObject[] robots, ActionParameters[] parameters)
     {
         IKRobotStateData[] robot_states = new IKRobotStateData[robots.Length];
@@ -559,13 +565,13 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     }
                 };
             }
-            
+
             ik_response = new SimulIKResponse
             {
                 success = true,
                 robot_states = robot_states
             };
-        } 
+        }
         catch (Exception e)
         {
             Debug.LogError("Error in ExecuteMoveRobot: " + e.Message);
@@ -576,14 +582,14 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 robot_states = null
             };
         }
-        
+
     }
-    
+
     private bool ExecuteActivateSuction(GameObject robot)
     {
         var suctionController = robot.GetComponent<SuctionController>();
         if (suctionController == null) return false;
-        
+
         suctionController.ToggleSuction();
         return true;
     }
@@ -599,7 +605,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         }
         return true;
     }
-    
+
     public void closeSocket()
     {
         isSocketActive = false;

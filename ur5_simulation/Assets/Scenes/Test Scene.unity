@@ -271,12 +271,17 @@ MonoBehaviour:
   robots:
   - {fileID: 0}
   - {fileID: 0}
+  targets: []
+  ikSocket: 0
   allRobotsActive: 0
-  pythonSocket: 0
+  agenticSocket: 0
+  simulAgenticSocket: 0
   agentRobotController: {fileID: 0}
   agentTrajectoryController: {fileID: 0}
   agentTrajectory: {fileID: 0}
-  pythonSocketSetup: {fileID: 0}
+  agenticSocketSetup: {fileID: 0}
+  simulAgenticSocketSetup: {fileID: 0}
+  ikSocketSetup: {fileID: 0}
   selectedRobotIndex: 0
   unifiedRobotController: {fileID: 0}
   suctionController: {fileID: 0}
@@ -3115,6 +3120,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::UnifiedRobotController
   robotArmSetup: {fileID: 0}
+  ur5IkController: {fileID: 0}
   pickAndPlaceController: {fileID: 0}
   manualController: {fileID: 0}
   csvTrajectoryController: {fileID: 0}
@@ -3122,9 +3128,6 @@ MonoBehaviour:
   currentMode: 0
   jointSpeed: 15
   moveSpeed: 500
-  ikStepSize: 0.02
-  ikRotationStep: 5
-  ikSmoothDuration: 0.2
 --- !u!114 &818199180
 MonoBehaviour:
   m_ObjectHideFlags: 0

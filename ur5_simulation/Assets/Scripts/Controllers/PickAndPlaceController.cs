@@ -1,9 +1,11 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using System.IO;
 //using System.Collections.Generic;
 //using System.Text;
 
+using static ConstantsUR5;
 
 [RequireComponent(typeof(RobotArmSetup))]
 public class PickAndPlaceController : MonoBehaviour
@@ -25,7 +27,7 @@ public class PickAndPlaceController : MonoBehaviour
     private bool isSuctionActive = false;
     private bool keyPressed = false;
     private string logFilePath;
-
+    
     // Waypoint system
     private Vector3[] currentWaypoints;
     private Vector3[] pickupWaypoints;
@@ -34,12 +36,10 @@ public class PickAndPlaceController : MonoBehaviour
     private bool isExecutingWaypoints;
     private bool isInPickupSequence;
 
-    private bool initialized = false;
-
     private void LogToFile(string message)
     {
         if (string.IsNullOrEmpty(logFilePath)) return;
-
+        
         try
         {
             using (StreamWriter writer = File.AppendText(logFilePath))
@@ -53,7 +53,7 @@ public class PickAndPlaceController : MonoBehaviour
         }
     }
     private const float waypointThreshold = 0.01f;  // Distance to consider a waypoint reached
-
+    
     // State tracking
     private PickAndPlaceState currentState = PickAndPlaceState.Idle;
 
@@ -64,7 +64,7 @@ public class PickAndPlaceController : MonoBehaviour
         ExecutingWaypoints,
         Complete
     }
-
+    
     // Define standard waypoint sequences
     private Vector3[] GeneratePickupWaypoints()
     {
@@ -96,42 +96,32 @@ public class PickAndPlaceController : MonoBehaviour
         return placeWaypoints;
     }
 
-    private void Initialize()
+    private void Start()
     {
-        if (initialized)
-            return;
-
-        initialized = true;
-
-        // setup robot arm
-        robotArmSetup = GetComponent<RobotArmSetup>();
-        if (robotArmSetup == null)
-        {
-            Debug.LogError("PickAndPlaceController: RobotArmSetup component not found!");
-            enabled = false;
-            return;
-        }
-        articulationChain = robotArmSetup.articulationChain;
-        suctionEndEffector = articulationChain[8].transform;
-
-        // Setup logging (only runs when component is enabled)
+        // Setup logging
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         logFilePath = Path.Combine(Application.dataPath, "..", "Logs", $"RobotArm_{timestamp}.log");
         Directory.CreateDirectory(Path.GetDirectoryName(logFilePath));
         LogToFile("=== Robot Arm Controller Started ===");
 
+        robotArmSetup = GetComponent<RobotArmSetup>();
+        if (robotArmSetup == null)
+        {
+            LogToFile("ERROR: RobotArmSetup component not found!");
+            Debug.LogError("RobotArmSetup component not found!");
+            enabled = false;
+            return;
+        }
+
         blockToPickup = robotArmSetup.blockToPickup;
         //platform = robotArmSetup.platform;
+        articulationChain = robotArmSetup.articulationChain;
+        suctionEndEffector = articulationChain[8].transform;
 
         LogToFile($"Block position: {blockToPickup.transform.position}");
         //LogToFile($"Platform position: {platform.transform.position}");
         Debug.Log($"Block position: {blockToPickup.transform.position}");
         //Debug.Log($"Platform position: {platform.transform.position}");
-    }
-
-    private void Start()
-    {
-        Initialize();
     }
 
     private void Update()
@@ -154,14 +144,14 @@ public class PickAndPlaceController : MonoBehaviour
     {
         isPickAndPlaceActive = true;
         robotArmSetup.StartRecording();
-
+        
         // Start with pickup waypoints
         currentWaypoints = GeneratePickupWaypoints();
         currentWaypointIndex = 0;
         isExecutingWaypoints = true;
         isInPickupSequence = true;
         currentState = PickAndPlaceState.ExecutingWaypoints;
-
+        
         LogToFile("Starting pick and place operation");
         Debug.Log("Starting pick and place operation with waypoints");
     }
@@ -184,7 +174,7 @@ public class PickAndPlaceController : MonoBehaviour
     {
         Vector3[] pickupWaypoints = GeneratePickupWaypoints();
         if (currentWaypoints.Length != pickupWaypoints.Length) return false;
-
+        
         // Check first and last waypoint to identify the sequence
         return Vector3.Distance(currentWaypoints[0], pickupWaypoints[0]) < 0.01f &&
                Vector3.Distance(currentWaypoints[currentWaypoints.Length - 1], pickupWaypoints[pickupWaypoints.Length - 1]) < 0.01f;
@@ -194,7 +184,7 @@ public class PickAndPlaceController : MonoBehaviour
     {
         LogToFile($"Reached waypoint {currentWaypointIndex}");
         Debug.Log($"Reached waypoint {currentWaypointIndex}");
-
+        
         // Handle pickup sequence
         if (isInPickupSequence)
         {
@@ -204,7 +194,7 @@ public class PickAndPlaceController : MonoBehaviour
                     float distanceToBlock = Vector3.Distance(suctionEndEffector.position, blockToPickup.transform.position);
                     LogToFile($"Distance to block: {distanceToBlock}");
                     Debug.Log($"Distance to block: {distanceToBlock}");
-
+                    
                     if (!isSuctionActive && distanceToBlock <= suctionDistance)
                     {
                         LogToFile($"Attempting to pick up block at distance {distanceToBlock}");
@@ -261,9 +251,6 @@ public class PickAndPlaceController : MonoBehaviour
 
     public bool MoveEndEffectorTo(Vector3 targetPosition)
     {
-        if (!initialized)
-            Initialize();
-
         // Get the indices of the joints we want to control (3-8)
         ArticulationBody[] joints = robotArmSetup.articulationChain;
         Transform endEffector = joints[8].transform;
@@ -276,45 +263,71 @@ public class PickAndPlaceController : MonoBehaviour
             return true; // Reached target
         }
 
-        // Calculate relative position from base (preserve X, Y, Z separately)
-        Vector3 baseToTarget = targetPosition - baseJoint.position;
+        // Debug logging
+        LogToFile("\n=== Movement Update ===");
+        LogToFile($"End effector position: {endEffector.position}");
+        LogToFile($"Target position: {targetPosition}");
+        Debug.Log($"End effector position: {endEffector.position}");
+        Debug.Log($"Target position: {targetPosition}");
 
-        // Calculate base rotation - keep X and Z direction separate
+        // Calculate relative position from base
+        Vector3 baseToTarget = targetPosition - baseJoint.position;
+        LogToFile($"Base to target vector: {baseToTarget}");
+        Debug.Log($"Base to target vector: {baseToTarget}");
+
+        // Calculate base rotation using the correct coordinate system
         float baseAngle = Mathf.Atan2(baseToTarget.x, baseToTarget.z);
+        // Ensure the base angle is in the correct quadrant
+        if (baseAngle < 0)
+            baseAngle += 2 * Mathf.PI;
+            
+        LogToFile($"Base angle: {baseAngle * Mathf.Rad2Deg:F2} degrees");
+        Debug.Log($"Base angle: {baseAngle * Mathf.Rad2Deg} degrees");
 
         // Calculate shoulder and elbow angles using inverse kinematics
         Vector3 shoulderPos = joints[4].transform.position;
-
-        // Transform target to shoulder-local coordinates
-        // Calculate horizontal distance preserving direction
-        float horizontalDist = Mathf.Sqrt(baseToTarget.x * baseToTarget.x + baseToTarget.z * baseToTarget.z);
-        float heightDiff = targetPosition.y - shoulderPos.y;
+        
+        // Get the vertical offset from base to shoulder
+        float baseToShoulderHeight = shoulderPos.y - joints[3].transform.position.y;
+        
+        // Transform target into shoulder space, keeping the height offset in mind
+        Vector3 localTarget = Quaternion.Euler(0, -baseAngle * Mathf.Rad2Deg, 0) * (targetPosition - shoulderPos);
+        localTarget.y += baseToShoulderHeight;  // Account for shoulder height offset
+        
+        Vector3 targetVec = localTarget;
+        float targetDist = new Vector2(targetVec.x, targetVec.z).magnitude; // Use horizontal distance for IK
+        
+        Debug.Log($"Target Position: {targetPosition}, Base Angle: {baseAngle * Mathf.Rad2Deg}°");
 
         // Link lengths (adjust these based on your UR5 model)
         float upperArmLength = 0.425f;  // Length of the upper arm
         float forearmLength = 0.392f;   // Length of the forearm
 
+        // Calculate shoulder and elbow angles using cosine law
+        float shoulderAngle, elbowAngle;
+
+        // Calculate the height difference for shoulder angle
+        float heightDiff = targetVec.y;
+        float horizontalDist = targetDist;
+
         // Using law of cosines to calculate elbow angle
-        float reachDist = Mathf.Sqrt(horizontalDist * horizontalDist + heightDiff * heightDiff);
-        float cosElbow = (reachDist * reachDist - upperArmLength * upperArmLength - forearmLength * forearmLength)
+        float cosElbow = (horizontalDist * horizontalDist + heightDiff * heightDiff 
+                         - upperArmLength * upperArmLength - forearmLength * forearmLength) 
                         / (2 * upperArmLength * forearmLength);
         cosElbow = Mathf.Clamp(cosElbow, -1f, 1f);
-        float elbowAngle = Mathf.Acos(cosElbow);
+        elbowAngle = Mathf.Acos(cosElbow);
 
         // Calculate shoulder angle considering both horizontal distance and height
         float elevationAngle = Mathf.Atan2(heightDiff, horizontalDist);
         float k1 = upperArmLength + forearmLength * cosElbow;
         float k2 = forearmLength * Mathf.Sin(elbowAngle);
         float reachAngle = Mathf.Atan2(k2, k1);
-        float shoulderAngle = elevationAngle - reachAngle;
+        shoulderAngle = elevationAngle - reachAngle;
 
         // Calculate wrist angles to maintain end effector orientation
         float wrist1Angle = -(shoulderAngle + elbowAngle);  // Compensate for arm angles
-        float wrist2Angle = -Mathf.PI / 2;  // Keep end effector pointed downward
+        float wrist2Angle = -Mathf.PI/2;  // Keep end effector pointed downward
         float wrist3Angle = baseAngle;    // Align with approach direction
-
-        // Debug output
-        Debug.Log($"Target: {targetPosition.ToString("F3")} Base angle: {(baseAngle * Mathf.Rad2Deg):F1}° H-dist: {horizontalDist:F3} Height: {heightDiff:F3}");
 
         // Convert angles to degrees
         var jointAngles = new[] {
@@ -332,25 +345,40 @@ public class PickAndPlaceController : MonoBehaviour
             var joint = joints[jointIndex];
             var drive = joint.xDrive;
             float currentAngle = joint.jointPosition[0] * Mathf.Rad2Deg;
-            float angleDiff = Mathf.DeltaAngle(currentAngle, targetAngle);
-
-            // Move directly to target angle for responsive IK control
-            float newAngle = targetAngle;
-
+            
+            // For base joint (index 3), we need to handle the rotation direction differently
+            float angleToSet;
+            if (jointIndex == 3)
+            {
+                // Use the calculated base angle directly, already in the correct coordinate system
+                angleToSet = targetAngle;
+                Debug.Log($"Setting base joint angle to: {angleToSet}");
+            }
+            else
+            {
+                angleToSet = targetAngle;
+            }
+            
+            float angleDiff = Mathf.DeltaAngle(currentAngle, angleToSet);
+            
+            // Smooth movement
+            float newAngle = currentAngle + Mathf.Clamp(angleDiff * moveSpeed * Time.deltaTime, -5f, 5f);
+            
             // Update joint drive
             drive.target = newAngle;
             drive.stiffness = 10000f; // High stiffness for precise movement
             drive.damping = 100f;     // Damping to prevent oscillation
             joint.xDrive = drive;
-
-            // Log the angle changes (file only, not console)
-            LogToFile($"Joint {jointIndex} - Current: {currentAngle:F2}, Target: {targetAngle:F2}, New: {newAngle:F2}");
+            
+            // Log the angle changes
+            LogToFile($"Joint {jointIndex} - Current: {currentAngle:F2}, Target: {angleToSet:F2}, New: {newAngle:F2}");
+            Debug.Log($"Joint {jointIndex} - Current: {currentAngle:F2}, Target: {angleToSet:F2}, New: {newAngle:F2}");
         }
 
         // Check if end effector is close enough to target
         float distanceToTarget = Vector3.Distance(endEffector.position, targetPosition);
         LogToFile($"Distance to target: {distanceToTarget}");
-
+        
         if (distanceToTarget <= waypointThreshold)
         {
             LogToFile("Target position reached");
@@ -375,7 +403,7 @@ public class PickAndPlaceController : MonoBehaviour
     private void ActivateSuction()
     {
         if (isSuctionActive) return; // Prevent multiple activations
-
+        
         isSuctionActive = true;
         LogToFile("Activating suction");
         Debug.Log("Activating suction");
@@ -383,7 +411,7 @@ public class PickAndPlaceController : MonoBehaviour
         // Ensure the block is close enough
         float distanceToBlock = Vector3.Distance(suctionEndEffector.position, blockToPickup.transform.position);
         LogToFile($"Distance to block at suction: {distanceToBlock}");
-
+        
         if (distanceToBlock <= suctionDistance * 1.5f)
         {
             blockToPickup.transform.position = suctionEndEffector.position; // Snap to position
@@ -431,7 +459,7 @@ public class PickAndPlaceController : MonoBehaviour
             Gizmos.DrawWireSphere(suctionEndEffector.position, suctionDistance);
         }
     }
-
+    
     public void OnGUI()
     {
         GUIStyle centeredStyle = GUI.skin.GetStyle("Label");

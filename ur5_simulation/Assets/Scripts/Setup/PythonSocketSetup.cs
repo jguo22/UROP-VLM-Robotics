@@ -1,107 +1,119 @@
-using UnityEngine;
-using System;
-using System.Net.Sockets;
-using System.Text;
-using System.Net;
-using System.IO;
+/*
+contains JSON serializable data structures for IKSocketSetup and AgenticSocketSetup AI communication
+*/
 
-[DefaultExecutionOrder(100)]
-public class PythonSocketSetup : MonoBehaviour
+[System.Serializable]
+public class IKRobotStateData
 {
-    private TcpListener listener;
-    private TcpClient client;
-    private NetworkStream stream;
-    private byte[] receiveBuffer = new byte[1024];
+    public string robot_name;
+    public float[] current_joint_angles;
+    public float[] end_effector_position;
+}
 
-    //for socket connection
-    private static string unityAssetsFilePath = "ur5_simulation/Assets";
-    private string envFilePath = Application.dataPath.Replace(unityAssetsFilePath, "");
-    private string hostAddress;
-    private int portNumber;
+[System.Serializable]
+public class IKCommand
+{
+    public string type;
+    public string robot_name;
+    public float[] joint_angles;
+    public float timestamp;
+}
 
-    void Start()
-    {
-        ReadEnv();
-        try
-        {
-            // Start listening for connections
-            listener = new TcpListener(IPAddress.Parse(hostAddress), portNumber);
-            listener.Start();
-            Debug.Log("Unity server started, waiting for Python connection...");
+[System.Serializable]
+public class SimulIKCommand
+{
+    public string type = "execute_action";
+    public string action_type = "solve_ik";
+    public float[] ur5_left;
+    public float[] ur5_right;
+    public float timestamp;
+}
 
-            // Accept connection from Python
-            client = listener.AcceptTcpClient();
-            stream = client.GetStream();
-            Debug.Log("Python connected!");
+[System.Serializable]
+public class IKResponse
+{
+    public bool success;
+    public string message;
+    public IKRobotStateData robot_state;
+    public float timestamp;
+}
 
-            // Start receiving data
-            stream.BeginRead(receiveBuffer, 0, receiveBuffer.Length, ReceiveCallback, null);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError("Socket error: " + e.Message);
-        }
-    }
+[System.Serializable]
+public class SimulIKResponse
+{
+    public bool success;
+    public string message = "run_simul_ik";
+    public IKRobotStateData[] robot_states;
+    public float timestamp;
+}
 
-    private void ReadEnv()
-    {
-        Debug.Log(Application.dataPath);
-        string envFile = Directory.GetFiles(envFilePath, "*.env")[0];
-        foreach (var line in File.ReadAllLines(envFile))
-        {
-            // Skip empty lines and comments
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
-            {
-                continue;
-            }
 
-            var parts = line.Split('=', 2); // Split only on the first '='
-            if (parts.Length == 2)
-            {
-                var key = parts[0].Trim();
-                var value = parts[1].Trim().Trim('"'); // Remove potential quotes
+[System.Serializable]
+public class AICommand
+{
+    public string type;
+    public string action_type;
+    public string robot_name;
+    public ActionParameters parameters;
+    public float timestamp;
+}
 
-                // Set as environment variable
-                Environment.SetEnvironmentVariable(key, value);
-            }
-        }
+[System.Serializable]
+public class SimulAICommand
+{
+    public string type;
+    public SimulArmCommand ur5_left;
+    public SimulArmCommand ur5_right;
+    public float timestamp;
+}
 
-        hostAddress = Environment.GetEnvironmentVariable("HOST");
-        portNumber = int.Parse(Environment.GetEnvironmentVariable("PORT"));
+[System.Serializable]
+public class SimulArmCommand
+{
+    public string action_type;
+    public ActionParameters parameters;
+}
 
-        Debug.Log($"{hostAddress} | {portNumber}");
-    }
+[System.Serializable]
+public class ActionParameters
+{
+    public float[] target_position;
+    public float[] joint_angles;
+    //public float speed;
+}
 
-    private void ReceiveCallback(IAsyncResult AR)
-    {
-        try
-        {
-            int bytesRead = stream.EndRead(AR);
-            if (bytesRead > 0)
-            {
-                string receivedData = Encoding.ASCII.GetString(receiveBuffer, 0, bytesRead);
-                Debug.Log("Received from Python: " + receivedData);
+[System.Serializable]
+public class AIResponse
+{
+    public bool success;
+    public string message;
+    public float timestamp;
+}
 
-                // Send response back to Python
-                string response = "Hello back from Unity!";
-                byte[] responseData = Encoding.ASCII.GetBytes(response);
-                stream.Write(responseData, 0, responseData.Length);
-                Debug.Log("Sent to Python: " + response);
+[System.Serializable]
+public class SceneStateData
+{
+    public RobotStateData[] robots;
+    // public ObjectStateData[] objects;
+    public float timestamp;
+}
 
-                // Continue listening for more data
-                stream.BeginRead(receiveBuffer, 0, receiveBuffer.Length, ReceiveCallback, null);
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError("Receive callback error: " + e.Message);
-        }
-    }
+[System.Serializable]
+public class RobotStateData
+{
+    public string name;
+    // public float[] joint_angles;
+    public float[] end_effector_position;
+    public ObjectStateData[] objects;
+    public bool suction_active;
+    //public bool is_moving;
+}
 
-    void OnApplicationQuit()
-    {
-        if (stream != null) stream.Close();
-        if (client != null) client.Close();
-        if (listener != null) listener.Stop();
-    }
+[System.Serializable]
+public class ObjectStateData
+{
+    public string name;
+    public float[] position;
+    // public float[] rotation;
+    public bool is_attached;
 }

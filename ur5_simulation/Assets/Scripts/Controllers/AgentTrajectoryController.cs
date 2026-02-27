@@ -575,6 +575,9 @@ public class AgentTrajectoryController : MonoBehaviour
         int startY = 300;
         int lineHeight = 25;
 
+        string instructionText = "Load trajectory [F1] | Play trajectory [Space]";
+        GUI.Label(new Rect(10, 35, 400, 30), instructionText, style);
+
         // Trajectory info
         GUI.Label(new Rect(startX, startY, 300, 20), $"Trajectory: {totalFrames} frames, {totalDuration:F2}s", style);
         GUI.Label(new Rect(startX, startY + lineHeight, 300, 20), $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s", style);

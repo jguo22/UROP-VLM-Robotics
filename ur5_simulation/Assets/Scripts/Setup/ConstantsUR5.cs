@@ -39,7 +39,7 @@ public static class ConstantsUR5
 
     public static readonly float[] StableStartingRotations = new float[] //rotations in radians
     {
-        0f,     // Base rotation
+        Mathf.PI,     // Base rotation
         -0.8f,  // Shoulder (lowered to better reach cubes)
         1.0f,   // Elbow (adjusted to position arm lower)
         -1.5f,  // Wrist 1 (adjusted to position suction cup better)
@@ -47,68 +47,10 @@ public static class ConstantsUR5
         0f      // Wrist 3
     };
 
-    public struct DenavitHartenbergParameters
-    {
-        public float a;
-        public float d;
-        public float alpha;
-        public float theta;
+    // Suction params
 
-        public DenavitHartenbergParameters(float aDH = 0, float dDH = 0, float alphaDH = 0, float thetaDH = 0)
-        {
-            a = aDH;
-            d = dDH;
-            alpha = alphaDH;
-            theta = thetaDH;
-        }
-    }
-
-    private const float halfPi = 1.57079632f;
-
-    public static readonly DenavitHartenbergParameters BaseDH = new DenavitHartenbergParameters();
-    public static readonly DenavitHartenbergParameters BaseJointDH = new DenavitHartenbergParameters(0, 0.089159f, halfPi);
-    public static readonly DenavitHartenbergParameters ShoulderJointDH = new DenavitHartenbergParameters(-0.425f);
-    public static readonly DenavitHartenbergParameters ElbowJointDH = new DenavitHartenbergParameters(-0.39225f);
-    public static readonly DenavitHartenbergParameters Wrist1JointDH = new DenavitHartenbergParameters(0, 0.10915f, halfPi);
-    public static readonly DenavitHartenbergParameters Wrist2JointDH = new DenavitHartenbergParameters(0, 0.09465f, -halfPi);
-    public static readonly DenavitHartenbergParameters Wrist3JointDH = new DenavitHartenbergParameters(0, 0.0823f);
-    public static readonly DenavitHartenbergParameters EndEffectorDH = new DenavitHartenbergParameters();
-
-    /*
-    public FrameConfig(float alpha, float a, float d, float theta, string name = null)
-    {
-        _name = name;
-        _alpha = alpha;
-        _a = a;
-        _d = d;
-        _theta = theta;
-    }
-    */
-
-    // private const float halfPi = 1.57079632f;
-
-    // public static readonly FrameConfig BaseFrameConfig = FrameConfig.Default;
-    // public static readonly FrameConfig BaseJointFrameConfig = new FrameConfig(halfPi, 0, 0.089159f, 0);
-    // public static readonly FrameConfig ShoulderJointFrameConfig = new FrameConfig(0, -0.425f, 0, 0);
-    // public static readonly FrameConfig ElbowJointFrameConfig = new FrameConfig(0, -0.39225f, 0, 0);
-    // public static readonly FrameConfig Wrist1JointFrameConfig = new FrameConfig(halfPi, 0, 0.10915f, 0);
-    // public static readonly FrameConfig Wrist2JointFrameConfig = new FrameConfig(-halfPi, 0, 0.09465f, 0);
-    // public static readonly FrameConfig Wrist3JointFrameConfig = new FrameConfig(0, 0, 0.0823f, 0);
-    // public static readonly FrameConfig EndEffectorFrameConfig = FrameConfig.Default;
-
-    /*
-    public JointConfig(TransformJoint.JointType type, Vector2 limits, float offset, float factor, float speedMax, float accMax, string name = null)
-    {
-        _name = name;
-        _type = type;
-        _limits = limits;
-        _offset = offset;
-        _factor = factor;
-        _speedMax = speedMax;
-        _accMax = accMax;
-    }
-    */
-
-    //public static readonly JointConfig defaultJointConfig = new JointConfig(TransformJoint.JointType.Rotation, new Vector2(-360, 360), 0, 1f, 15f, 10f);
+    public const float SuctionDistance = 0.005f; //distance from suction cup to object to activate suction
+    public const float SuctionOffsetY = -0.01f; //offset from end effector to suction cup along Y axis
+    public const float SuctionIKOffsetY = 0.0f; //0.002f //offset from end effector to suction cup along Y axis for IK calculations
 
 }

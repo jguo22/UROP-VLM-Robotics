@@ -13,7 +13,7 @@ public class SuctionController : MonoBehaviour
     public bool enableSuction = false;
     
     [Tooltip("Maximum distance for suction activation (1cm = 0.01 units)")]
-    public float suctionDistance = 0.025f;
+    public float suctionDistance = SuctionDistance;
     
     [Tooltip("Strength of suction attraction force")]
     public float suctionForce = 10f;
@@ -145,7 +145,12 @@ public class SuctionController : MonoBehaviour
 
     void Update()
     {
-        //if (endEffector == null || targetBlock == null) return;
+        if (targetBlocks == null || targetBlocks.Length == 0)
+        {
+            currentDistance = float.MaxValue;
+            targetBlock = null;
+            return;
+        }
 
         //currentDistances.Clear();
         float minDistance = float.MaxValue;
@@ -158,7 +163,9 @@ public class SuctionController : MonoBehaviour
             if (block == null) continue;
 
             Collider blockCollider = block.GetComponent<Collider>();
-            Vector3 blockPosition = blockCollider != null ? blockCollider.bounds.center : block.transform.position;
+            if (blockCollider == null) continue;
+            // Vector3 blockPosition = blockCollider != null ? blockCollider.bounds.center : block.transform.position;
+            Vector3 blockPosition = blockCollider.bounds.center;
 
             // if (blockCollider == null || isBlockAttached) blockPosition = block.transform.position;
             // else blockPosition = blockCollider.bounds.center;            
@@ -167,7 +174,10 @@ public class SuctionController : MonoBehaviour
             //Vector3 blockPosition = block.transform.position;
             //blockPosition.x += GearOriginOffsetX;
 
-            float distance = Vector3.Distance(endEffector.position, blockPosition); //targetBlocks[i].transform.position
+            Vector3 endEffectorPos = endEffector.position;
+            endEffectorPos.y += SuctionOffsetY; // Adjust for suction cup offset
+
+            float distance = Vector3.Distance(endEffectorPos, blockPosition); //targetBlocks[i].transform.position
             //currentDistances.Add(distance);
 
             if (distance < minDistance) // Find the closest block
@@ -175,6 +185,13 @@ public class SuctionController : MonoBehaviour
                 minDistance = distance;
                 closestIndex = i;
             }
+        }
+
+        if (closestIndex < 0)
+        {
+            currentDistance = float.MaxValue;
+            targetBlock = null;
+            return;
         }
 
         currentDistance = isBlockAttached ? 0.0f : minDistance; //isBlockAttached ? 0.0f : minDistance;
@@ -224,6 +241,8 @@ public class SuctionController : MonoBehaviour
     
     void HandleBlockAttachment()
     {
+        if (targetBlock == null) return;
+
         bool shouldBeAttached = enableSuction && currentDistance <= suctionDistance;
         
         if (shouldBeAttached && !isBlockAttached)
@@ -395,6 +414,33 @@ public class SuctionController : MonoBehaviour
     public bool IsWithinSuctionRange()
     {
         return currentDistance <= suctionDistance;
+    }
+
+    public void ResetSuctionState()
+    {
+        enableSuction = false;
+        isBlockAttached = false;
+        wasSuctionActive = false;
+        currentDistance = float.MaxValue;
+
+        if (targetBlocks != null)
+        {
+            foreach (GameObject target in targetBlocks)
+            {
+                if (target == null) continue;
+
+                Rigidbody rb = target.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                }
+            }
+        }
+
+        targetBlock = null;
+        blockRigidbody = null;
+        blockRenderer = null;
     }
     
     // Debug information
