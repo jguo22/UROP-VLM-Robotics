@@ -40,7 +40,8 @@ class UnityTCPConnection:
         self.socket: socket.socket = None  # type: ignore
         self._connect()
 
-    def _connect(self, max_retries: int = DEFAULT_MAX_RETRIES, retry_delay: float = DEFAULT_RETRY_DELAY) -> None:
+    def _connect(self, max_retries: int = DEFAULT_MAX_RETRIES,
+                 retry_delay: float = DEFAULT_RETRY_DELAY) -> None:
         """Establish connection to Unity with retry logic.
 
         Args:

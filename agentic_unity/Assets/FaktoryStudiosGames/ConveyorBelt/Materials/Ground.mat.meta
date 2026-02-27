@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a6b221e8619274a73809a99751ae5533
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 320200
+  packageName: Procedural Conveyor Belt
+  packageVersion: 1.0.0
+  assetPath: Assets/FaktoryStudiosGames/ConveyorBelt/Materials/Ground.mat
+  uploadId: 760409

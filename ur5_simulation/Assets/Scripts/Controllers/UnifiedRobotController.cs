@@ -209,10 +209,10 @@ public class UnifiedRobotController : MonoBehaviour
         // Rotation controls (Arrow keys + Page Up/Down) - hold for continuous rotation
         if (Input.GetKey(KeyCode.UpArrow)) deltaRotation.x += ikRotationStep; // Pitch up
         if (Input.GetKey(KeyCode.DownArrow)) deltaRotation.x -= ikRotationStep; // Pitch down
-        if (Input.GetKey(KeyCode.LeftArrow)) deltaRotation.y -= ikRotationStep; // Yaw left
-        if (Input.GetKey(KeyCode.RightArrow)) deltaRotation.y += ikRotationStep; // Yaw right
-        if (Input.GetKey(KeyCode.PageUp)) deltaRotation.z += ikRotationStep; // Roll CCW
-        if (Input.GetKey(KeyCode.PageDown)) deltaRotation.z -= ikRotationStep; // Roll CW
+        if (Input.GetKey(KeyCode.LeftArrow)) deltaRotation.z += ikRotationStep; // Roll CCW
+        if (Input.GetKey(KeyCode.RightArrow)) deltaRotation.z -= ikRotationStep; // Roll CW
+        if (Input.GetKey(KeyCode.J)) deltaRotation.y -= ikRotationStep; // Yaw left
+        if (Input.GetKey(KeyCode.K)) deltaRotation.y += ikRotationStep; // Yaw right
 
         // Reset to current position
         if (Input.GetKeyDown(KeyCode.R))

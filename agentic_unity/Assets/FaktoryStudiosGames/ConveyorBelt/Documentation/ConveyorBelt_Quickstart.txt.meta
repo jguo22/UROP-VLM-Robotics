@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: eaa44330cce644beaa874939d8225070
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 320200
+  packageName: Procedural Conveyor Belt
+  packageVersion: 1.0.0
+  assetPath: Assets/FaktoryStudiosGames/ConveyorBelt/Documentation/ConveyorBelt_Quickstart.txt
+  uploadId: 760409

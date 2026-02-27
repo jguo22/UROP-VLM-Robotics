@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7a1430b06c08242fbb683f0f97b6f66a
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 320200
+  packageName: Procedural Conveyor Belt
+  packageVersion: 1.0.0
+  assetPath: Assets/FaktoryStudiosGames/ConveyorBelt/Readme.txt
+  uploadId: 760409
