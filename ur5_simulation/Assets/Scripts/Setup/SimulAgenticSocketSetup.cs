@@ -18,7 +18,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
     private byte[] receiveBuffer = new byte[4096]; // Increased buffer size
 
     //for socket connection
-    private static string unityAssetsFilePath = "agentic_unity/Assets";
+    private static string unityAssetsFilePath = "ur5_simulation/Assets";
     private string envFilePath = Application.dataPath.Replace(unityAssetsFilePath, "");
     private string hostAddress;
     private int portNumber;

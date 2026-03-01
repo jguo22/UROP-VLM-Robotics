@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
-public class UR5TCPServer : MonoBehaviour
+public class OpenVLAServer : MonoBehaviour
 {
     [Header("Settings")]
     public int port = 5000;

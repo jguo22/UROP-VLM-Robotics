@@ -703,7 +703,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: forearm_link_wrist_1_link_joint
+  jointName: wrist_1_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &127325347
@@ -1054,7 +1054,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: wrist_3_link_ee_link_joint
+  jointName: ee_fixed_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &265012385
@@ -1352,7 +1352,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: rotated_base_link_base_link_joint
+  jointName: rotated_base-base_fixed_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &400634170
@@ -1970,7 +1970,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: world_rotated_base_link_joint
+  jointName: world_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &594074721
@@ -2940,7 +2940,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: upper_arm_link_forearm_link_joint
+  jointName: elbow_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &797271325
@@ -3050,12 +3050,19 @@ GameObject:
   m_Component:
   - component: {fileID: 818199187}
   - component: {fileID: 818199186}
-  - component: {fileID: 818199195}
+  - component: {fileID: 818199185}
+  - component: {fileID: 818199184}
   - component: {fileID: 818199183}
+  - component: {fileID: 818199182}
+  - component: {fileID: 818199181}
+  - component: {fileID: 818199180}
+  - component: {fileID: 818199179}
   - component: {fileID: 818199178}
+  - component: {fileID: 818199177}
   - component: {fileID: 818199189}
+  - component: {fileID: 818199191}
+  - component: {fileID: 818199192}
   - component: {fileID: 818199193}
-  - component: {fileID: 818199194}
   m_Layer: 0
   m_Name: ur5
   m_TagString: robot
@@ -3063,6 +3070,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &818199177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4f00f5f538eee54295d640ba825d7e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickAndPlaceController
+  moveSpeed: 2
+  pickupHeight: 0.1
+  suctionDistance: 0.05
+  placementHeight: 0.05
 --- !u!114 &818199178
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3084,6 +3107,89 @@ MonoBehaviour:
   suctionInactiveMaterial: {fileID: 0}
   targetBlocks: []
   isBlockAttached: 0
+--- !u!114 &818199179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19fb1fc65198dd94bac5d1c4839abb1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::UnifiedRobotController
+  robotArmSetup: {fileID: 0}
+  ur5IkController: {fileID: 0}
+  pickAndPlaceController: {fileID: 0}
+  manualController: {fileID: 0}
+  csvTrajectoryController: {fileID: 0}
+  suctionController: {fileID: 0}
+  currentMode: 0
+  jointSpeed: 15
+  moveSpeed: 500
+--- !u!114 &818199180
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 583b285cbe1a044479082b9c141c10ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryExample
+  robotController: {fileID: 0}
+  csvController: {fileID: 0}
+  csvFileNames: []
+  selectedFileIndex: 0
+  showDemoGUI: 1
+  customFilePath: 
+--- !u!114 &818199181
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e1aca63a3d66a744a311faf5c18224f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryController
+  robotController: {fileID: 0}
+  csvFile: {fileID: 0}
+  csvFilePath: 
+  playbackSpeed: 1
+  loopTrajectory: 0
+  autoStart: 0
+  isPlaying: 0
+  isPaused: 0
+  currentTime: 0
+  currentFrame: 0
+  totalFrames: 0
+  totalDuration: 0
+  currentPlaybackTime: 0
+--- !u!114 &818199182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa28e04cbd1a2ab4fa55ae01dacc5481, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::Unity.Robotics.UrdfImporter.Control.ManualController
+  selectedJoint: 
+  selectedIndex: 0
+  control: 0
+  speed: 15
+  torque: 100
+  acceleration: 30
+  highLightColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!114 &818199183
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3103,6 +3209,41 @@ MonoBehaviour:
   exportFilePath: RobotJointCoordinates
   appendTimestamp: 1
   samplingRate: 0.1
+--- !u!114 &818199184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e88b41a9da42e3c41acb896a457631d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BlockSetup
+  targetBlock: {fileID: 0}
+--- !u!114 &818199185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d607ea46a579d44c4b19a6322ce4b9b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  selectedJoint: 
+  selectedIndex: 0
+  control: 0
+  stiffness: 10000
+  damping: 100
+  forceLimit: 1000
+  speed: 30
+  torque: 100
+  acceleration: 10
+  highLightColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!114 &818199186
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3148,8 +3289,40 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
+  moveDuration: 0.3
   stiffness: 10000
   damping: 100
+--- !u!114 &818199191
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d204cd577faa4f4db1bce239f33bf9e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UR5TCPServer
+  port: 5000
+  robotCamera: {fileID: 963194227}
+  imageWidth: 224
+  imageHeight: 224
+--- !u!114 &818199192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818199176}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c5de3890ff464985b5978b784b829fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UR5FKValidatorServer
+  port: 5005
+  updateRate: 30
+  showDebugInfo: 1
 --- !u!114 &818199193
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3166,42 +3339,6 @@ MonoBehaviour:
   serverPort: 5010
   autoReconnect: 1
   connectionTimeout: 5000
---- !u!114 &818199194
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 818199176}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 563f25c410f1a4402ba115ac8d0aca8d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UR5KeyboardIKController
-  ikMoveSpeed: 1
-  ikRotateSpeed: 30
---- !u!114 &818199195
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 818199176}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d607ea46a579d44c4b19a6322ce4b9b2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  selectedJoint: 
-  selectedIndex: 0
-  control: 0
-  stiffness: 10000
-  damping: 100
-  forceLimit: 1000
-  speed: 30
-  torque: 100
-  acceleration: 10
-  highLightColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &829519996
 GameObject:
   m_ObjectHideFlags: 0
@@ -3293,7 +3430,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: base_link_shoulder_link_joint
+  jointName: shoulder_pan_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &833549925
@@ -3854,7 +3991,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: tool0_tool_tip_joint
+  jointName: tool0-tool_tip
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &1002474946
@@ -4470,7 +4607,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: wrist_3_link_tool0_joint
+  jointName: wrist_3_link-tool0_fixed_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &1288546664
@@ -4961,7 +5098,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: wrist_2_link_wrist_3_link_joint
+  jointName: wrist_3_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &1490506015
@@ -5112,7 +5249,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: wrist_1_link_wrist_2_link_joint
+  jointName: wrist_2_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &1501731593
@@ -5867,7 +6004,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: shoulder_link_upper_arm_link_joint
+  jointName: shoulder_lift_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &1720527710
@@ -6423,7 +6560,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   xAxis: 0
-  jointName: base_link_base_joint
+  jointName: base_link-base_fixed_joint
   EffortLimit: 1000
   VelocityLimit: 1000
 --- !u!114 &1966619885

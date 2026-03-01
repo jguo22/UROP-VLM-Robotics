@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 
 // helper script, doesn't have any update code
 [DefaultExecutionOrder(100)]
@@ -7,7 +6,6 @@ using System.Collections;
 public class UR5Controller : MonoBehaviour
 {
     [Header("IK Settings")]
-    public float moveDuration = 0.3f;
     public float stiffness = 10000f;
     public float damping = 100f;
 
@@ -22,7 +20,10 @@ public class UR5Controller : MonoBehaviour
     private Transform endEffector;
     private Transform originTransform; // used to calculate the relative position of the end effector to the base of the robot
 
-    private Coroutine moveCoroutine;
+    private float maxJointAngularSpeed = 3.14f; // rad/s
+    private float[] startAngles = new float[6];
+    private float[] lastAngles = new float[6];
+    private float[] targetAngles = new float[6];
     private bool isMoving = false;
 
     void Start()
@@ -64,6 +65,58 @@ public class UR5Controller : MonoBehaviour
         Debug.Log("UR5Controller initialized successfully");
     }
 
+    void FixedUpdate()
+    {
+        if (!isMoving) return;
+
+        // Find the direction of movement, wrapped to [-pi, pi]
+        float[] currentAngles = GetJointAngles();
+        float[] diffAngles = new float[6];
+        for (int i = 0; i < 6; i++)
+        {
+            diffAngles[i] = targetAngles[i] - currentAngles[i];
+            diffAngles[i] = Mathf.Repeat(diffAngles[i] + Mathf.PI, 2f * Mathf.PI) - Mathf.PI;
+        }
+
+        // // Find maximum angle difference for scaling down
+        // float maxDiff = 0f;
+        // for (int i = 0; i < 6; i++)
+        //     maxDiff = Mathf.Max(maxDiff, Mathf.Abs(diffAngles[i]));
+        //
+        // // check if we have to scale down
+        // if (maxDiff > maxJointAngularSpeed * Time.fixedDeltaTime)
+        // {
+        //     // Scale down each joint step
+        //     float stepScale = maxJointAngularSpeed * Time.fixedDeltaTime / maxDiff;
+        //
+        //     for (int i = 0; i < 6; i++)
+        //         diffAngles[i] *= stepScale;
+        // }
+        // else
+        // {
+        //     // we will move straight to target so won't be moving after this frame
+        //     isMoving = false;
+        // }
+
+        // if none of the diffAngles are too large, we will finish moving this frame
+        isMoving = false;
+        for (int i = 0; i < 6; i++)
+        {
+            float maxJointStep = maxJointAngularSpeed * Time.fixedDeltaTime;
+            if (Mathf.Abs(diffAngles[i]) > maxJointStep)
+            {
+                diffAngles[i] = Mathf.Sign(diffAngles[i]) * maxJointStep;
+                isMoving = true;
+            }
+        }
+
+        float[] newAngles = new float[6];
+        for (int i = 0; i < 6; i++)
+            newAngles[i] = currentAngles[i] + diffAngles[i];
+
+        SetJointAngles(newAngles);
+    }
+
     void ConfigureJointDrives()
     {
         // Configure drives for the 6 robot arm joints (indices 0-5 in robotJoints)
@@ -79,50 +132,46 @@ public class UR5Controller : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Move to target position and rotation using IK
-    /// </summary>
+    // Move by a delta position and rotation (world coordinates)
+    public void MoveDelta(Vector3 deltaPosition, Quaternion deltaRotation)
+    {
+        Vector3 targetPos = endEffector.position + deltaPosition;
+        // Apply rotation in world coordinates: deltaRotation * currentRotation
+        Quaternion targetRot = deltaRotation * endEffector.rotation;
+
+        Debug.Log($"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})");
+
+        MoveToTarget(targetPos, targetRot);
+    }
+
+    // Move to target position and rotation using IK
     void MoveToTarget(Vector3 targetPosition, Quaternion targetRotation)
     {
-        // Don't start a new movement if one is already in progress
-        if (isMoving)
-            return;
-
         (Vector3 relativePosition, Quaternion relativeRotation) = ConvertToRobotCoordinates(targetPosition, targetRotation);
         float[] currentAngles = GetJointAngles();
-        float[] targetAngles = ikSolver.SolveIK(relativePosition, relativeRotation, currentAngles);
+        float[] ikResult = ikSolver.SolveIK(relativePosition, relativeRotation, currentAngles);
 
         Debug.Log($"UR5Controller: Current angles: [{string.Join(", ", currentAngles)}]");
-        Debug.Log($"UR5Controller: Target angles: [{string.Join(", ", targetAngles ?? new float[0])}]");
+        Debug.Log($"UR5Controller: Target angles: [{string.Join(", ", ikResult ?? new float[0])}]");
 
-        if (targetAngles != null)
-        {
-            if (moveCoroutine != null)
-            {
-                StopCoroutine(moveCoroutine);
-            }
-            isMoving = true;
-            moveCoroutine = StartCoroutine(MoveToAnglesCoroutine(targetAngles));
-        }
+        if (ikResult != null)
+            MoveToAngles(ikResult);
         else
-        {
             Debug.LogWarning("UR5Controller: No IK solution found for target position");
-        }
     }
 
-
-    void MoveToAngles(float[] targetAngles)
+    void MoveToAngles(float[] newTargetAngles)
     {
-        if (moveCoroutine != null)
-        {
-            StopCoroutine(moveCoroutine);
-        }
-        moveCoroutine = StartCoroutine(MoveToAnglesCoroutine(targetAngles));
+        // prevent having a delta calculated from an undesirable mid-movement pose
+        if (isMoving)
+            return;
+        startAngles = GetJointAngles();
+        lastAngles = startAngles;
+        targetAngles = newTargetAngles;
+        isMoving = true;
     }
 
-    /// <summary>
-    /// Set joint angles directly (in radians)
-    /// </summary>
+    // Set joint angles directly (in radians)
     void SetJointAngles(float[] angles)
     {
         for (int i = 0; i < Mathf.Min(6, angles.Length); i++)
@@ -136,58 +185,23 @@ public class UR5Controller : MonoBehaviour
         }
     }
 
-    IEnumerator MoveToAnglesCoroutine(float[] targetAngles)
+    // Get current joint angles in radians
+    public float[] GetJointAngles()
     {
-        float[] startAngles = GetJointAngles();
-        float elapsed = 0f;
+        float[] angles = new float[6]; // Assuming 6-DOF UR5 robot
 
-        while (elapsed < moveDuration)
+        // Get the current joint angles from the joint controllers
+        for (int i = 0; i < 6; i++)
         {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / moveDuration);
-            t = t * t * (3f - 2f * t); // Smoothstep
-
-            float[] interpolated = new float[6];
-            for (int i = 0; i < 6; i++)
-            {
-                interpolated[i] = Mathf.LerpAngle(startAngles[i] * Mathf.Rad2Deg,
-                                                   targetAngles[i] * Mathf.Rad2Deg, t) * Mathf.Deg2Rad;
-            }
-
-            SetJointAngles(interpolated);
-            yield return null;
+            Debug.Assert(robotJoints.Length >= 6);
+            // Get the angle from the joint controller
+            angles[i] = robotJoints[i].jointPosition[0];
         }
 
-        SetJointAngles(targetAngles);
-        isMoving = false;
+        return angles;
     }
 
-    (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(Vector3 inputPosition, Quaternion inputRotation)
-    {
-        Vector3 position = originTransform.InverseTransformPoint(inputPosition);
-        Quaternion rotation = Quaternion.Inverse(originTransform.rotation) * inputRotation;
-        return (position, rotation);
-    }
-    /// <summary>
-    /// Move by a delta position and rotation (world coordinates)
-    /// </summary>
-    public void MoveDelta(Vector3 deltaPosition, Quaternion deltaRotation)
-    {
-        if (isMoving)
-            return;
-
-        Vector3 targetPos = endEffector.position + deltaPosition;
-        // Apply rotation in world coordinates: deltaRotation * currentRotation
-        Quaternion targetRot = deltaRotation * endEffector.rotation;
-
-        Debug.Log($"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})");
-
-        MoveToTarget(targetPos, targetRot);
-    }
-
-    /// <summary>
-    /// Control gripper/suction
-    /// </summary>
+    // Control gripper/suction
     public void SetGripper(bool close)
     {
         if (suctionController != null)
@@ -200,9 +214,14 @@ public class UR5Controller : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Get current end effector pose
-    /// </summary>
+    (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(Vector3 inputPosition, Quaternion inputRotation)
+    {
+        Vector3 position = originTransform.InverseTransformPoint(inputPosition);
+        Quaternion rotation = Quaternion.Inverse(originTransform.rotation) * inputRotation;
+        return (position, rotation);
+    }
+
+    // Get current end effector pose
     public (Vector3 position, Quaternion rotation) GetEndEffectorPose()
     {
         if (endEffector != null)
@@ -213,26 +232,6 @@ public class UR5Controller : MonoBehaviour
         {
             return (Vector3.zero, Quaternion.identity);
         }
-    }
-
-    /// <summary>
-    /// Get current joint angles in radians
-    /// </summary>
-    public float[] GetJointAngles()
-    {
-        float[] angles = new float[6]; // Assuming 6-DOF UR5 robot
-
-        // Get the current joint angles from the joint controllers
-        for (int i = 0; i < 6; i++)
-        {
-            if (i < robotJoints.Length)
-            {
-                // Get the angle from the joint controller
-                angles[i] = robotJoints[i].jointPosition[0];
-            }
-        }
-
-        return angles;
     }
 
     void OnGUI()

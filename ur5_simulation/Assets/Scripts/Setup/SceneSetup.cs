@@ -174,9 +174,15 @@ public class SceneSetup : MonoBehaviour
 
         int idx = 0;
         foreach (GameObject robot in robots)
-        {     
+        {
             RobotSetup(robot, idx);
             idx += 1;
+        }
+
+        if (!allRobotsActive)
+        {
+            ToggleRobotOff(robots[(selectedRobotIndex + 1) % robots.Length]);
+            ToggleRobotOn(robots[selectedRobotIndex]);
         }
     }
 
@@ -284,6 +290,8 @@ public class SceneSetup : MonoBehaviour
         if (selectRobot)
         {
             selectedRobotIndex = (selectedRobotIndex + 1) % robots.Length;
+            ToggleRobotOff(robots[(selectedRobotIndex + 1) % robots.Length]);
+            ToggleRobotOn(robots[selectedRobotIndex]);
         }
 
         if (agenticSocket && closeSocket)
@@ -298,9 +306,6 @@ public class SceneSetup : MonoBehaviour
             ikSocketSetup.enabled = false;
             ikSocket = false;
         }
-        
-        ToggleRobotOff(robots[(selectedRobotIndex + 1) % robots.Length]);
-        ToggleRobotOn(robots[selectedRobotIndex]);
     }
 
     void ToggleRobotOff(GameObject robot)

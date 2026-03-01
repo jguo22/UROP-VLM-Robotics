@@ -102,10 +102,12 @@ public class UnifiedRobotController : MonoBehaviour
 
             //joints = robotArmSetup.articulationChain;
             // Find end effector (usually the last joint)
-            if (robotJoints.Length > 0) {
+            if (robotJoints.Length > 0)
+            {
                 endEffector = robotJoints[robotJoints.Length - 1].transform;
             }
-            else {
+            else
+            {
                 Debug.LogError("Unified Robot Controller - no joints found!");
             }
         }
@@ -125,7 +127,7 @@ public class UnifiedRobotController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha3)) SetControlMode(ControlMode.PickAndPlace);
         if (Input.GetKeyDown(KeyCode.Alpha4)) SetControlMode(ControlMode.Programmatic);
         if (Input.GetKeyDown(KeyCode.Alpha5)) SetControlMode(ControlMode.CSVTrajectory);
-        
+
         // Suction controls
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -281,7 +283,8 @@ public class UnifiedRobotController : MonoBehaviour
 
     public void MoveEndEffectorTo(Vector3 targetPosition)
     {
-        if (!ur5IkController.ikActive) {
+        if (!ur5IkController.ikActive)
+        {
             ur5IkController.MoveToEndEffectorPose(targetPosition);
         }
     }
@@ -613,22 +616,22 @@ public class UnifiedRobotController : MonoBehaviour
             Color suctionColor = suctionController.enableSuction ? Color.green : Color.red;
             GUIStyle suctionStyle = new GUIStyle(style);
             suctionStyle.normal.textColor = suctionColor;
-            
+
             GUI.Label(new Rect(10, 185, 400, 20), suctionText, suctionStyle);
-            
+
             if (suctionController.enableSuction)
             {
                 float distance = suctionController.GetDistanceToBlock();
                 bool inRange = suctionController.IsWithinSuctionRange();
                 bool attached = suctionController.IsBlockAttached();
-                
+
                 GUI.Label(new Rect(10, 210, 400, 20), $"Distance from nearest block: {distance:F3}m", style);
-                
+
                 string statusText = attached ? "ATTACHED" : (inRange ? "IN RANGE" : "OUT OF RANGE");
                 Color statusColor = attached ? Color.green : (inRange ? Color.yellow : Color.red);
                 GUIStyle statusStyle = new GUIStyle(style);
                 statusStyle.normal.textColor = statusColor;
-                
+
                 GUI.Label(new Rect(10, 235, 400, 20), $"Status: {statusText}", statusStyle);
             }
         }

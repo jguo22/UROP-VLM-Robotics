@@ -21,7 +21,6 @@ public class RobotArmSetup : MonoBehaviour
                                               "wrist2_PosX,wrist2_PosY,wrist2_PosZ,wrist2_RotX,wrist2_RotY,wrist2_RotZ,wrist2_RotW,wrist2_jointAngle," +
                                               "wrist3_PosX,wrist3_PosY,wrist3_PosZ,wrist3_RotX,wrist3_RotY,wrist3_RotZ,wrist3_RotW,wrist3_jointAngle," +
                                               "ee_PosX,ee_PosY,ee_PosZ,ee_RotX,ee_RotY,ee_RotZ,ee_RotW,suctionOn,blockAttracted"; //+
-                                              //"block_PosX,block_PosY,block_PosZ,block_RotX,block_RotY,block_RotZ,block_RotW";
 
     [HideInInspector]
     public ArticulationBody[] articulationChain; // Automatically populated articulation chain
@@ -69,8 +68,8 @@ public class RobotArmSetup : MonoBehaviour
         {
             if (JointNames.ContainsKey(joint.name))
             {
-                Debug.Log($"Adding JointControl to {JointNames[joint.name]}");
-                joint.gameObject.AddComponent<JointControl>();
+                // Debug.Log($"Adding JointControl to {JointNames[joint.name]}");
+                // joint.gameObject.AddComponent<JointControl>();
                 joint.jointFriction = JointFriction;
                 joint.angularDamping = AngularDamping;
                 ArticulationDrive currentDrive = joint.xDrive;
@@ -277,7 +276,7 @@ public class RobotArmSetup : MonoBehaviour
             StopRecording();
         }
     }
-    
+
     private void Start()
     {
         coordinates = new List<JointCoordinateRecord>();
