@@ -1,35 +1,46 @@
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.Audio;
-using UnityEditor;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Audio;
+using UnityEngine.Events;
 
-namespace FaktoryStudiosGames {
+namespace FaktoryStudiosGames
+{
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
     [ExecuteAlways]
     public class ConveyorBelt : MonoBehaviour
     {
         [Header("Profile Shape")]
-        [Min(0f)] public float length = 2f;
-        [Min(0f)] public float height = 1f;
-        [Range(1, 20)] public int cornerSegments = 6;
+        [Min(0f)]
+        public float length = 2f;
+
+        [Min(0f)]
+        public float height = 1f;
+
+        [Range(1, 20)]
+        public int cornerSegments = 6;
 
         [Header("Extrusion")]
-        [Min(0f)] public float width = 2f;
-        [Min(1)] public int segments = 10;
+        [Min(0f)]
+        public float width = 2f;
+
+        [Min(1)]
+        public int segments = 10;
 
         [Header("Material & UV")]
         public Material material;
         public float uvScaleU = 1f;
         public float uvScaleV = 1f;
         public float scrollSpeed = 1f;
+
         [Tooltip("Correction factor to ensure UV scroll matches object motion")]
         [Range(0.45f, 0.55f)]
         public float scrollSpeedModifier = 0.49f;
         public bool startConveyorBeltOnPlay = true;
         public AnimationCurve scrollCurve = AnimationCurve.Linear(0, 1, 1, 1);
+
         [Tooltip("How many world units per tile (UV 0–1)")]
         public float textureTilingU_PerWorldUnit = 1f;
 
@@ -40,7 +51,7 @@ namespace FaktoryStudiosGames {
 
         [Header("Trigger Movement")]
         public bool moveObjectsInTrigger = true;
-        public Vector3 triggerSizeOffset = new Vector3(0,1,0);
+        public Vector3 triggerSizeOffset = new Vector3(0, 1, 0);
 
         [Header("Events")]
         public UnityEvent onStart;
@@ -68,7 +79,7 @@ namespace FaktoryStudiosGames {
 
         void OnEnable()
         {
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
             if (!Application.isPlaying && pendingMesh != null)
             {
                 var captured = pendingMesh;
@@ -79,7 +90,7 @@ namespace FaktoryStudiosGames {
                         mf.sharedMesh = captured;
                 };
             }
-    #endif
+#endif
             {
                 EnsureAudioCenter();
                 EnsureTriggerZone();
@@ -104,8 +115,7 @@ namespace FaktoryStudiosGames {
                 renderer.sharedMaterial = material;
             }
 
-            textureTilingU_PerWorldUnit = uvScaleU / length
-        ;
+            textureTilingU_PerWorldUnit = uvScaleU / length;
         }
 
         private void Start()
@@ -135,12 +145,10 @@ namespace FaktoryStudiosGames {
             }
         }
 
-        public void UpdateConveyorSpeed(System.Single speed) 
+        public void UpdateConveyorSpeed(System.Single speed)
         {
             scrollSpeed = speed;
         }
-
-
 
         private void Update()
         {
@@ -153,8 +161,8 @@ namespace FaktoryStudiosGames {
                 uvOffset.x += lastUvSpeed * Time.deltaTime;
                 //runtimeMaterial.SetTextureOffset("_BaseMap", uvOffset);
 
-                lastUvSpeed = scrollSpeed * scrollSpeedModifier * textureTilingU_PerWorldUnit * curveValue;
-
+                lastUvSpeed =
+                    scrollSpeed * scrollSpeedModifier * textureTilingU_PerWorldUnit * curveValue;
 
                 float movementSpeed = scrollSpeed * curveValue;
 
@@ -291,8 +299,12 @@ namespace FaktoryStudiosGames {
                     int c = baseB + j + 1;
                     int d = baseA + j + 1;
 
-                    triangles.Add(a); triangles.Add(c); triangles.Add(b);
-                    triangles.Add(a); triangles.Add(d); triangles.Add(c);
+                    triangles.Add(a);
+                    triangles.Add(c);
+                    triangles.Add(b);
+                    triangles.Add(a);
+                    triangles.Add(d);
+                    triangles.Add(c);
                 }
             }
 
@@ -302,7 +314,7 @@ namespace FaktoryStudiosGames {
                 mesh.name = "ConveyorBeltMesh";
             }
 
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
             // Ensure the ConveyorBelt tag exists
             if (!UnityEditorInternal.InternalEditorUtility.tags.Contains("ConveyorBelt"))
             {
@@ -314,7 +326,7 @@ namespace FaktoryStudiosGames {
             {
                 tag = "ConveyorBelt";
             }
-    #endif
+#endif
 
             mesh.Clear();
             mesh.SetVertices(vertices);
@@ -323,14 +335,15 @@ namespace FaktoryStudiosGames {
             mesh.SetUVs(0, uvs);
             mesh.RecalculateBounds();
 
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
             if (!Application.isPlaying)
-                UnityEditor.EditorApplication.delayCall += () => {
+                UnityEditor.EditorApplication.delayCall += () =>
+                {
                     if (this != null && GetComponent<MeshFilter>() != null)
                         pendingMesh = mesh;
                 };
             else
-    #endif
+#endif
                 pendingMesh = mesh;
             GetComponent<MeshCollider>().sharedMesh = mesh;
             GetComponent<MeshFilter>().mesh = mesh;
@@ -376,7 +389,7 @@ namespace FaktoryStudiosGames {
                 if (triggerZone == null)
                 {
                     triggerZone = gameObject.AddComponent<BoxCollider>();
-                    triggerSizeOffset = new Vector3(0,1,0);
+                    triggerSizeOffset = new Vector3(0, 1, 0);
                     triggerZone.size += triggerSizeOffset;
                 }
                 triggerZone.isTrigger = true;
@@ -394,7 +407,8 @@ namespace FaktoryStudiosGames {
 
         private void OnTriggerStay(Collider other)
         {
-            if (!Application.isPlaying || !isRunning || !moveObjectsInTrigger) return;
+            if (!Application.isPlaying || !isRunning || !moveObjectsInTrigger)
+                return;
 
             Vector3 move = cachedConveyorVelocity;
 
@@ -413,7 +427,8 @@ namespace FaktoryStudiosGames {
 
         private void OnDrawGizmos()
         {
-            if (!showGizmos || segments < 1) return;
+            if (!showGizmos || segments < 1)
+                return;
 
             Gizmos.color = gizmoColor;
             Vector3 step = Vector3.forward * (width / segments);
@@ -425,7 +440,7 @@ namespace FaktoryStudiosGames {
 
             Gizmos.color = Color.yellow;
             Vector3 arrowStart = transform.position + Vector3.up * 0.1f;
-            Vector3 arrowEnd = arrowStart + transform.right * scrollSpeed;//0.5f;
+            Vector3 arrowEnd = arrowStart + transform.right * scrollSpeed; //0.5f;
             Gizmos.DrawLine(arrowStart, arrowEnd);
             Gizmos.DrawSphere(arrowEnd, 0.2f);
 
@@ -433,9 +448,17 @@ namespace FaktoryStudiosGames {
             {
                 // Set the gizmo matrix to match the conveyor's transform
                 Gizmos.matrix = transform.localToWorldMatrix;
-                Gizmos.color = new Color(gizmoColor.r, gizmoColor.g, gizmoColor.b, Mathf.Clamp(gizmoColor.a, 0, 64));
+                Gizmos.color = new Color(
+                    gizmoColor.r,
+                    gizmoColor.g,
+                    gizmoColor.b,
+                    Mathf.Clamp(gizmoColor.a, 0, 64)
+                );
                 Vector3 center = transform.position + transform.forward * length * 0.5f;
-                Gizmos.DrawCube(Vector3.zero + new Vector3(0,0,width/2), new Vector3(length, height, width) + triggerSizeOffset);
+                Gizmos.DrawCube(
+                    Vector3.zero + new Vector3(0, 0, width / 2),
+                    new Vector3(length, height, width) + triggerSizeOffset
+                );
             }
         }
 
@@ -444,17 +467,20 @@ namespace FaktoryStudiosGames {
             return cachedConveyorVelocity;
         }
 
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
         private void AddTag(string tagName)
         {
-            SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+            SerializedObject tagManager = new SerializedObject(
+                AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]
+            );
             SerializedProperty tagsProp = tagManager.FindProperty("tags");
 
             // Check if tag already exists
             for (int i = 0; i < tagsProp.arraySize; i++)
             {
                 SerializedProperty t = tagsProp.GetArrayElementAtIndex(i);
-                if (t.stringValue.Equals(tagName)) return; // Tag already exists
+                if (t.stringValue.Equals(tagName))
+                    return; // Tag already exists
             }
 
             // Add new tag
@@ -462,7 +488,7 @@ namespace FaktoryStudiosGames {
             tagsProp.GetArrayElementAtIndex(tagsProp.arraySize - 1).stringValue = tagName;
             tagManager.ApplyModifiedProperties();
         }
-        #endif
+#endif
     }
 
     [CustomEditor(typeof(ConveyorBelt))]
@@ -494,10 +520,16 @@ namespace FaktoryStudiosGames {
             showShape = EditorGUILayout.BeginFoldoutHeaderGroup(showShape, "Profile Shape");
             if (showShape)
             {
-                EditorGUILayout.HelpBox("Defines the shape of the conveyor belt in 3D space.", MessageType.None);
+                EditorGUILayout.HelpBox(
+                    "Defines the shape of the conveyor belt in 3D space.",
+                    MessageType.None
+                );
                 DrawTooltipField(nameof(belt.length), "Conveyor conveyorLength (X axis)");
                 DrawTooltipField(nameof(belt.height), "Conveyor height (Y axis)");
-                DrawTooltipField(nameof(belt.cornerSegments), "Number of segments used to round corners");
+                DrawTooltipField(
+                    nameof(belt.cornerSegments),
+                    "Number of segments used to round corners"
+                );
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
             DrawDivider();
@@ -505,9 +537,15 @@ namespace FaktoryStudiosGames {
             showExtrusion = EditorGUILayout.BeginFoldoutHeaderGroup(showExtrusion, "Extrusion");
             if (showExtrusion)
             {
-                EditorGUILayout.HelpBox("Controls conveyor belt length and mesh resolution.", MessageType.None);
+                EditorGUILayout.HelpBox(
+                    "Controls conveyor belt length and mesh resolution.",
+                    MessageType.None
+                );
                 DrawTooltipField(nameof(belt.width), "Total conveyor length (Z axis)");
-                DrawTooltipField(nameof(belt.segments), "Number of segments for extrusion along length");
+                DrawTooltipField(
+                    nameof(belt.segments),
+                    "Number of segments for extrusion along length"
+                );
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
             DrawDivider();
@@ -519,10 +557,19 @@ namespace FaktoryStudiosGames {
                 DrawTooltipField(nameof(belt.uvScaleU), "Tiling scale in U direction (length)");
                 DrawTooltipField(nameof(belt.uvScaleV), "Tiling scale in V direction (width)");
                 DrawTooltipField(nameof(belt.scrollSpeed), "Scroll speed for UV animation");
-                DrawTooltipField(nameof(belt.scrollSpeedModifier), "Modifier to match UV scroll with object motion");
-                DrawTooltipField(nameof(belt.startConveyorBeltOnPlay), "Start conveyor automatically when playing");
+                DrawTooltipField(
+                    nameof(belt.scrollSpeedModifier),
+                    "Modifier to match UV scroll with object motion"
+                );
+                DrawTooltipField(
+                    nameof(belt.startConveyorBeltOnPlay),
+                    "Start conveyor automatically when playing"
+                );
                 DrawTooltipField(nameof(belt.scrollCurve), "Speed modulation over time");
-                DrawTooltipField(nameof(belt.textureTilingU_PerWorldUnit), "World units per U tile");
+                DrawTooltipField(
+                    nameof(belt.textureTilingU_PerWorldUnit),
+                    "World units per U tile"
+                );
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
             DrawDivider();
@@ -540,8 +587,14 @@ namespace FaktoryStudiosGames {
             showTrigger = EditorGUILayout.BeginFoldoutHeaderGroup(showTrigger, "Trigger Movement");
             if (showTrigger)
             {
-                DrawTooltipField(nameof(belt.moveObjectsInTrigger), "Move objects detected in trigger zone");
-                DrawTooltipField(nameof(belt.triggerSizeOffset), "Extra size added to trigger bounds");
+                DrawTooltipField(
+                    nameof(belt.moveObjectsInTrigger),
+                    "Move objects detected in trigger zone"
+                );
+                DrawTooltipField(
+                    nameof(belt.triggerSizeOffset),
+                    "Extra size added to trigger bounds"
+                );
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
             DrawDivider();
@@ -565,18 +618,29 @@ namespace FaktoryStudiosGames {
 
             EditorGUILayout.Space(10);
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button(new GUIContent("Start", EditorGUIUtility.IconContent("PlayButton").image)))
+            if (
+                GUILayout.Button(
+                    new GUIContent("Start", EditorGUIUtility.IconContent("PlayButton").image)
+                )
+            )
             {
                 belt.StartConveyorBelt();
             }
-            if (GUILayout.Button(new GUIContent("Stop", EditorGUIUtility.IconContent("PauseButton").image)))
+            if (
+                GUILayout.Button(
+                    new GUIContent("Stop", EditorGUIUtility.IconContent("PauseButton").image)
+                )
+            )
             {
                 belt.StopConveyorBelt();
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(20);
-            EditorGUILayout.LabelField("© 2025 Faktory Studios", EditorStyles.centeredGreyMiniLabel);
+            EditorGUILayout.LabelField(
+                "© 2025 Faktory Studios",
+                EditorStyles.centeredGreyMiniLabel
+            );
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -586,7 +650,10 @@ namespace FaktoryStudiosGames {
             SerializedProperty prop = serializedObject.FindProperty(propertyName);
             if (prop != null)
             {
-                GUIContent label = new GUIContent(ObjectNames.NicifyVariableName(propertyName), tooltip);
+                GUIContent label = new GUIContent(
+                    ObjectNames.NicifyVariableName(propertyName),
+                    tooltip
+                );
                 EditorGUILayout.PropertyField(prop, label, true);
             }
         }
@@ -611,7 +678,7 @@ namespace FaktoryStudiosGames {
                 alignment = TextAnchor.MiddleLeft,
                 fontSize = 18,
                 fontStyle = FontStyle.Bold,
-                padding = new RectOffset(10, 0, 10, 0)
+                padding = new RectOffset(10, 0, 10, 0),
             };
             GUI.Label(rect, " Conveyor Belt System", titleStyle);
         }

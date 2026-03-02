@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
 using System.Collections.Generic;
-using System;
+using UnityEngine;
 
 public class FKRobot : MonoBehaviour
 {
@@ -13,7 +13,7 @@ public class FKRobot : MonoBehaviour
 
     public Quaternion endEffectorRotation;
     public Matrix4x4 endEffectorPosition;
-    
+
     public const string k_TagName = "robot";
 
     // TODO : Automatically adding DH parameters 2. Detecting number of active joints
@@ -23,11 +23,11 @@ public class FKRobot : MonoBehaviour
         {
             dh = new List<float[]>();
         }
-        
+
         jointChain = new List<ArticulationBody>();
 
         robot = FindRobotObject();
-        
+
         if (!robot)
         {
             return;
@@ -53,8 +53,10 @@ public class FKRobot : MonoBehaviour
         }
         catch (Exception)
         {
-            Debug.LogError($"Unable to find tag '{k_TagName}'. " + 
-                            $"Add A tag '{k_TagName}' in the Project Settings in Unity Editor.");
+            Debug.LogError(
+                $"Unable to find tag '{k_TagName}'. "
+                    + $"Add A tag '{k_TagName}' in the Project Settings in Unity Editor."
+            );
         }
         return null;
     }
@@ -89,7 +91,6 @@ public class FKRobot : MonoBehaviour
         }
 
         return endEffectorPosition;
-    
     }
 
     /// <summary>
@@ -115,8 +116,6 @@ public class FKRobot : MonoBehaviour
                 Debug.LogError("Other joint types not supported");
             }
         }
-
-
     }
 
     public List<float> currentJointParameters()
@@ -124,7 +123,7 @@ public class FKRobot : MonoBehaviour
         List<float> angles = new List<float>();
         for (int i = 0; i < jointChain.Count; i++)
         {
-            angles.Add((float)Math.Round(jointChain[i].jointPosition[0],2));
+            angles.Add((float)Math.Round(jointChain[i].jointPosition[0], 2));
         }
         return angles;
     }
@@ -136,12 +135,29 @@ public class FKRobot : MonoBehaviour
     /// </summary>
     /// <param name="DHparameters">Array of four float parameters</param>
     /// <returns></returns>
-    private Matrix4x4 FWDMatrix(float[] DHparameters) 
+    private Matrix4x4 FWDMatrix(float[] DHparameters)
     {
-        return new Matrix4x4(new Vector4(Mathf.Cos(DHparameters[2]),-Mathf.Sin(DHparameters[2]),0,DHparameters[1]),
-                            new Vector4(Mathf.Sin(DHparameters[2]) * Mathf.Cos(DHparameters[0]),Mathf.Cos(DHparameters[2]) * Mathf.Cos(DHparameters[0]),-Mathf.Sin(DHparameters[0]),-Mathf.Sin(DHparameters[0]) * DHparameters[3]),
-                            new Vector4(Mathf.Sin(DHparameters[2]) * Mathf.Sin(DHparameters[0]),Mathf.Cos(DHparameters[2]) * Mathf.Sin(DHparameters[0]), Mathf.Cos(DHparameters[0]),Mathf.Cos(DHparameters[0]) * DHparameters[3]),
-                            new Vector4(0,0,0,1));
+        return new Matrix4x4(
+            new Vector4(
+                Mathf.Cos(DHparameters[2]),
+                -Mathf.Sin(DHparameters[2]),
+                0,
+                DHparameters[1]
+            ),
+            new Vector4(
+                Mathf.Sin(DHparameters[2]) * Mathf.Cos(DHparameters[0]),
+                Mathf.Cos(DHparameters[2]) * Mathf.Cos(DHparameters[0]),
+                -Mathf.Sin(DHparameters[0]),
+                -Mathf.Sin(DHparameters[0]) * DHparameters[3]
+            ),
+            new Vector4(
+                Mathf.Sin(DHparameters[2]) * Mathf.Sin(DHparameters[0]),
+                Mathf.Cos(DHparameters[2]) * Mathf.Sin(DHparameters[0]),
+                Mathf.Cos(DHparameters[0]),
+                Mathf.Cos(DHparameters[0]) * DHparameters[3]
+            ),
+            new Vector4(0, 0, 0, 1)
+        );
     }
 
     /// <summary>
@@ -150,12 +166,23 @@ public class FKRobot : MonoBehaviour
     /// </summary>
     /// <param name="DHparameters">Array of four float parameters</param>
     /// <returns></returns>
-    private Matrix4x4 FWDMatrix2(float[] DHparameters) 
+    private Matrix4x4 FWDMatrix2(float[] DHparameters)
     {
-        return new Matrix4x4(new Vector4(Mathf.Cos(DHparameters[2]), -Mathf.Sin(DHparameters[2]) * Mathf.Cos(DHparameters[0]), Mathf.Sin(DHparameters[2]) * Mathf.Sin(DHparameters[0]), DHparameters[1] * Mathf.Cos(DHparameters[2])),
-                            new Vector4(Mathf.Sin(DHparameters[2]) , Mathf.Cos(DHparameters[2]) * Mathf.Cos(DHparameters[0]), -Mathf.Sin(DHparameters[0]) * Mathf.Cos(DHparameters[2]), Mathf.Sin(DHparameters[2]) * DHparameters[1]),
-                            new Vector4(0, Mathf.Sin(DHparameters[0]), Mathf.Cos(DHparameters[0]), DHparameters[3]),
-                            new Vector4(0, 0, 0, 1));
+        return new Matrix4x4(
+            new Vector4(
+                Mathf.Cos(DHparameters[2]),
+                -Mathf.Sin(DHparameters[2]) * Mathf.Cos(DHparameters[0]),
+                Mathf.Sin(DHparameters[2]) * Mathf.Sin(DHparameters[0]),
+                DHparameters[1] * Mathf.Cos(DHparameters[2])
+            ),
+            new Vector4(
+                Mathf.Sin(DHparameters[2]),
+                Mathf.Cos(DHparameters[2]) * Mathf.Cos(DHparameters[0]),
+                -Mathf.Sin(DHparameters[0]) * Mathf.Cos(DHparameters[2]),
+                Mathf.Sin(DHparameters[2]) * DHparameters[1]
+            ),
+            new Vector4(0, Mathf.Sin(DHparameters[0]), Mathf.Cos(DHparameters[0]), DHparameters[3]),
+            new Vector4(0, 0, 0, 1)
+        );
     }
-
 }

@@ -1,11 +1,10 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using static ConstantsUR5;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-using UnityEngine;
-using System;
-using System.Collections.Generic;
-
-using static ConstantsUR5;
 
 [RequireComponent(typeof(RobotArmSetup))]
 public class RobotController : MonoBehaviour
@@ -39,7 +38,6 @@ public class RobotController : MonoBehaviour
     /// </summary>
     [Range(0, 1)]
     public float SnapBackStrength = 1f;
-
 
     protected float[] LinksLength; //Target to Origin
     protected float CompleteLength;
@@ -78,7 +76,7 @@ public class RobotController : MonoBehaviour
 
         this.gameObject.AddComponent<FKRobot>();
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
-        
+
         if (articulationChain == null || articulationChain.Length == 0)
         {
             Debug.LogError("Articulation chain is not properly set up in RobotController.");
@@ -126,12 +124,14 @@ public class RobotController : MonoBehaviour
             if (i == Links.Length - 1)
             {
                 //leaf
-                StartDirectionSucc[i] = GetPositionRootSpace(Target) - GetPositionRootSpace(current);
+                StartDirectionSucc[i] =
+                    GetPositionRootSpace(Target) - GetPositionRootSpace(current);
             }
             else
             {
                 //mid bone
-                StartDirectionSucc[i] = GetPositionRootSpace(Links[i + 1]) - GetPositionRootSpace(current);
+                StartDirectionSucc[i] =
+                    GetPositionRootSpace(Links[i + 1]) - GetPositionRootSpace(current);
                 LinksLength[i] = StartDirectionSucc[i].magnitude;
                 CompleteLength += LinksLength[i];
             }
@@ -156,7 +156,8 @@ public class RobotController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (isMovingToBlock) ResolveIK();
+        if (isMovingToBlock)
+            ResolveIK();
     }
 
     private void StartMovingToBlock()
@@ -197,10 +198,11 @@ public class RobotController : MonoBehaviour
 
         if (LinksLength.Length != JointCount)
         {
-            Debug.Log($"LinksLength.Length: {LinksLength.Length}, JointCount: {JointCount}, re-initialising IK due to chain length mismatch");
+            Debug.Log(
+                $"LinksLength.Length: {LinksLength.Length}, JointCount: {JointCount}, re-initialising IK due to chain length mismatch"
+            );
             Init();
         }
-            
 
         //Fabric
 
@@ -216,7 +218,10 @@ public class RobotController : MonoBehaviour
         var targetRotation = GetRotationRootSpace(Target);
 
         //1st is possible to reach?
-        if ((targetPosition - GetPositionRootSpace(Links[0])).sqrMagnitude >= CompleteLength * CompleteLength)
+        if (
+            (targetPosition - GetPositionRootSpace(Links[0])).sqrMagnitude
+            >= CompleteLength * CompleteLength
+        )
         {
             //just strech it
             var direction = (targetPosition - Positions[0]).normalized;
@@ -227,7 +232,11 @@ public class RobotController : MonoBehaviour
         else
         {
             for (int i = 0; i < Positions.Length - 1; i++)
-                Positions[i + 1] = Vector3.Lerp(Positions[i + 1], Positions[i] + StartDirectionSucc[i], SnapBackStrength);
+                Positions[i + 1] = Vector3.Lerp(
+                    Positions[i + 1],
+                    Positions[i] + StartDirectionSucc[i],
+                    SnapBackStrength
+                );
 
             for (int iteration = 0; iteration < Iterations; iteration++)
             {
@@ -238,12 +247,16 @@ public class RobotController : MonoBehaviour
                     if (i == Positions.Length - 1)
                         Positions[i] = targetPosition; //set it to target
                     else
-                        Positions[i] = Positions[i + 1] + (Positions[i] - Positions[i + 1]).normalized * LinksLength[i]; //set in line on distance
+                        Positions[i] =
+                            Positions[i + 1]
+                            + (Positions[i] - Positions[i + 1]).normalized * LinksLength[i]; //set in line on distance
                 }
 
                 //forward
                 for (int i = 1; i < Positions.Length; i++)
-                    Positions[i] = Positions[i - 1] + (Positions[i] - Positions[i - 1]).normalized * LinksLength[i - 1];
+                    Positions[i] =
+                        Positions[i - 1]
+                        + (Positions[i] - Positions[i - 1]).normalized * LinksLength[i - 1];
 
                 //close enough?
                 if ((Positions[Positions.Length - 1] - targetPosition).sqrMagnitude < Delta * Delta)
@@ -260,8 +273,14 @@ public class RobotController : MonoBehaviour
                 var plane = new Plane(Positions[i + 1] - Positions[i - 1], Positions[i - 1]);
                 var projectedPole = plane.ClosestPointOnPlane(polePosition);
                 var projectedBone = plane.ClosestPointOnPlane(Positions[i]);
-                var angle = Vector3.SignedAngle(projectedBone - Positions[i - 1], projectedPole - Positions[i - 1], plane.normal);
-                Positions[i] = Quaternion.AngleAxis(angle, plane.normal) * (Positions[i] - Positions[i - 1]) + Positions[i - 1];
+                var angle = Vector3.SignedAngle(
+                    projectedBone - Positions[i - 1],
+                    projectedPole - Positions[i - 1],
+                    plane.normal
+                );
+                Positions[i] =
+                    Quaternion.AngleAxis(angle, plane.normal) * (Positions[i] - Positions[i - 1])
+                    + Positions[i - 1];
             }
         }
 
@@ -269,9 +288,20 @@ public class RobotController : MonoBehaviour
         for (int i = 0; i < Positions.Length; i++)
         {
             if (i == Positions.Length - 1)
-                SetRotationRootSpace(Links[i], Quaternion.Inverse(targetRotation) * StartRotationTarget * Quaternion.Inverse(StartRotationBone[i]));
+                SetRotationRootSpace(
+                    Links[i],
+                    Quaternion.Inverse(targetRotation)
+                        * StartRotationTarget
+                        * Quaternion.Inverse(StartRotationBone[i])
+                );
             else
-                SetRotationRootSpace(Links[i], Quaternion.FromToRotation(StartDirectionSucc[i], Positions[i + 1] - Positions[i]) * Quaternion.Inverse(StartRotationBone[i]));
+                SetRotationRootSpace(
+                    Links[i],
+                    Quaternion.FromToRotation(
+                        StartDirectionSucc[i],
+                        Positions[i + 1] - Positions[i]
+                    ) * Quaternion.Inverse(StartRotationBone[i])
+                );
             SetPositionRootSpace(Links[i], Positions[i]);
         }
     }
@@ -316,7 +346,15 @@ public class RobotController : MonoBehaviour
         for (int i = 0; i < JointCount && current != null && current.parent != null; i++)
         {
             var scale = Vector3.Distance(current.position, current.parent.position) * 0.1f;
-            Handles.matrix = Matrix4x4.TRS(current.position, Quaternion.FromToRotation(Vector3.up, current.parent.position - current.position), new Vector3(scale, Vector3.Distance(current.parent.position, current.position), scale));
+            Handles.matrix = Matrix4x4.TRS(
+                current.position,
+                Quaternion.FromToRotation(Vector3.up, current.parent.position - current.position),
+                new Vector3(
+                    scale,
+                    Vector3.Distance(current.parent.position, current.position),
+                    scale
+                )
+            );
             Handles.color = Color.green;
             Handles.DrawWireCube(Vector3.up * 0.5f, Vector3.one);
             current = current.parent;

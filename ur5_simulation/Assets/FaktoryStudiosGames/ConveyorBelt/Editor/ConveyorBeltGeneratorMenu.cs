@@ -1,7 +1,8 @@
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
-namespace FaktoryStudiosGames {
+namespace FaktoryStudiosGames
+{
     public class ConveyorBeltGeneratorMenu
     {
         [MenuItem("GameObject/3D Object/Conveyor Belt", false, 10)]
@@ -14,7 +15,9 @@ namespace FaktoryStudiosGames {
 
             // Optional: Assign default material (if you have one)
             var renderer = go.GetComponent<MeshRenderer>();
-            var defaultMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/ConveyorBelt/Materials/ConveyorBeltMaterial.mat");
+            var defaultMat = AssetDatabase.LoadAssetAtPath<Material>(
+                "Assets/ConveyorBelt/Materials/ConveyorBeltMaterial.mat"
+            );
             if (defaultMat != null)
             {
                 renderer.sharedMaterial = defaultMat;

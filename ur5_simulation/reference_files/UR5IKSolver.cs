@@ -1,22 +1,22 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
 public class UR5IKSolver : MonoBehaviour
 {
     [Header("Robot Links")]
-    public ArticulationBody baseJoint;        // shoulder_pan_joint
-    public ArticulationBody shoulderJoint;    // shoulder_lift_joint
-    public ArticulationBody elbowJoint;       // elbow_joint
-    public ArticulationBody wrist1Joint;      // wrist_1_joint
-    public ArticulationBody wrist2Joint;      // wrist_2_joint
-    public ArticulationBody wrist3Joint;      // wrist_3_joint
+    public ArticulationBody baseJoint; // shoulder_pan_joint
+    public ArticulationBody shoulderJoint; // shoulder_lift_joint
+    public ArticulationBody elbowJoint; // elbow_joint
+    public ArticulationBody wrist1Joint; // wrist_1_joint
+    public ArticulationBody wrist2Joint; // wrist_2_joint
+    public ArticulationBody wrist3Joint; // wrist_3_joint
 
     [Header("Link Lengths")]
-    public float shoulderLength = 0.425f;  // Distance between shoulder and elbow
-    public float elbowLength = 0.392f;     // Distance between elbow and wrist
-    public float wrist1Length = 0.0997f;   // Distance between wrist1 and wrist2
-    public float wrist2Length = 0.0996f;   // Distance between wrist2 and wrist3
-    public float toolLength = 0.0823f;     // Length of the end effector tool
+    public float shoulderLength = 0.425f; // Distance between shoulder and elbow
+    public float elbowLength = 0.392f; // Distance between elbow and wrist
+    public float wrist1Length = 0.0997f; // Distance between wrist1 and wrist2
+    public float wrist2Length = 0.0996f; // Distance between wrist2 and wrist3
+    public float toolLength = 0.0823f; // Length of the end effector tool
 
     [Header("Joint Limits (in degrees)")]
     public Vector2 baseLimits = new Vector2(-360f, 360f);
@@ -33,8 +33,14 @@ public class UR5IKSolver : MonoBehaviour
 
     private void ValidateSetup()
     {
-        if (baseJoint == null || shoulderJoint == null || elbowJoint == null ||
-            wrist1Joint == null || wrist2Joint == null || wrist3Joint == null)
+        if (
+            baseJoint == null
+            || shoulderJoint == null
+            || elbowJoint == null
+            || wrist1Joint == null
+            || wrist2Joint == null
+            || wrist3Joint == null
+        )
         {
             Debug.LogError("UR5IKSolver: All joints must be assigned!");
             enabled = false;
@@ -48,12 +54,14 @@ public class UR5IKSolver : MonoBehaviour
         {
             // Transform target position to robot base space
             Vector3 localTarget = transform.InverseTransformPoint(targetPosition);
-            
+
             // Calculate base rotation (theta1)
             float theta1 = Mathf.Atan2(localTarget.y, localTarget.x);
-            
+
             // Transform target position into the plane of the arm after base rotation
-            float projDist = Mathf.Sqrt(localTarget.x * localTarget.x + localTarget.y * localTarget.y);
+            float projDist = Mathf.Sqrt(
+                localTarget.x * localTarget.x + localTarget.y * localTarget.y
+            );
             float targetX = projDist;
             float targetY = localTarget.z;
 
@@ -85,20 +93,13 @@ public class UR5IKSolver : MonoBehaviour
             // Calculate wrist angles based on target rotation
             Quaternion localRotation = Quaternion.Inverse(transform.rotation) * targetRotation;
             Vector3 targetEuler = localRotation.eulerAngles;
-            
+
             float theta4 = -theta2 - theta3; // Keep wrist 1 level
             float theta5 = Mathf.Deg2Rad * targetEuler.y;
             float theta6 = Mathf.Deg2Rad * targetEuler.z;
 
             // Apply joint angles
-            ApplyJointAngles(new float[] {
-                theta1,
-                theta2,
-                theta3,
-                theta4,
-                theta5,
-                theta6
-            });
+            ApplyJointAngles(new float[] { theta1, theta2, theta3, theta4, theta5, theta6 });
 
             return true;
         }
@@ -139,9 +140,11 @@ public class UR5IKSolver : MonoBehaviour
     private float ClampAngle(float angle, float min, float max)
     {
         // Normalize angle to -180 to 180 range
-        while (angle > 180f) angle -= 360f;
-        while (angle < -180f) angle += 360f;
-        
+        while (angle > 180f)
+            angle -= 360f;
+        while (angle < -180f)
+            angle += 360f;
+
         return Mathf.Clamp(angle, min, max);
     }
 

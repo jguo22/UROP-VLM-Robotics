@@ -55,7 +55,9 @@ public class UR5Controller : MonoBehaviour
         ikSolver = GetComponent<UR5IKSolver>();
         if (ikSolver == null)
         {
-            Debug.LogWarning("UR5Controller: UR5IKSolver component not found. Adding dummy solver.");
+            Debug.LogWarning(
+                "UR5Controller: UR5IKSolver component not found. Adding dummy solver."
+            );
             ikSolver = gameObject.AddComponent<UR5IKSolver>();
         }
 
@@ -67,7 +69,8 @@ public class UR5Controller : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!isMoving) return;
+        if (!isMoving)
+            return;
 
         // Find the direction of movement, wrapped to [-pi, pi]
         float[] currentAngles = GetJointAngles();
@@ -122,7 +125,8 @@ public class UR5Controller : MonoBehaviour
         // Configure drives for the 6 robot arm joints (indices 0-5 in robotJoints)
         for (int i = 0; i < 6; i++)
         {
-            if (robotJoints[i] == null) continue;
+            if (robotJoints[i] == null)
+                continue;
 
             ArticulationDrive drive = robotJoints[i].xDrive;
             drive.stiffness = stiffness;
@@ -139,7 +143,9 @@ public class UR5Controller : MonoBehaviour
         // Apply rotation in world coordinates: deltaRotation * currentRotation
         Quaternion targetRot = deltaRotation * endEffector.rotation;
 
-        Debug.Log($"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})");
+        Debug.Log(
+            $"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})"
+        );
 
         MoveToTarget(targetPos, targetRot);
     }
@@ -147,7 +153,10 @@ public class UR5Controller : MonoBehaviour
     // Move to target position and rotation using IK
     void MoveToTarget(Vector3 targetPosition, Quaternion targetRotation)
     {
-        (Vector3 relativePosition, Quaternion relativeRotation) = ConvertToRobotCoordinates(targetPosition, targetRotation);
+        (Vector3 relativePosition, Quaternion relativeRotation) = ConvertToRobotCoordinates(
+            targetPosition,
+            targetRotation
+        );
         float[] currentAngles = GetJointAngles();
         float[] ikResult = ikSolver.SolveIK(relativePosition, relativeRotation, currentAngles);
 
@@ -214,7 +223,10 @@ public class UR5Controller : MonoBehaviour
         }
     }
 
-    (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(Vector3 inputPosition, Quaternion inputRotation)
+    (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(
+        Vector3 inputPosition,
+        Quaternion inputRotation
+    )
     {
         Vector3 position = originTransform.InverseTransformPoint(inputPosition);
         Quaternion rotation = Quaternion.Inverse(originTransform.rotation) * inputRotation;
@@ -236,11 +248,15 @@ public class UR5Controller : MonoBehaviour
 
     void OnGUI()
     {
-        if (endEffector == null) return;
+        if (endEffector == null)
+            return;
 
-        string displayText = $"End Effector Position: ({endEffector.position.x:F5}, {endEffector.position.y:F5}, {endEffector.position.z:F5})\n";
-        displayText += $"End Effector Rotation: ({endEffector.rotation.x:F5}, {endEffector.rotation.y:F5}, {endEffector.rotation.z:F5}, {endEffector.rotation.w:F5})\n";
-        displayText += $"Euler Angles: ({endEffector.rotation.eulerAngles.x:F2}, {endEffector.rotation.eulerAngles.y:F2}, {endEffector.rotation.eulerAngles.z:F2})";
+        string displayText =
+            $"End Effector Position: ({endEffector.position.x:F5}, {endEffector.position.y:F5}, {endEffector.position.z:F5})\n";
+        displayText +=
+            $"End Effector Rotation: ({endEffector.rotation.x:F5}, {endEffector.rotation.y:F5}, {endEffector.rotation.z:F5}, {endEffector.rotation.w:F5})\n";
+        displayText +=
+            $"Euler Angles: ({endEffector.rotation.eulerAngles.x:F2}, {endEffector.rotation.eulerAngles.y:F2}, {endEffector.rotation.eulerAngles.z:F2})";
 
         float width = 650;
         float height = 80;

@@ -1,7 +1,7 @@
-using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class GearSetup : MonoBehaviour
 {
@@ -11,7 +11,12 @@ public class GearSetup : MonoBehaviour
     {
         foreach (var gear in originalGears)
         {
-            Debug.Log("Gear: " + gear.name + " Center: " + gear.GetComponent<Collider>().bounds.center.ToString("F5"));
+            Debug.Log(
+                "Gear: "
+                    + gear.name
+                    + " Center: "
+                    + gear.GetComponent<Collider>().bounds.center.ToString("F5")
+            );
         }
     }
 }

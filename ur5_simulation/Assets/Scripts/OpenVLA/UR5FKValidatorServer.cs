@@ -38,7 +38,9 @@ public class UR5FKValidatorServer : MonoBehaviour
             return;
         }
 
-        Debug.Log($"UR5 FK Validator Server starting on port {port} (update rate: {updateRate} Hz)");
+        Debug.Log(
+            $"UR5 FK Validator Server starting on port {port} (update rate: {updateRate} Hz)"
+        );
 
         // Start async server
         await HandleClientAsync();
@@ -125,7 +127,9 @@ public class UR5FKValidatorServer : MonoBehaviour
 
                             if (showDebugInfo)
                             {
-                                Debug.Log($"Sent state - EE: ({state[0]:F4}, {state[1]:F4}, {state[2]:F4})");
+                                Debug.Log(
+                                    $"Sent state - EE: ({state[0]:F4}, {state[1]:F4}, {state[2]:F4})"
+                                );
                             }
                         }
                         catch (Exception e)

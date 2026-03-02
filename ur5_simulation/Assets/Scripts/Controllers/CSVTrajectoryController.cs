@@ -1,11 +1,10 @@
-using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Unity.Robotics.UrdfImporter.Control;
-
+using UnityEngine;
 using static ConstantsUR5;
 
 /// <summary>
@@ -33,8 +32,10 @@ public class CSVTrajectoryController : MonoBehaviour
     [Header("Trajectory Data")]
     [Tooltip("Total number of frames in the loaded trajectory")]
     public int totalFrames = 0;
+
     [Tooltip("Total duration of the trajectory in seconds")]
     public float totalDuration = 0f;
+
     [Tooltip("Current playback time position")]
     public float currentPlaybackTime = 0f;
 
@@ -160,7 +161,7 @@ public class CSVTrajectoryController : MonoBehaviour
             Dictionary<string, int> jointColumnMap = new Dictionary<string, int>();
 
             // Map joint names to their position column indices
-            string[] jointNames = {"base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3" };
+            string[] jointNames = { "base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3" };
             foreach (string jointName in jointNames)
             {
                 string posXCol = $"{jointName}_PosX";
@@ -196,11 +197,13 @@ public class CSVTrajectoryController : MonoBehaviour
             // Parse data rows
             for (int i = 1; i < lines.Length; i++)
             {
-                if (string.IsNullOrWhiteSpace(lines[i])) continue;
+                if (string.IsNullOrWhiteSpace(lines[i]))
+                    continue;
 
                 string[] values = lines[i].Split(',');
 
-                if (values.Length < headers.Length) continue;
+                if (values.Length < headers.Length)
+                    continue;
 
                 // Parse timestamp
                 if (float.TryParse(values[timestampCol], out float timestamp))
@@ -250,10 +253,18 @@ public class CSVTrajectoryController : MonoBehaviour
                 }
 
                 // Parse suction state
-                suctionStates.Add(suctionColIndex >= 0 && suctionColIndex < values.Length && values[suctionColIndex].Trim() == "True");
+                suctionStates.Add(
+                    suctionColIndex >= 0
+                        && suctionColIndex < values.Length
+                        && values[suctionColIndex].Trim() == "True"
+                );
 
                 // Parse attracted state
-                attractedStates.Add(attractedColIndex >= 0 && attractedColIndex < values.Length && values[attractedColIndex].Trim() == "True");
+                attractedStates.Add(
+                    attractedColIndex >= 0
+                        && attractedColIndex < values.Length
+                        && values[attractedColIndex].Trim() == "True"
+                );
 
                 jointPositionsTrajectory.Add(positions);
                 jointRotationsTrajectory.Add(rotations);
@@ -261,7 +272,7 @@ public class CSVTrajectoryController : MonoBehaviour
                 // For now, we'll use IK to convert positions to joint angles
                 // This is a simplified approach - in practice you might want to store joint angles directly
                 //float[] jointAngles = ConvertPositionsToJointAngles(positions, rotations);
-                //float[] jointAngles = 
+                //float[] jointAngles =
                 jointAnglesTrajectory.Add(jointAngles);
             }
 
@@ -271,9 +282,10 @@ public class CSVTrajectoryController : MonoBehaviour
                 totalDuration = timestamps[timestamps.Count - 1] - timestamps[0];
             }
 
-            Debug.Log($"Successfully loaded trajectory: {totalFrames} frames, {totalDuration:F2} seconds");
+            Debug.Log(
+                $"Successfully loaded trajectory: {totalFrames} frames, {totalDuration:F2} seconds"
+            );
             return true;
-
         }
         catch (System.Exception e)
         {
@@ -396,7 +408,8 @@ public class CSVTrajectoryController : MonoBehaviour
     /// </summary>
     public void JumpToTime(float time)
     {
-        if (timestamps.Count == 0) return;
+        if (timestamps.Count == 0)
+            return;
 
         // Find closest timestamp
         int closestFrame = 0;
@@ -440,7 +453,8 @@ public class CSVTrajectoryController : MonoBehaviour
                 // Wait for next frame based on timestamp difference
                 if (currentFrame < totalFrames - 1)
                 {
-                    float timeToNextFrame = (timestamps[currentFrame + 1] - timestamps[currentFrame]) / playbackSpeed;
+                    float timeToNextFrame =
+                        (timestamps[currentFrame + 1] - timestamps[currentFrame]) / playbackSpeed;
                     yield return new WaitForSeconds(timeToNextFrame);
                 }
                 else
@@ -488,7 +502,9 @@ public class CSVTrajectoryController : MonoBehaviour
             bool suctionOn = suctionStates[frameIndex];
             bool attracted = attractedStates[frameIndex];
 
-            Debug.Log($"Setting frame {frameIndex}: joint angles [{string.Join(", ", jointAngles.Select(a => a.ToString("F3")))}]");
+            Debug.Log(
+                $"Setting frame {frameIndex}: joint angles [{string.Join(", ", jointAngles.Select(a => a.ToString("F3")))}]"
+            );
 
             if (robotController != null)
             {
@@ -496,7 +512,8 @@ public class CSVTrajectoryController : MonoBehaviour
                 robotController.SetSuctionState(suctionOn);
                 robotController.SetBlockAttractedState(attracted); //uncomment this line to enable reliable attraction state setting
                 Debug.Log($"Joint angles and suction state sent to robot controller");
-                if (attracted) Debug.Log("Block is attracted to suction");
+                if (attracted)
+                    Debug.Log("Block is attracted to suction");
             }
             else
             {
@@ -505,7 +522,9 @@ public class CSVTrajectoryController : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"CSVTrajectoryController: Invalid frame index {frameIndex}, trajectory has {jointAnglesTrajectory.Count} frames");
+            Debug.LogWarning(
+                $"CSVTrajectoryController: Invalid frame index {frameIndex}, trajectory has {jointAnglesTrajectory.Count} frames"
+            );
         }
     }
 
@@ -580,7 +599,9 @@ public class CSVTrajectoryController : MonoBehaviour
         // Test with simple joint angles
         float[] testAngles = new float[] { 0.5f, 0.3f, -0.2f, 0.8f, -0.4f, 0.1f };
 
-        Debug.Log($"Testing with angles: [{string.Join(", ", testAngles.Select(a => a.ToString("F3")))}]");
+        Debug.Log(
+            $"Testing with angles: [{string.Join(", ", testAngles.Select(a => a.ToString("F3")))}]"
+        );
 
         if (robotController != null)
         {
@@ -608,9 +629,21 @@ public class CSVTrajectoryController : MonoBehaviour
         int lineHeight = 25;
 
         // Trajectory info
-        GUI.Label(new Rect(startX, startY, 300, 20), $"Trajectory: {totalFrames} frames, {totalDuration:F2}s", style);
-        GUI.Label(new Rect(startX, startY + lineHeight, 300, 20), $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s", style);
-        GUI.Label(new Rect(startX, startY + 2 * lineHeight, 300, 20), $"Speed: {playbackSpeed:F1}x, Status: {(isPlaying ? (isPaused ? "Paused" : "Playing") : "Stopped")}", style);
+        GUI.Label(
+            new Rect(startX, startY, 300, 20),
+            $"Trajectory: {totalFrames} frames, {totalDuration:F2}s",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, startY + lineHeight, 300, 20),
+            $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, startY + 2 * lineHeight, 300, 20),
+            $"Speed: {playbackSpeed:F1}x, Status: {(isPlaying ? (isPaused ? "Paused" : "Playing") : "Stopped")}",
+            style
+        );
 
         // Progress bar
         if (totalDuration > 0)
@@ -626,7 +659,12 @@ public class CSVTrajectoryController : MonoBehaviour
         int buttonHeight = 30;
         int buttonSpacing = 5;
 
-        if (GUI.Button(new Rect(startX, buttonY, buttonWidth, buttonHeight), isPlaying ? "Pause" : "Play"))
+        if (
+            GUI.Button(
+                new Rect(startX, buttonY, buttonWidth, buttonHeight),
+                isPlaying ? "Pause" : "Play"
+            )
+        )
         {
             if (isPlaying)
                 PausePlayback();
@@ -634,12 +672,27 @@ public class CSVTrajectoryController : MonoBehaviour
                 StartPlayback();
         }
 
-        if (GUI.Button(new Rect(startX + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight), "Stop"))
+        if (
+            GUI.Button(
+                new Rect(startX + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight),
+                "Stop"
+            )
+        )
         {
             StopPlayback();
         }
 
-        if (GUI.Button(new Rect(startX + 2 * (buttonWidth + buttonSpacing), buttonY, buttonWidth, buttonHeight), "Reload"))
+        if (
+            GUI.Button(
+                new Rect(
+                    startX + 2 * (buttonWidth + buttonSpacing),
+                    buttonY,
+                    buttonWidth,
+                    buttonHeight
+                ),
+                "Reload"
+            )
+        )
         {
             if (!string.IsNullOrEmpty(csvFilePath) || csvFile != null)
             {
@@ -648,7 +701,11 @@ public class CSVTrajectoryController : MonoBehaviour
         }
 
         // Speed controls
-        GUI.Label(new Rect(startX, buttonY + buttonHeight + 10, 200, 20), $"Playback Speed: {playbackSpeed:F1}x", style);
+        GUI.Label(
+            new Rect(startX, buttonY + buttonHeight + 10, 200, 20),
+            $"Playback Speed: {playbackSpeed:F1}x",
+            style
+        );
 
         if (GUI.Button(new Rect(startX, buttonY + buttonHeight + 35, 40, 25), "-"))
         {
@@ -661,8 +718,16 @@ public class CSVTrajectoryController : MonoBehaviour
         }
 
         // Instructions
-        GUI.Label(new Rect(startX, buttonY + buttonHeight + 70, 400, 20), "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed", style);
-        GUI.Label(new Rect(startX, buttonY + buttonHeight + 95, 400, 20), "Arrow Keys: Frame stepping", style);
+        GUI.Label(
+            new Rect(startX, buttonY + buttonHeight + 70, 400, 20),
+            "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, buttonY + buttonHeight + 95, 400, 20),
+            "Arrow Keys: Frame stepping",
+            style
+        );
     }
 
     #endregion
@@ -705,4 +770,3 @@ public class CSVTrajectoryController : MonoBehaviour
 
     #endregion
 }
-

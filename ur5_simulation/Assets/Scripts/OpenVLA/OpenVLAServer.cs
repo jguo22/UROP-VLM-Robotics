@@ -17,8 +17,10 @@ public class OpenVLAServer : MonoBehaviour
     [Header("Action Scaling")]
     [Tooltip("Control frequency in Hz (BridgeData V2 training freq = 5 Hz)")]
     private float controlFrequency = 5.0f;
+
     [Tooltip("BridgeData V2 was collected at 5 Hz")]
     private float trainingFrequency = 5.0f;
+
     [Tooltip("Additional workspace scale factor (adjust empirically, 1.0 = no scaling)")]
     private float workspaceScale = 2.0f;
 
@@ -60,7 +62,7 @@ public class OpenVLAServer : MonoBehaviour
         {
             name = "NetworkStreamRT",
             antiAliasing = 1,
-            filterMode = FilterMode.Bilinear
+            filterMode = FilterMode.Bilinear,
         };
 
         // Create camera image
@@ -73,7 +75,7 @@ public class OpenVLAServer : MonoBehaviour
         serverThread = new Thread(ServerLoop)
         {
             IsBackground = true,
-            Priority = System.Threading.ThreadPriority.BelowNormal
+            Priority = System.Threading.ThreadPriority.BelowNormal,
         };
         serverThread.Start();
 
@@ -111,7 +113,8 @@ public class OpenVLAServer : MonoBehaviour
 
     public static void RunOnMainThread(Action action)
     {
-        if (action == null) return;
+        if (action == null)
+            return;
 
         lock (_lock)
         {
@@ -140,7 +143,8 @@ public class OpenVLAServer : MonoBehaviour
                             try
                             {
                                 int messageType = stream.ReadByte();
-                                if (messageType == -1) break;
+                                if (messageType == -1)
+                                    break;
 
                                 switch (messageType)
                                 {
@@ -209,7 +213,9 @@ public class OpenVLAServer : MonoBehaviour
                     Debug.Log($"Sending {imageBytes.Length} bytes of image data");
 
                     // Send image size (4 bytes, big-endian)
-                    byte[] sizeBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(imageBytes.Length));
+                    byte[] sizeBytes = BitConverter.GetBytes(
+                        IPAddress.HostToNetworkOrder(imageBytes.Length)
+                    );
                     stream.Write(sizeBytes, 0, 4);
 
                     // Send image data
@@ -288,9 +294,19 @@ public class OpenVLAServer : MonoBehaviour
                     // Gripper action (last dimension) - no scaling needed
                     scaledAction[6] = action[6];
 
-                    Debug.Log($"Scaled action (freq={controlFrequency}Hz, workspace={workspaceScale}x): {string.Join(", ", scaledAction)}");
-                    Vector3 deltaPosition = new Vector3(scaledAction[0], scaledAction[1], scaledAction[2]);
-                    Quaternion deltaRotation = Quaternion.Euler(scaledAction[3], scaledAction[4], scaledAction[5]);
+                    Debug.Log(
+                        $"Scaled action (freq={controlFrequency}Hz, workspace={workspaceScale}x): {string.Join(", ", scaledAction)}"
+                    );
+                    Vector3 deltaPosition = new Vector3(
+                        scaledAction[0],
+                        scaledAction[1],
+                        scaledAction[2]
+                    );
+                    Quaternion deltaRotation = Quaternion.Euler(
+                        scaledAction[3],
+                        scaledAction[4],
+                        scaledAction[5]
+                    );
                     robotController.MoveDelta(deltaPosition, deltaRotation);
                 });
 
@@ -305,7 +321,11 @@ public class OpenVLAServer : MonoBehaviour
         }
 
         // Send failure ACK
-        try { stream.WriteByte(0); } catch { }
+        try
+        {
+            stream.WriteByte(0);
+        }
+        catch { }
     }
 
     void OnDestroy()

@@ -47,7 +47,6 @@ public class SimulIKResponse
     public float timestamp;
 }
 
-
 [System.Serializable]
 public class AICommand
 {
@@ -94,6 +93,7 @@ public class AIResponse
 public class SceneStateData
 {
     public RobotStateData[] robots;
+
     // public ObjectStateData[] objects;
     public float timestamp;
 }
@@ -102,6 +102,7 @@ public class SceneStateData
 public class RobotStateData
 {
     public string name;
+
     // public float[] joint_angles;
     public float[] end_effector_position;
     public ObjectStateData[] objects;
@@ -114,6 +115,7 @@ public class ObjectStateData
 {
     public string name;
     public float[] position;
+
     // public float[] rotation;
     public bool is_attached;
 }

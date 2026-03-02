@@ -1,25 +1,25 @@
-using UnityEngine;
 using System;
 using System.Collections;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
 
 [RequireComponent(typeof(RobotArmController))]
 public class PickAndPlaceController : MonoBehaviour
 {
     [Header("Scene References")]
-    public GameObject blockToPickup;        // Reference to the block
-    public GameObject platform;             // Reference to the platform
-    public Transform suctionEndEffector;    // Reference to the suction end effector
+    public GameObject blockToPickup; // Reference to the block
+    public GameObject platform; // Reference to the platform
+    public Transform suctionEndEffector; // Reference to the suction end effector
 
     [Header("Movement Settings")]
-    public float moveSpeed = 2.0f;         // Speed of arm movement
-    public float pickupHeight = 0.1f;      // Height above block for approach
-    public float suctionDistance = 0.02f;  // Distance to activate suction
-    public KeyCode activationKey = KeyCode.Space;  // Hotkey to start the pick and place operation
+    public float moveSpeed = 2.0f; // Speed of arm movement
+    public float pickupHeight = 0.1f; // Height above block for approach
+    public float suctionDistance = 0.02f; // Distance to activate suction
+    public KeyCode activationKey = KeyCode.Space; // Hotkey to start the pick and place operation
 
     [Header("Task Positions")]
-    public Vector3 platformPlacePosition;   // Position on platform to place block
+    public Vector3 platformPlacePosition; // Position on platform to place block
 
     // Private references and state
     private RobotArmController robotController;
@@ -37,7 +37,7 @@ public class PickAndPlaceController : MonoBehaviour
         MovingToPlace,
         Placing,
         Returning,
-        Complete
+        Complete,
     }
 
     private void Start()
@@ -140,7 +140,10 @@ public class PickAndPlaceController : MonoBehaviour
     private void PickupBlock()
     {
         // Check if we're close enough to activate suction
-        if (Vector3.Distance(suctionEndEffector.position, blockToPickup.transform.position) <= suctionDistance)
+        if (
+            Vector3.Distance(suctionEndEffector.position, blockToPickup.transform.position)
+            <= suctionDistance
+        )
         {
             ActivateSuction();
             currentState = PickAndPlaceState.Lifting;
@@ -279,11 +282,15 @@ public class PickAndPlaceController : MonoBehaviour
             Gizmos.DrawWireSphere(platformPlacePosition, 0.02f);
         }
     }
-    
+
     public void OnGUI()
     {
         GUIStyle centeredStyle = GUI.skin.GetStyle("Label");
         centeredStyle.alignment = TextAnchor.UpperCenter;
-        GUI.Label(new Rect(Screen.width / 2 - 200, 10, 400, 20), "Press space key to move robot to pick up block.", centeredStyle);
+        GUI.Label(
+            new Rect(Screen.width / 2 - 200, 10, 400, 20),
+            "Press space key to move robot to pick up block.",
+            centeredStyle
+        );
     }
 }

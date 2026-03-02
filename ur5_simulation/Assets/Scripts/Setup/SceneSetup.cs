@@ -1,8 +1,7 @@
-using UnityEngine;
 using System;
 using System.Collections.Generic;
-
 using Unity.Robotics.UrdfImporter.Control; //for ManualController
+using UnityEngine;
 
 [System.Serializable]
 public class RobotArms
@@ -17,8 +16,10 @@ public class SceneSetup : MonoBehaviour
     [Header("Scene References")]
     [SerializeField]
     public RobotArms[] robotArms;
+
     [HideInInspector]
     public GameObject[] robots;
+
     [HideInInspector]
     public GameObject[] targets;
     private List<GameObject[]> robotTargetsList = new List<GameObject[]>();
@@ -33,38 +34,46 @@ public class SceneSetup : MonoBehaviour
 
     [HideInInspector]
     public AgentRobotController agentRobotController;
+
     [HideInInspector]
     public AgentTrajectoryController agentTrajectoryController;
+
     [HideInInspector]
     public AgentTrajectory agentTrajectory;
+
     [HideInInspector]
     public AgenticSocketSetup agenticSocketSetup;
+
     [HideInInspector]
     public SimulAgenticSocketSetup simulAgenticSocketSetup;
+
     [HideInInspector]
     public IKSocketSetup ikSocketSetup;
 
-
     [HideInInspector]
     public int selectedRobotIndex;
-    
+
     [HideInInspector]
     public UnifiedRobotController unifiedRobotController;
+
     //[HideInInspector]
     //public IKController ikController;
     [HideInInspector]
     public SuctionController suctionController;
+
     [HideInInspector]
     public CSVTrajectoryController csvTrajectoryController;
+
     [HideInInspector]
     public CSVTrajectoryExample csvTrajectoryExample;
     private SceneResetController sceneResetController;
     private TrajectoryBatchGenerator trajectoryBatchGenerator;
+
     // [HideInInspector]
     // public UR5IKController ikController;
     // [HideInInspector]
     // public UR5IKServer ikServer;
-    
+
 
     void Start()
     {
@@ -89,7 +98,9 @@ public class SceneSetup : MonoBehaviour
         {
             if (robotArm == null || robotArm.robot == null || robotArm.targets == null)
             {
-                Debug.LogError("Invalid robotArms configuration: each entry needs robot and targets assigned.");
+                Debug.LogError(
+                    "Invalid robotArms configuration: each entry needs robot and targets assigned."
+                );
                 return;
             }
 
@@ -111,14 +122,17 @@ public class SceneSetup : MonoBehaviour
         }
 
         sceneResetController = this.gameObject.GetComponent<SceneResetController>();
-        if (sceneResetController == null) sceneResetController = this.gameObject.AddComponent<SceneResetController>();
+        if (sceneResetController == null)
+            sceneResetController = this.gameObject.AddComponent<SceneResetController>();
         sceneResetController.Initialize(this);
 
         trajectoryBatchGenerator = this.gameObject.GetComponent<TrajectoryBatchGenerator>();
-        if (trajectoryBatchGenerator == null) trajectoryBatchGenerator = this.gameObject.AddComponent<TrajectoryBatchGenerator>();
+        if (trajectoryBatchGenerator == null)
+            trajectoryBatchGenerator = this.gameObject.AddComponent<TrajectoryBatchGenerator>();
         trajectoryBatchGenerator.Initialize(this);
 
-        if (allRobotsActive) agentRobotController = this.gameObject.AddComponent<AgentRobotController>();
+        if (allRobotsActive)
+            agentRobotController = this.gameObject.AddComponent<AgentRobotController>();
         if (allRobotsActive && !agenticSocket && !simulAgenticSocket)
         {
             agentRobotController.defaultJointAngleY = 60;
@@ -130,7 +144,7 @@ public class SceneSetup : MonoBehaviour
 
         // int idx = 0;
         // foreach (GameObject robot in robots)
-        // {     
+        // {
         //     RobotSetup(robot, idx);
         //     idx += 1;
         // }
@@ -139,33 +153,40 @@ public class SceneSetup : MonoBehaviour
 
         if (agenticSocket)
         {
-            if (allRobotsActive) agenticSocketSetup = this.gameObject.AddComponent<AgenticSocketSetup>();
+            if (allRobotsActive)
+                agenticSocketSetup = this.gameObject.AddComponent<AgenticSocketSetup>();
             else
             {
                 agenticSocket = false;
-                agentTrajectoryController = this.gameObject.AddComponent<AgentTrajectoryController>();
-                agentTrajectory = this.gameObject.AddComponent<AgentTrajectory>();
-                agentTrajectoryController.robots = robots;
-                agentTrajectory.robots = robots;
-            } 
-            simulAgenticSocket = false;
-        } else if (ikSocket && !allRobotsActive)
-        {
-            agenticSocket = false;
-            simulAgenticSocket = false;
-            ikSocketSetup = this.gameObject.AddComponent<IKSocketSetup>();
-        } else if (simulAgenticSocket)
-        {
-            if (allRobotsActive) simulAgenticSocketSetup = this.gameObject.AddComponent<SimulAgenticSocketSetup>();
-            else
-            {
-                simulAgenticSocket = false;
-                agentTrajectoryController = this.gameObject.AddComponent<AgentTrajectoryController>();
+                agentTrajectoryController =
+                    this.gameObject.AddComponent<AgentTrajectoryController>();
                 agentTrajectory = this.gameObject.AddComponent<AgentTrajectory>();
                 agentTrajectoryController.robots = robots;
                 agentTrajectory.robots = robots;
             }
-        } else
+            simulAgenticSocket = false;
+        }
+        else if (ikSocket && !allRobotsActive)
+        {
+            agenticSocket = false;
+            simulAgenticSocket = false;
+            ikSocketSetup = this.gameObject.AddComponent<IKSocketSetup>();
+        }
+        else if (simulAgenticSocket)
+        {
+            if (allRobotsActive)
+                simulAgenticSocketSetup = this.gameObject.AddComponent<SimulAgenticSocketSetup>();
+            else
+            {
+                simulAgenticSocket = false;
+                agentTrajectoryController =
+                    this.gameObject.AddComponent<AgentTrajectoryController>();
+                agentTrajectory = this.gameObject.AddComponent<AgentTrajectory>();
+                agentTrajectoryController.robots = robots;
+                agentTrajectory.robots = robots;
+            }
+        }
+        else
         {
             agenticSocket = false;
             simulAgenticSocket = false;
@@ -198,7 +219,8 @@ public class SceneSetup : MonoBehaviour
         }
 
         SuctionController suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController != null) suctionController.targetBlocks = targets;
+        if (suctionController != null)
+            suctionController.targetBlocks = targets;
 
         ManualController manualController = robot.GetComponent<ManualController>();
         UnifiedRobotController unifiedController = robot.GetComponent<UnifiedRobotController>();
@@ -211,27 +233,34 @@ public class SceneSetup : MonoBehaviour
         // if (simulAgenticSocket)
         // {
         //     SimulAgentController simulAgentController = robot.GetComponent<SimulAgentController>();
-        //     if (simulAgentController != null) 
+        //     if (simulAgentController != null)
         //     {
         //         simulAgentController.simulAgenticSocketSetup = this.gameObject.GetComponent<SimulAgenticSocketSetup>();
         //     }
-            
+
         // }
 
         if (allRobotsActive)
         {
-            if (manualController != null) manualController.enabled = false;
-            if (unifiedController != null) unifiedController.enabled = false;
-            if (csvController != null) csvController.enabled = false;
-            if (csvExample != null) csvExample.enabled = false;
-            if (ikController != null) ikController.enabled = false;
+            if (manualController != null)
+                manualController.enabled = false;
+            if (unifiedController != null)
+                unifiedController.enabled = false;
+            if (csvController != null)
+                csvController.enabled = false;
+            if (csvExample != null)
+                csvExample.enabled = false;
+            if (ikController != null)
+                ikController.enabled = false;
             // if (ikServer != null) ikServer.enabled = false;
         }
         else
         {
-            if (csvController != null) csvController.enabled = true;
-            if (csvExample != null) csvExample.enabled = true;
-            
+            if (csvController != null)
+                csvController.enabled = true;
+            if (csvExample != null)
+                csvExample.enabled = true;
+
             // if (ikController != null) ikController.enabled = true;
             // if (ikServer != null)
             // {
@@ -282,7 +311,8 @@ public class SceneSetup : MonoBehaviour
             ResetSceneState();
         }
 
-        if (allRobotsActive) return;
+        if (allRobotsActive)
+            return;
 
         bool selectRobot = Input.GetKeyDown(KeyCode.P);
         bool closeSocket = Input.GetKeyDown(KeyCode.X);
@@ -314,25 +344,31 @@ public class SceneSetup : MonoBehaviour
         {
             //disable all controllers in robot
             ManualController manualController = robot.GetComponent<ManualController>();
-            if (manualController != null) manualController.enabled = false;
-            
+            if (manualController != null)
+                manualController.enabled = false;
+
             UnifiedRobotController unifiedController = robot.GetComponent<UnifiedRobotController>();
-            if (unifiedController != null) {
+            if (unifiedController != null)
+            {
                 unifiedController.currentMode = UnifiedRobotController.ControlMode.Start;
                 unifiedController.enabled = false;
             }
-            
+
             SuctionController suctionController = robot.GetComponent<SuctionController>();
-            if (suctionController != null) suctionController.enabled = false;
-            
+            if (suctionController != null)
+                suctionController.enabled = false;
+
             CSVTrajectoryController csvController = robot.GetComponent<CSVTrajectoryController>();
-            if (csvController != null) csvController.enabled = false;
-            
+            if (csvController != null)
+                csvController.enabled = false;
+
             CSVTrajectoryExample csvExample = robot.GetComponent<CSVTrajectoryExample>();
-            if (csvExample != null) csvExample.enabled = false;
+            if (csvExample != null)
+                csvExample.enabled = false;
 
             UR5IKController ikController = robot.GetComponent<UR5IKController>();
-            if (ikController != null) ikController.enabled = false;
+            if (ikController != null)
+                ikController.enabled = false;
 
             // UR5IKServer ikServer = robot.GetComponent<UR5IKServer>();
             // if (ikServer != null) ikServer.enabled = false;
@@ -345,16 +381,20 @@ public class SceneSetup : MonoBehaviour
         {
             //enable all controllers in robot
             UnifiedRobotController unifiedController = robot.GetComponent<UnifiedRobotController>();
-            if (unifiedController != null) unifiedController.enabled = true;
-            
+            if (unifiedController != null)
+                unifiedController.enabled = true;
+
             SuctionController suctionController = robot.GetComponent<SuctionController>();
-            if (suctionController != null) suctionController.enabled = true;
-            
+            if (suctionController != null)
+                suctionController.enabled = true;
+
             CSVTrajectoryController csvController = robot.GetComponent<CSVTrajectoryController>();
-            if (csvController != null) csvController.enabled = true;
-            
+            if (csvController != null)
+                csvController.enabled = true;
+
             CSVTrajectoryExample csvExample = robot.GetComponent<CSVTrajectoryExample>();
-            if (csvExample != null) csvExample.enabled = true;
+            if (csvExample != null)
+                csvExample.enabled = true;
 
             // UR5IKController ikController = robot.GetComponent<UR5IKController>();
             // if (ikController != null) ikController.enabled = true;
@@ -366,7 +406,8 @@ public class SceneSetup : MonoBehaviour
 
     void OnGUI()
     {
-        if (allRobotsActive) return;
+        if (allRobotsActive)
+            return;
 
         GUIStyle style = new GUIStyle(GUI.skin.label);
         style.fontSize = 16;
@@ -376,5 +417,4 @@ public class SceneSetup : MonoBehaviour
         GUI.Label(new Rect(Screen.width - 250, 10, 300, 30), "Selected Robot: " + robotName, style);
         GUI.Label(new Rect(Screen.width - 250, 35, 300, 20), "Press 'P' to switch", style);
     }
-
 }

@@ -1,12 +1,11 @@
-using UnityEngine;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Net;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-
+using UnityEngine;
 using static ConstantsUR5;
 
 [DefaultExecutionOrder(100)]
@@ -31,12 +30,14 @@ public class SimulAgenticSocketSetup : MonoBehaviour
     private GameObject[] targets;
     private RobotArmSetup[] robotArmSetups;
     private SuctionController[] suctionControllers;
+
     // private SimulAgentController[] simulAgentControllers;
     private int robotCount;
     private int targetCount;
 
     private Queue<Action> mainThreadActions = new Queue<Action>();
     private object lockObject = new object();
+
     //private string pendingResponse;
     //private bool isProcessingCommand;
 
@@ -57,11 +58,14 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         // Initialize AI components
         sceneSetup = GetComponent<SceneSetup>();
 
-        if (sceneSetup != null) agentController = sceneSetup.agentRobotController;
+        if (sceneSetup != null)
+            agentController = sceneSetup.agentRobotController;
 
         if (agentController == null)
         {
-            Debug.LogWarning("PythonSocketSetup: AgentRobotController not found. AI features may be limited.");
+            Debug.LogWarning(
+                "PythonSocketSetup: AgentRobotController not found. AI features may be limited."
+            );
         }
 
         //GET ALL REQUIRED SCENE DATA
@@ -189,7 +193,8 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         }
         catch (Exception e)
         {
-            if (isSocketActive) Debug.LogError("Receive callback error: " + e.Message);
+            if (isSocketActive)
+                Debug.LogError("Receive callback error: " + e.Message);
         }
     }
 
@@ -212,11 +217,13 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError("Error processing AI command: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse
-            {
-                success = false,
-                message = "Error processing command: " + e.Message
-            });
+            return JsonUtility.ToJson(
+                new AIResponse
+                {
+                    success = false,
+                    message = "Error processing command: " + e.Message,
+                }
+            );
         }
     }
 
@@ -228,7 +235,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             {
                 robots = GetRobotStates(),
                 // objects = GetObjectStates(),
-                timestamp = Time.time
+                timestamp = Time.time,
             };
 
             return JsonUtility.ToJson(sceneState);
@@ -236,11 +243,13 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError("Error getting scene state: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse
-            {
-                success = false,
-                message = "Error getting scene state: " + e.Message
-            });
+            return JsonUtility.ToJson(
+                new AIResponse
+                {
+                    success = false,
+                    message = "Error getting scene state: " + e.Message,
+                }
+            );
         }
     }
 
@@ -268,16 +277,17 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 robotTargets[j] = new ObjectStateData
                 {
                     name = target.name,
-                    position = new float[] {
-                        targetPosition.x,
-                        targetPosition.y,
-                        targetPosition.z
-                    },
-                    is_attached = target.transform.parent != null // && block.transform.parent.name.Contains("suction")
+                    position = new float[] { targetPosition.x, targetPosition.y, targetPosition.z },
+                    is_attached =
+                        target.transform.parent
+                        != null // && block.transform.parent.name.Contains("suction")
+                    ,
                 };
             }
 
-            var endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
+            var endEffector = robotArmSetup
+                .robotJoints[robotArmSetup.robotJoints.Length - 1]
+                .transform;
             robotStates[i] = new RobotStateData
             {
                 name = robot.name,
@@ -286,7 +296,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 {
                     endEffector.position.x,
                     endEffector.position.y,
-                    endEffector.position.z
+                    endEffector.position.z,
                 },
                 objects = robotTargets,
                 suction_active = suctionController != null && suctionController.enableSuction,
@@ -327,7 +337,10 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             {
                 name = target.name,
                 position = new float[] { targetPosition.x, targetPosition.y, targetPosition.z },
-                is_attached = target.transform.parent != null // && block.transform.parent.name.Contains("suction")
+                is_attached =
+                    target.transform.parent
+                    != null // && block.transform.parent.name.Contains("suction")
+                ,
             };
         }
 
@@ -366,7 +379,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 case "home_robot":
                     // toMoveLeftArm = true;
                     leftSuccess = agentController.ResetToHomePosition(ur5_left_robot);
-                    message = leftSuccess ? "Left Robot homed successfully" : "Left Robot homing failed";
+                    message = leftSuccess
+                        ? "Left Robot homed successfully"
+                        : "Left Robot homing failed";
                     break;
                 case "solve_ik": // delay movement cos need to move both arms tgt
                     toMoveLeftArm = true;
@@ -379,12 +394,16 @@ public class SimulAgenticSocketSetup : MonoBehaviour
 
                 case "activate_suction":
                     leftSuccess = ExecuteActivateSuction(ur5_left_robot);
-                    message = leftSuccess ? "Left Suction activated" : "Left Suction activation failed";
+                    message = leftSuccess
+                        ? "Left Suction activated"
+                        : "Left Suction activation failed";
                     break;
 
                 case "deactivate_suction":
                     leftSuccess = ExecuteDeactivateSuction(ur5_left_robot);
-                    message = leftSuccess ? "Left Suction deactivated" : "Left Suction deactivation failed";
+                    message = leftSuccess
+                        ? "Left Suction deactivated"
+                        : "Left Suction deactivation failed";
                     break;
 
                 default:
@@ -400,7 +419,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 case "home_robot":
                     // toMoveRightArm = true;
                     rightSuccess = agentController.ResetToHomePosition(ur5_right_robot);
-                    message += rightSuccess ? "Right Robot homed successfully" : "Right Robot homing failed";
+                    message += rightSuccess
+                        ? "Right Robot homed successfully"
+                        : "Right Robot homing failed";
                     break;
                 case "solve_ik": // delay movement cos need to move both arms tgt
                     toMoveRightArm = true;
@@ -413,12 +434,16 @@ public class SimulAgenticSocketSetup : MonoBehaviour
 
                 case "activate_suction":
                     rightSuccess = ExecuteActivateSuction(ur5_right_robot);
-                    message += rightSuccess ? "Right Suction activated" : "Right Suction activation failed";
+                    message += rightSuccess
+                        ? "Right Suction activated"
+                        : "Right Suction activation failed";
                     break;
 
                 case "deactivate_suction":
                     rightSuccess = ExecuteDeactivateSuction(ur5_right_robot);
-                    message += rightSuccess ? "Right Suction deactivated" : "Right Suction deactivation failed";
+                    message += rightSuccess
+                        ? "Right Suction deactivated"
+                        : "Right Suction deactivation failed";
                     break;
 
                 default:
@@ -507,11 +532,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError("Error executing action: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse
-            {
-                success = false,
-                message = "Error executing action: " + e.Message
-            });
+            return JsonUtility.ToJson(
+                new AIResponse { success = false, message = "Error executing action: " + e.Message }
+            );
         }
     }
 
@@ -551,7 +574,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                 );
 
                 targetInputPosition.y += SuctionIKOffsetY; // slight offset to account for suction cup height
-                Vector3 endEffectorTargetPosition = robot.transform.InverseTransformPoint(targetInputPosition);
+                Vector3 endEffectorTargetPosition = robot.transform.InverseTransformPoint(
+                    targetInputPosition
+                );
 
                 robot_states[i] = new IKRobotStateData
                 {
@@ -561,16 +586,12 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     {
                         endEffectorTargetPosition.x,
                         endEffectorTargetPosition.y,
-                        endEffectorTargetPosition.z
-                    }
+                        endEffectorTargetPosition.z,
+                    },
                 };
             }
 
-            ik_response = new SimulIKResponse
-            {
-                success = true,
-                robot_states = robot_states
-            };
+            ik_response = new SimulIKResponse { success = true, robot_states = robot_states };
         }
         catch (Exception e)
         {
@@ -579,16 +600,16 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             {
                 success = false,
                 message = "Error in ExecuteMoveRobot: " + e.Message,
-                robot_states = null
+                robot_states = null,
             };
         }
-
     }
 
     private bool ExecuteActivateSuction(GameObject robot)
     {
         var suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController == null) return false;
+        if (suctionController == null)
+            return false;
 
         suctionController.ToggleSuction();
         return true;
@@ -597,7 +618,8 @@ public class SimulAgenticSocketSetup : MonoBehaviour
     private bool ExecuteDeactivateSuction(GameObject robot)
     {
         var suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController == null) return false;
+        if (suctionController == null)
+            return false;
 
         if (suctionController.enableSuction)
         {
@@ -609,9 +631,12 @@ public class SimulAgenticSocketSetup : MonoBehaviour
     public void closeSocket()
     {
         isSocketActive = false;
-        if (stream != null) stream.Close();
-        if (client != null) client.Close();
-        if (listener != null) listener.Stop();
+        if (stream != null)
+            stream.Close();
+        if (client != null)
+            client.Close();
+        if (listener != null)
+            listener.Stop();
     }
 
     void OnApplicationQuit()

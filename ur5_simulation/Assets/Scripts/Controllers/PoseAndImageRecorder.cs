@@ -1,7 +1,7 @@
-using UnityEngine;
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
 using static ConstantsUR5;
 
 /// <summary>
@@ -39,19 +39,19 @@ public class PoseAndImageRecorder : MonoBehaviour
     private bool renderResourcesReady = false;
 
     // Previous frame pose for delta calculation
-    private Vector3    prevPos;
+    private Vector3 prevPos;
     private Quaternion prevRot;
 
     // Buffer rows — is_last/is_terminal/reward only known on StopRecording()
     private List<string> frameBuffer = new List<string>();
 
     private const string PoseHeader =
-        "frame,timestamp," +
-        "joint_0,joint_1,joint_2,joint_3,joint_4,joint_5," +
-        "delta_pos_x,delta_pos_y,delta_pos_z," +
-        "delta_rot_x,delta_rot_y,delta_rot_z,delta_rot_w," +
-        "suction_on," +
-        "is_first,is_last,is_terminal,reward,discount";
+        "frame,timestamp,"
+        + "joint_0,joint_1,joint_2,joint_3,joint_4,joint_5,"
+        + "delta_pos_x,delta_pos_y,delta_pos_z,"
+        + "delta_rot_x,delta_rot_y,delta_rot_z,delta_rot_w,"
+        + "suction_on,"
+        + "is_first,is_last,is_terminal,reward,discount";
 
     // -------------------------------------------------------------------------
 
@@ -63,8 +63,10 @@ public class PoseAndImageRecorder : MonoBehaviour
 
     private void Update()
     {
-        if (!isRecording) return;
-        if (Time.time < nextSampleTime) return;
+        if (!isRecording)
+            return;
+        if (Time.time < nextSampleTime)
+            return;
 
         CaptureFrame();
         nextSampleTime = Time.time + (1f / recordingFPS);
@@ -78,18 +80,38 @@ public class PoseAndImageRecorder : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (renderTexture != null)    { renderTexture.Release(); Destroy(renderTexture); }
-        if (screenshotBuffer != null) { Destroy(screenshotBuffer); }
+        if (renderTexture != null)
+        {
+            renderTexture.Release();
+            Destroy(renderTexture);
+        }
+        if (screenshotBuffer != null)
+        {
+            Destroy(screenshotBuffer);
+        }
     }
 
     // -------------------------------------------------------------------------
 
     public void StartRecording()
     {
-        if (isRecording) return;
-        if (endEffectorTransform == null) { Debug.LogError("PoseAndImageRecorder: endEffectorTransform not assigned."); return; }
-        if (recordingCamera == null)      { Debug.LogError("PoseAndImageRecorder: recordingCamera not assigned."); return; }
-        if (robotArmSetup == null)        { Debug.LogError("PoseAndImageRecorder: robotArmSetup not assigned."); return; }
+        if (isRecording)
+            return;
+        if (endEffectorTransform == null)
+        {
+            Debug.LogError("PoseAndImageRecorder: endEffectorTransform not assigned.");
+            return;
+        }
+        if (recordingCamera == null)
+        {
+            Debug.LogError("PoseAndImageRecorder: recordingCamera not assigned.");
+            return;
+        }
+        if (robotArmSetup == null)
+        {
+            Debug.LogError("PoseAndImageRecorder: robotArmSetup not assigned.");
+            return;
+        }
 
         InitRenderResources();
         SetupEpisode();
@@ -102,7 +124,8 @@ public class PoseAndImageRecorder : MonoBehaviour
 
     public void StopRecording()
     {
-        if (!isRecording) return;
+        if (!isRecording)
+            return;
         isRecording = false;
 
         FlushBufferToDisk();
@@ -115,11 +138,12 @@ public class PoseAndImageRecorder : MonoBehaviour
     /// <summary>Allocates render texture and screenshot buffer once. Safe to call repeatedly.</summary>
     private void InitRenderResources()
     {
-        if (renderResourcesReady) return;
+        if (renderResourcesReady)
+            return;
 
-        int width  = recordingCamera.pixelWidth  > 0 ? recordingCamera.pixelWidth  : 640;
+        int width = recordingCamera.pixelWidth > 0 ? recordingCamera.pixelWidth : 640;
         int height = recordingCamera.pixelHeight > 0 ? recordingCamera.pixelHeight : 480;
-        renderTexture    = new RenderTexture(width, height, 24);
+        renderTexture = new RenderTexture(width, height, 24);
         screenshotBuffer = new Texture2D(width, height, TextureFormat.RGB24, false);
         renderResourcesReady = true;
     }
@@ -127,9 +151,9 @@ public class PoseAndImageRecorder : MonoBehaviour
     /// <summary>Creates a new episode folder and resets per-episode state.</summary>
     private void SetupEpisode()
     {
-        string timestamp  = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         string folderName = appendTimestamp ? $"{sessionName}_{timestamp}" : sessionName;
-        sessionFolder     = Path.Combine(Application.dataPath, "..", "Exports", "dataset", folderName);
+        sessionFolder = Path.Combine(Application.dataPath, "..", "Exports", "dataset", folderName);
 
         Directory.CreateDirectory(Path.Combine(sessionFolder, "images"));
 
@@ -145,12 +169,12 @@ public class PoseAndImageRecorder : MonoBehaviour
         ArticulationBody[] joints = robotArmSetup.robotJoints;
         string jointCols = "";
         for (int i = 0; i < JointCount; i++)
-            jointCols += $"{joints[i].jointPosition[0]:F5},";  // radians
+            jointCols += $"{joints[i].jointPosition[0]:F5},"; // radians
 
         // --- Delta pose (action) ---
-        Vector3    pos      = endEffectorTransform.position;
-        Quaternion rot      = endEffectorTransform.rotation;
-        Vector3    deltaPos = pos - prevPos;
+        Vector3 pos = endEffectorTransform.position;
+        Quaternion rot = endEffectorTransform.rotation;
+        Vector3 deltaPos = pos - prevPos;
         Quaternion deltaRot = rot * Quaternion.Inverse(prevRot);
         prevPos = pos;
         prevRot = rot;
@@ -162,12 +186,12 @@ public class PoseAndImageRecorder : MonoBehaviour
         int isFirst = frameIndex == 0 ? 1 : 0;
 
         string row =
-            $"{frameIndex},{Time.time:F4}," +
-            jointCols +
-            $"{deltaPos.x:F5},{deltaPos.y:F5},{deltaPos.z:F5}," +
-            $"{deltaRot.x:F5},{deltaRot.y:F5},{deltaRot.z:F5},{deltaRot.w:F5}," +
-            $"{suction}," +
-            $"{isFirst}";
+            $"{frameIndex},{Time.time:F4},"
+            + jointCols
+            + $"{deltaPos.x:F5},{deltaPos.y:F5},{deltaPos.z:F5},"
+            + $"{deltaRot.x:F5},{deltaRot.y:F5},{deltaRot.z:F5},{deltaRot.w:F5},"
+            + $"{suction},"
+            + $"{isFirst}";
 
         frameBuffer.Add(row);
 
@@ -177,12 +201,16 @@ public class PoseAndImageRecorder : MonoBehaviour
         recordingCamera.Render();
 
         RenderTexture.active = renderTexture;
-        screenshotBuffer.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+        screenshotBuffer.ReadPixels(
+            new Rect(0, 0, renderTexture.width, renderTexture.height),
+            0,
+            0
+        );
         screenshotBuffer.Apply();
         RenderTexture.active = null;
         recordingCamera.targetTexture = prevRT;
 
-        byte[] png       = screenshotBuffer.EncodeToPNG();
+        byte[] png = screenshotBuffer.EncodeToPNG();
         string imagePath = Path.Combine(sessionFolder, "images", $"{frameIndex:D6}.png");
         File.WriteAllBytes(imagePath, png);
 
@@ -191,7 +219,8 @@ public class PoseAndImageRecorder : MonoBehaviour
 
     private void FlushBufferToDisk()
     {
-        if (frameBuffer.Count == 0) return;
+        if (frameBuffer.Count == 0)
+            return;
 
         string posesPath = Path.Combine(sessionFolder, "poses.csv");
         using (StreamWriter writer = new StreamWriter(posesPath, false))
@@ -199,9 +228,9 @@ public class PoseAndImageRecorder : MonoBehaviour
             writer.WriteLine(PoseHeader);
             for (int i = 0; i < frameBuffer.Count; i++)
             {
-                bool isLast  = i == frameBuffer.Count - 1;
+                bool isLast = i == frameBuffer.Count - 1;
                 string suffix = isLast
-                    ? ",1,1,1.0,1.0"   // final step: is_last, is_terminal, reward=1
+                    ? ",1,1,1.0,1.0" // final step: is_last, is_terminal, reward=1
                     : ",0,0,0.0,1.0";
                 writer.WriteLine(frameBuffer[i] + suffix);
             }

@@ -1,8 +1,8 @@
-using UnityEngine;
 using System;
-using System.Net.Sockets;
 using System.IO;
+using System.Net.Sockets;
 using System.Threading.Tasks;
+using UnityEngine;
 
 /// <summary>
 /// IK Solver for UR5 robot using Python roboticstoolbox via TCP connection.
@@ -68,20 +68,27 @@ public class UR5IKSolver : MonoBehaviour
                 return true;
             }
 
-            Debug.Log($"UR5IKSolver: Connecting to Python IK server at {serverHost}:{serverPort}...");
+            Debug.Log(
+                $"UR5IKSolver: Connecting to Python IK server at {serverHost}:{serverPort}..."
+            );
 
             client = new TcpClient();
 
             // Enable TCP keepalive to prevent idle disconnects
-            client.Client.SetSocketOption(System.Net.Sockets.SocketOptionLevel.Socket,
-                                         System.Net.Sockets.SocketOptionName.KeepAlive, true);
+            client.Client.SetSocketOption(
+                System.Net.Sockets.SocketOptionLevel.Socket,
+                System.Net.Sockets.SocketOptionName.KeepAlive,
+                true
+            );
 
             // Set 10-minute timeout to keep connection alive
             client.ReceiveTimeout = 600000; // 10 minutes
             client.SendTimeout = 600000; // 10 minutes
 
             IAsyncResult result = client.BeginConnect(serverHost, serverPort, null, null);
-            bool success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(connectionTimeout));
+            bool success = result.AsyncWaitHandle.WaitOne(
+                TimeSpan.FromMilliseconds(connectionTimeout)
+            );
 
             if (!success)
             {
@@ -97,7 +104,9 @@ public class UR5IKSolver : MonoBehaviour
             reader = new BinaryReader(stream);
 
             isConnected = true;
-            Debug.Log($"UR5IKSolver: Connected to Python IK server at {serverHost}:{serverPort} successfully!");
+            Debug.Log(
+                $"UR5IKSolver: Connected to Python IK server at {serverHost}:{serverPort} successfully!"
+            );
             return true;
         }
         catch (Exception e)
@@ -115,10 +124,14 @@ public class UR5IKSolver : MonoBehaviour
     {
         try
         {
-            if (writer != null) writer.Close();
-            if (reader != null) reader.Close();
-            if (stream != null) stream.Close();
-            if (client != null) client.Close();
+            if (writer != null)
+                writer.Close();
+            if (reader != null)
+                reader.Close();
+            if (stream != null)
+                stream.Close();
+            if (client != null)
+                client.Close();
 
             isConnected = false;
             Debug.Log("UR5IKSolver: Disconnected from Python IK server");
@@ -197,7 +210,9 @@ public class UR5IKSolver : MonoBehaviour
         {
             if (debugMode)
             {
-                Debug.Log($"UR5IKSolver.SolveIK: Sending request - pos={targetPosition}, rot={targetRotation}");
+                Debug.Log(
+                    $"UR5IKSolver.SolveIK: Sending request - pos={targetPosition}, rot={targetRotation}"
+                );
             }
 
             // Send target position (3 doubles)
@@ -252,7 +267,9 @@ public class UR5IKSolver : MonoBehaviour
 
                 if (debugMode)
                 {
-                    Debug.Log($"UR5IKSolver.SolveIK: Solution found - joints={string.Join(", ", solution)}");
+                    Debug.Log(
+                        $"UR5IKSolver.SolveIK: Solution found - joints={string.Join(", ", solution)}"
+                    );
                 }
 
                 return solution;

@@ -114,7 +114,7 @@ def load_platform_and_cubes(self, assets_root):
             
             # Set physical properties for the cube
             p.changeDynamics(
-                cube_id, 
+                cube_id,
                 -1,  # Base link
                 mass=cube_mass,
                 lateralFriction=cube_lateral_friction,
@@ -147,8 +147,8 @@ def load_platform_and_cubes(self, assets_root):
                 if color1 != color2:
                     # Enable collision between this pair of cubes
                     p.setCollisionFilterPair(
-                        cube_info1["id"], cube_info2["id"], 
-                        -1, -1, 
+                        cube_info1["id"], cube_info2["id"],
+                        -1, -1,
                         1  # 1 = enable collision
                     )
                     print(f"Enabled collision between {color1} and {color2} cubes")
@@ -249,11 +249,11 @@ Max force: 0.0, Max velocity: 0.0
         Debug.Log("Arm reset to stable position");
 */
 
-using UnityEngine;
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using UnityEngine;
 
 public class RobotArmController : MonoBehaviour
 {
@@ -262,15 +262,17 @@ public class RobotArmController : MonoBehaviour
     public ArticulationBody[] articulationChain; // Automatically populated articulation chain
     private readonly float[] stablePositions = new float[]
     {
-        0f,     // Base rotation
-        -0.8f,  // Shoulder (lowered to better reach cubes)
-        1.0f,   // Elbow (adjusted to position arm lower)
-        -1.5f,  // Wrist 1 (adjusted to position suction cup better)
+        0f, // Base rotation
+        -0.8f, // Shoulder (lowered to better reach cubes)
+        1.0f, // Elbow (adjusted to position arm lower)
+        -1.5f, // Wrist 1 (adjusted to position suction cup better)
         -1.57f, // Wrist 2
-        0f      // Wrist 3
+        0f // Wrist 3
+        ,
     };
     private int shoulderJointIdx = 3; // Index of the shoulder joint in the articulation chain
-    private readonly string coordinateHeaders = "Timestamp,BasePosX,BasePosY,BasePosZ,BaseRotX,BaseRotY,BaseRotZ,BaseRotW,ShoulderPosX,ShoulderPosY,ShoulderPosZ,ShoulderRotX,ShoulderRotY,ShoulderRotZ,ShoulderRotW,ElbowPosX,ElbowPosY,ElbowPosZ,ElbowRotX,ElbowRotY,ElbowRotZ,ElbowRotW,Wrist1PosX,Wrist1PosY,Wrist1PosZ,Wrist1RotX,Wrist1RotY,Wrist1RotZ,Wrist1RotW,Wrist2PosX,Wrist2PosY,Wrist2PosZ,Wrist2RotX,Wrist2RotY,Wrist2RotZ,Wrist2RotW,EndEffectorPosX,EndEffectorPosY,EndEffectorPosZ,EndEffectorRotX,EndEffectorRotY,EndEffectorRotZ,EndEffectorRotW";
+    private readonly string coordinateHeaders =
+        "Timestamp,BasePosX,BasePosY,BasePosZ,BaseRotX,BaseRotY,BaseRotZ,BaseRotW,ShoulderPosX,ShoulderPosY,ShoulderPosZ,ShoulderRotX,ShoulderRotY,ShoulderRotZ,ShoulderRotW,ElbowPosX,ElbowPosY,ElbowPosZ,ElbowRotX,ElbowRotY,ElbowRotZ,ElbowRotW,Wrist1PosX,Wrist1PosY,Wrist1PosZ,Wrist1RotX,Wrist1RotY,Wrist1RotZ,Wrist1RotW,Wrist2PosX,Wrist2PosY,Wrist2PosZ,Wrist2RotX,Wrist2RotY,Wrist2RotZ,Wrist2RotW,EndEffectorPosX,EndEffectorPosY,EndEffectorPosZ,EndEffectorRotX,EndEffectorRotY,EndEffectorRotZ,EndEffectorRotW";
 
     [Header("Robot Configuration")]
     public Transform baseTransform; // Reference to the robot base transform
@@ -308,7 +310,21 @@ public class RobotArmController : MonoBehaviour
         public Vector3 endEffectorPosition;
         public Quaternion endEffectorRotation;
 
-        public CoordinateRecord(float time, Vector3 basePos, Quaternion baseRot, Vector3 shoulderPos, Quaternion shoulderRot, Vector3 elbowPos, Quaternion elbowRot, Vector3 wrist1Pos, Quaternion wrist1Rot, Vector3 wrist2Pos, Quaternion wrist2Rot, Vector3 endPos, Quaternion endRot)
+        public CoordinateRecord(
+            float time,
+            Vector3 basePos,
+            Quaternion baseRot,
+            Vector3 shoulderPos,
+            Quaternion shoulderRot,
+            Vector3 elbowPos,
+            Quaternion elbowRot,
+            Vector3 wrist1Pos,
+            Quaternion wrist1Rot,
+            Vector3 wrist2Pos,
+            Quaternion wrist2Rot,
+            Vector3 endPos,
+            Quaternion endRot
+        )
         {
             timestamp = time;
             basePosition = basePos;
@@ -327,18 +343,18 @@ public class RobotArmController : MonoBehaviour
 
         public override string ToString()
         {
-            return $"{timestamp:F3},{basePosition.x:F6},{basePosition.y:F6},{basePosition.z:F6}," +
-                   $"{baseRotation.x:F6},{baseRotation.y:F6},{baseRotation.z:F6},{baseRotation.w:F6}," +
-                   $"{shoulderPosition.x:F6},{shoulderPosition.y:F6},{shoulderPosition.z:F6}," +
-                   $"{shoulderRotation.x:F6},{shoulderRotation.y:F6},{shoulderRotation.z:F6},{shoulderRotation.w:F6}," +
-                   $"{elbowPosition.x:F6},{elbowPosition.y:F6},{elbowPosition.z:F6}," +
-                   $"{elbowRotation.x:F6},{elbowRotation.y:F6},{elbowRotation.z:F6},{elbowRotation.w:F6}," +
-                   $"{wrist1Position.x:F6},{wrist1Position.y:F6},{wrist1Position.z:F6}," +
-                   $"{wrist1Rotation.x:F6},{wrist1Rotation.y:F6},{wrist1Rotation.z:F6},{wrist1Rotation.w:F6}," +
-                   $"{wrist2Position.x:F6},{wrist2Position.y:F6},{wrist2Position.z:F6}," +
-                   $"{wrist2Rotation.x:F6},{wrist2Rotation.y:F6},{wrist2Rotation.z:F6},{wrist2Rotation.w:F6}," +
-                   $"{endEffectorPosition.x:F6},{endEffectorPosition.y:F6},{endEffectorPosition.z:F6}," +
-                   $"{endEffectorRotation.x:F6},{endEffectorRotation.y:F6},{endEffectorRotation.z:F6},{endEffectorRotation.w:F6}";
+            return $"{timestamp:F3},{basePosition.x:F6},{basePosition.y:F6},{basePosition.z:F6},"
+                + $"{baseRotation.x:F6},{baseRotation.y:F6},{baseRotation.z:F6},{baseRotation.w:F6},"
+                + $"{shoulderPosition.x:F6},{shoulderPosition.y:F6},{shoulderPosition.z:F6},"
+                + $"{shoulderRotation.x:F6},{shoulderRotation.y:F6},{shoulderRotation.z:F6},{shoulderRotation.w:F6},"
+                + $"{elbowPosition.x:F6},{elbowPosition.y:F6},{elbowPosition.z:F6},"
+                + $"{elbowRotation.x:F6},{elbowRotation.y:F6},{elbowRotation.z:F6},{elbowRotation.w:F6},"
+                + $"{wrist1Position.x:F6},{wrist1Position.y:F6},{wrist1Position.z:F6},"
+                + $"{wrist1Rotation.x:F6},{wrist1Rotation.y:F6},{wrist1Rotation.z:F6},{wrist1Rotation.w:F6},"
+                + $"{wrist2Position.x:F6},{wrist2Position.y:F6},{wrist2Position.z:F6},"
+                + $"{wrist2Rotation.x:F6},{wrist2Rotation.y:F6},{wrist2Rotation.z:F6},{wrist2Rotation.w:F6},"
+                + $"{endEffectorPosition.x:F6},{endEffectorPosition.y:F6},{endEffectorPosition.z:F6},"
+                + $"{endEffectorRotation.x:F6},{endEffectorRotation.y:F6},{endEffectorRotation.z:F6},{endEffectorRotation.w:F6}";
         }
     }
 
@@ -434,7 +450,8 @@ public class RobotArmController : MonoBehaviour
 
     public void StartRecording()
     {
-        if (isRecording) return;
+        if (isRecording)
+            return;
 
         SetupExportFile();
         isRecording = true;
@@ -444,7 +461,8 @@ public class RobotArmController : MonoBehaviour
 
     public void StopRecording()
     {
-        if (!isRecording) return;
+        if (!isRecording)
+            return;
 
         isRecording = false;
         SaveCoordinates();
@@ -455,7 +473,9 @@ public class RobotArmController : MonoBehaviour
     private void SetupExportFile()
     {
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string filename = appendTimestamp ? $"{exportFilePath}_{timestamp}.csv" : $"{exportFilePath}.csv";
+        string filename = appendTimestamp
+            ? $"{exportFilePath}_{timestamp}.csv"
+            : $"{exportFilePath}.csv";
         currentFilePath = Path.Combine(Application.dataPath, "..", "Exports", filename);
 
         // Create exports directory if it doesn't exist
@@ -470,7 +490,8 @@ public class RobotArmController : MonoBehaviour
 
     private void RecordCoordinates()
     {
-        if (endEffectorTransform == null) return;
+        if (endEffectorTransform == null)
+            return;
 
         CoordinateRecord record = new CoordinateRecord(
             Time.time,
@@ -501,7 +522,8 @@ public class RobotArmController : MonoBehaviour
 
     private void SaveCoordinates()
     {
-        if (coordinates.Count == 0) return;
+        if (coordinates.Count == 0)
+            return;
 
         try
         {
@@ -527,5 +549,4 @@ public class RobotArmController : MonoBehaviour
             StopRecording();
         }
     }
-    
 }

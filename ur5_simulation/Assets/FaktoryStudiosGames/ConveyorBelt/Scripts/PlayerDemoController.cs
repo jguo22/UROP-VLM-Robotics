@@ -1,6 +1,7 @@
 using UnityEngine;
 
-namespace FaktoryStudiosGames {
+namespace FaktoryStudiosGames
+{
     /// <summary>
     /// Very basic Player Controller for demo purposes only. WASD controls with Space to jump
     /// NOT game tested. Feel free to build on this and use it or toss it.
@@ -36,7 +37,8 @@ namespace FaktoryStudiosGames {
             float z = Input.GetAxis("Vertical");
 
             Vector3 move = transform.right * x + transform.forward * z;
-            if (!Mathf.Approximately(move.magnitude, 0)) {
+            if (!Mathf.Approximately(move.magnitude, 0))
+            {
                 controller.Move(((move * moveSpeed) + conveyorForce) * Time.deltaTime);
             }
 
@@ -54,7 +56,8 @@ namespace FaktoryStudiosGames {
 
         void OnTriggerStay(Collider other)
         {
-            if (other.tag.Equals("ConveyorBelt")) {
+            if (other.tag.Equals("ConveyorBelt"))
+            {
                 controller.Move(other.GetComponent<ConveyorBelt>().GetSpeed() * Time.deltaTime);
             }
         }

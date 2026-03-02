@@ -1,6 +1,6 @@
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Programmatic Robot Control Examples
@@ -118,7 +118,7 @@ public class ProgrammaticRobotControl : MonoBehaviour
             new Vector3(patternRadius, patternHeight, patternRadius),
             new Vector3(patternRadius, patternHeight, -patternRadius),
             new Vector3(-patternRadius, patternHeight, -patternRadius),
-            new Vector3(-patternRadius, patternHeight, patternRadius)
+            new Vector3(-patternRadius, patternHeight, patternRadius),
         };
 
         while (enableSquarePattern)
@@ -200,7 +200,8 @@ public class ProgrammaticRobotControl : MonoBehaviour
             {
                 // Different frequencies for different joints
                 float jointFreq = frequency * (i + 1);
-                oscillationAngles[i] = baseAngles[i] + amplitude * Mathf.Sin(2f * Mathf.PI * jointFreq * time);
+                oscillationAngles[i] =
+                    baseAngles[i] + amplitude * Mathf.Sin(2f * Mathf.PI * jointFreq * time);
             }
 
             robotController.SetJointAngles(oscillationAngles);
@@ -308,11 +309,8 @@ public class ProgrammaticRobotControl : MonoBehaviour
         for (int i = 0; i < points; i++)
         {
             float angle = (i * 360f / points) * Mathf.Deg2Rad;
-            path[i] = center + new Vector3(
-                Mathf.Cos(angle) * radius,
-                0f,
-                Mathf.Sin(angle) * radius
-            );
+            path[i] =
+                center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
         }
         return path;
     }
@@ -328,7 +326,7 @@ public class ProgrammaticRobotControl : MonoBehaviour
             center + new Vector3(-halfSide, 0, -halfSide),
             center + new Vector3(halfSide, 0, -halfSide),
             center + new Vector3(halfSide, 0, halfSide),
-            center + new Vector3(-halfSide, 0, halfSide)
+            center + new Vector3(-halfSide, 0, halfSide),
         };
     }
 
@@ -386,19 +384,44 @@ public class ProgrammaticRobotControl : MonoBehaviour
         if (GUI.Button(new Rect(startX, startY, buttonWidth, buttonHeight), "Circular"))
             StartCircularMotion();
 
-        if (GUI.Button(new Rect(startX, startY + (buttonHeight + spacing), buttonWidth, buttonHeight), "Square"))
+        if (
+            GUI.Button(
+                new Rect(startX, startY + (buttonHeight + spacing), buttonWidth, buttonHeight),
+                "Square"
+            )
+        )
             StartSquarePattern();
 
-        if (GUI.Button(new Rect(startX, startY + 2 * (buttonHeight + spacing), buttonWidth, buttonHeight), "Pick&Place"))
+        if (
+            GUI.Button(
+                new Rect(startX, startY + 2 * (buttonHeight + spacing), buttonWidth, buttonHeight),
+                "Pick&Place"
+            )
+        )
             StartPickAndPlaceDemo();
 
-        if (GUI.Button(new Rect(startX, startY + 3 * (buttonHeight + spacing), buttonWidth, buttonHeight), "Oscillation"))
+        if (
+            GUI.Button(
+                new Rect(startX, startY + 3 * (buttonHeight + spacing), buttonWidth, buttonHeight),
+                "Oscillation"
+            )
+        )
             StartJointOscillation();
 
-        if (GUI.Button(new Rect(startX, startY + 4 * (buttonHeight + spacing), buttonWidth, buttonHeight), "Stop All"))
+        if (
+            GUI.Button(
+                new Rect(startX, startY + 4 * (buttonHeight + spacing), buttonWidth, buttonHeight),
+                "Stop All"
+            )
+        )
             StopAllPatterns();
 
-        if (GUI.Button(new Rect(startX, startY + 5 * (buttonHeight + spacing), buttonWidth, buttonHeight), "Reset"))
+        if (
+            GUI.Button(
+                new Rect(startX, startY + 5 * (buttonHeight + spacing), buttonWidth, buttonHeight),
+                "Reset"
+            )
+        )
             robotController.ResetToHomePosition();
     }
 

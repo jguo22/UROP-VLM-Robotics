@@ -1,6 +1,6 @@
-using UnityEngine;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 //using Preliy.Flange;
 
@@ -8,13 +8,13 @@ public static class ConstantsUR5
 {
     public static readonly Dictionary<string, string> JointNames = new Dictionary<string, string>()
     {
-        {"shoulder_link", "base_joint"},
-        {"upper_arm_link", "shoulder_joint"},
-        {"forearm_link", "elbow_joint"},
-        {"wrist_1_link", "wrist_1_joint"},
-        {"wrist_2_link", "wrist_2_joint"},
-        {"wrist_3_link", "wrist_3_joint"},
-        {"ee_link", "end_effector"}
+        { "shoulder_link", "base_joint" },
+        { "upper_arm_link", "shoulder_joint" },
+        { "forearm_link", "elbow_joint" },
+        { "wrist_1_link", "wrist_1_joint" },
+        { "wrist_2_link", "wrist_2_joint" },
+        { "wrist_3_link", "wrist_3_joint" },
+        { "ee_link", "end_effector" },
     };
 
     public const int JointStiffness = 10000;
@@ -39,12 +39,13 @@ public static class ConstantsUR5
 
     public static readonly float[] StableStartingRotations = new float[] //rotations in radians
     {
-        Mathf.PI,     // Base rotation
-        -0.8f,  // Shoulder (lowered to better reach cubes)
-        1.0f,   // Elbow (adjusted to position arm lower)
-        -1.5f,  // Wrist 1 (adjusted to position suction cup better)
+        Mathf.PI, // Base rotation
+        -0.8f, // Shoulder (lowered to better reach cubes)
+        1.0f, // Elbow (adjusted to position arm lower)
+        -1.5f, // Wrist 1 (adjusted to position suction cup better)
         -1.57f, // Wrist 2
-        0f      // Wrist 3
+        0f // Wrist 3
+        ,
     };
 
     // Suction params
@@ -52,5 +53,4 @@ public static class ConstantsUR5
     public const float SuctionDistance = 0.005f; //distance from suction cup to object to activate suction
     public const float SuctionOffsetY = -0.01f; //offset from end effector to suction cup along Y axis
     public const float SuctionIKOffsetY = 0.0f; //0.002f //offset from end effector to suction cup along Y axis for IK calculations
-
 }

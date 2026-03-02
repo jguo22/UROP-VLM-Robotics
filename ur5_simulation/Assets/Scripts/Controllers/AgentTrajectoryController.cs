@@ -1,13 +1,12 @@
-using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Unity.Robotics.UrdfImporter.Control;
-
-using static ConstantsUR5;
+using UnityEngine;
 using static Config;
+using static ConstantsUR5;
 
 /// <summary>
 /// CSV Trajectory Controller - Loads and executes robot trajectories from CSV files
@@ -17,6 +16,7 @@ public class AgentTrajectoryController : MonoBehaviour
 {
     [HideInInspector]
     public AgentRobotController robotController;
+
     [HideInInspector]
     public GameObject[] robots;
 
@@ -37,13 +37,16 @@ public class AgentTrajectoryController : MonoBehaviour
     [Header("Trajectory Data")]
     [Tooltip("Total number of frames in the loaded trajectory")]
     public int totalFrames = 0;
+
     [Tooltip("Total duration of the trajectory in seconds")]
     public float totalDuration = 0f;
+
     [Tooltip("Current playback time position")]
     public float currentPlaybackTime = 0f;
 
     [HideInInspector]
     public Dictionary<float, StoredTrajectoryModel>[] robotTrajectories; //key timestamp, value is StoredTrajectoryModel
+
     [HideInInspector]
     public List<float> timestamps;
 
@@ -57,7 +60,6 @@ public class AgentTrajectoryController : MonoBehaviour
 
     // Playback coroutine
     private Coroutine playbackCoroutine;
-
 
     #region Unity Methods
 
@@ -130,7 +132,9 @@ public class AgentTrajectoryController : MonoBehaviour
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogError($"Failed to load CSV file from path: {csvFilePath}\n{e.Message}");
+                    Debug.LogError(
+                        $"Failed to load CSV file from path: {csvFilePath}\n{e.Message}"
+                    );
                     return false;
                 }
             }
@@ -160,7 +164,8 @@ public class AgentTrajectoryController : MonoBehaviour
 
             for (int idx = 0; idx < robotCount; idx++)
             {
-                Dictionary<float, StoredTrajectoryModel> robotTrajectory = new Dictionary<float, StoredTrajectoryModel>();
+                Dictionary<float, StoredTrajectoryModel> robotTrajectory =
+                    new Dictionary<float, StoredTrajectoryModel>();
                 List<float> robotTimestamps = new List<float>();
 
                 string csvContent = csvContents[idx];
@@ -216,18 +221,21 @@ public class AgentTrajectoryController : MonoBehaviour
                 // Parse data rows
                 for (int i = 1; i < lines.Length; i++)
                 {
-                    if (string.IsNullOrWhiteSpace(lines[i])) continue;
+                    if (string.IsNullOrWhiteSpace(lines[i]))
+                        continue;
 
                     string[] values = lines[i].Split(',');
 
-                    if (values.Length < headers.Length) continue;
+                    if (values.Length < headers.Length)
+                        continue;
 
                     // Parse timestamp
                     if (float.TryParse(values[timestampCol], out float timestamp))
                     {
                         robotTimestamps.Add(timestamp);
                     }
-                    else continue;   // Skip invalid rows
+                    else
+                        continue; // Skip invalid rows
 
                     // Parse joint positions and rotations
                     Vector3[] positions = new Vector3[6]; // 6 joints
@@ -266,10 +274,20 @@ public class AgentTrajectoryController : MonoBehaviour
                         }
                     }
 
-                    bool currentSuctionState = suctionColIndex >= 0 && suctionColIndex < values.Length && values[suctionColIndex].Trim() == "True";
-                    bool currentAttractedState = attractedColIndex >= 0 && attractedColIndex < values.Length && values[attractedColIndex].Trim() == "True";
+                    bool currentSuctionState =
+                        suctionColIndex >= 0
+                        && suctionColIndex < values.Length
+                        && values[suctionColIndex].Trim() == "True";
+                    bool currentAttractedState =
+                        attractedColIndex >= 0
+                        && attractedColIndex < values.Length
+                        && values[attractedColIndex].Trim() == "True";
 
-                    StoredTrajectoryModel storedTrajectory = new StoredTrajectoryModel(jointAngles, currentSuctionState, currentAttractedState);
+                    StoredTrajectoryModel storedTrajectory = new StoredTrajectoryModel(
+                        jointAngles,
+                        currentSuctionState,
+                        currentAttractedState
+                    );
                     robotTrajectory.Add(timestamp, storedTrajectory);
                 }
                 //---end of for loop---
@@ -284,7 +302,6 @@ public class AgentTrajectoryController : MonoBehaviour
                 // }
 
                 // Debug.Log($"Successfully loaded {robots[idx].name} trajectory: {totalFrames} frames, {totalDuration:F2} seconds");
-
             }
         }
         catch (System.Exception e)
@@ -294,14 +311,18 @@ public class AgentTrajectoryController : MonoBehaviour
         }
 
         timestamps = arrayOfTimestamps[0];
-        for (int i = 1; i < robotCount; i++) timestamps = timestamps.Union(arrayOfTimestamps[i]).ToList();
+        for (int i = 1; i < robotCount; i++)
+            timestamps = timestamps.Union(arrayOfTimestamps[i]).ToList();
         timestamps.Sort();
 
-        if (timestamps.Count > 1) totalDuration = timestamps[timestamps.Count - 1] - timestamps[0];
+        if (timestamps.Count > 1)
+            totalDuration = timestamps[timestamps.Count - 1] - timestamps[0];
 
         totalFrames = timestamps.Count;
 
-        Debug.Log($"Successfully loaded trajectory: {totalFrames} frames, {totalDuration:F2} seconds");
+        Debug.Log(
+            $"Successfully loaded trajectory: {totalFrames} frames, {totalDuration:F2} seconds"
+        );
 
         return true;
     }
@@ -437,13 +458,13 @@ public class AgentTrajectoryController : MonoBehaviour
                 // Set robot to current frame
                 float timestamp = timestamps[currentFrame];
 
-
                 SetRobotToFrame(timestamp); //timestamps[currentFrame] gives the current time elapsed
 
                 // Wait for next frame based on timestamp difference
                 if (currentFrame < totalFrames - 1)
                 {
-                    float timeToNextFrame = (timestamps[currentFrame + 1] - timestamps[currentFrame]) / playbackSpeed;
+                    float timeToNextFrame =
+                        (timestamps[currentFrame + 1] - timestamps[currentFrame]) / playbackSpeed;
                     yield return new WaitForSeconds(timeToNextFrame);
                 }
                 else
@@ -497,7 +518,9 @@ public class AgentTrajectoryController : MonoBehaviour
                 bool suctionOn = storedTrajectory.suctionState;
                 bool attracted = storedTrajectory.attractedState;
 
-                Debug.Log($"Setting frame {timestamp}s: joint angles [{string.Join(", ", jointAngles.Select(a => a.ToString("F3")))}]");
+                Debug.Log(
+                    $"Setting frame {timestamp}s: joint angles [{string.Join(", ", jointAngles.Select(a => a.ToString("F3")))}]"
+                );
 
                 if (robotController != null)
                 {
@@ -507,7 +530,8 @@ public class AgentTrajectoryController : MonoBehaviour
                     //Debug.Log($"Joint angles and suction state sent to robot controller");
                     //if (attracted) Debug.Log("Block is attracted to suction");
                 }
-                else Debug.LogError("CSVTrajectoryController: robotController is null!");
+                else
+                    Debug.LogError("CSVTrajectoryController: robotController is null!");
             }
         }
     }
@@ -566,7 +590,7 @@ public class AgentTrajectoryController : MonoBehaviour
     #region GUI
 
     private void DrawTrajectoryGUI()
-    {   
+    {
         GUIStyle style = new GUIStyle(GUI.skin.label);
         style.fontSize = 14;
         style.normal.textColor = Color.white;
@@ -579,9 +603,21 @@ public class AgentTrajectoryController : MonoBehaviour
         GUI.Label(new Rect(10, 35, 400, 30), instructionText, style);
 
         // Trajectory info
-        GUI.Label(new Rect(startX, startY, 300, 20), $"Trajectory: {totalFrames} frames, {totalDuration:F2}s", style);
-        GUI.Label(new Rect(startX, startY + lineHeight, 300, 20), $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s", style);
-        GUI.Label(new Rect(startX, startY + 2 * lineHeight, 300, 20), $"Speed: {playbackSpeed:F2}x, Status: {(isPlaying ? (isPaused ? "Paused" : "Playing") : "Stopped")}", style);
+        GUI.Label(
+            new Rect(startX, startY, 300, 20),
+            $"Trajectory: {totalFrames} frames, {totalDuration:F2}s",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, startY + lineHeight, 300, 20),
+            $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, startY + 2 * lineHeight, 300, 20),
+            $"Speed: {playbackSpeed:F2}x, Status: {(isPlaying ? (isPaused ? "Paused" : "Playing") : "Stopped")}",
+            style
+        );
 
         // Progress bar
         if (totalDuration > 0)
@@ -597,7 +633,12 @@ public class AgentTrajectoryController : MonoBehaviour
         int buttonHeight = 30;
         int buttonSpacing = 5;
 
-        if (GUI.Button(new Rect(startX, buttonY, buttonWidth, buttonHeight), isPlaying ? "Pause" : "Play"))
+        if (
+            GUI.Button(
+                new Rect(startX, buttonY, buttonWidth, buttonHeight),
+                isPlaying ? "Pause" : "Play"
+            )
+        )
         {
             if (isPlaying)
                 PausePlayback();
@@ -605,12 +646,27 @@ public class AgentTrajectoryController : MonoBehaviour
                 StartPlayback();
         }
 
-        if (GUI.Button(new Rect(startX + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight), "Stop"))
+        if (
+            GUI.Button(
+                new Rect(startX + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight),
+                "Stop"
+            )
+        )
         {
             StopPlayback();
         }
 
-        if (GUI.Button(new Rect(startX + 2 * (buttonWidth + buttonSpacing), buttonY, buttonWidth, buttonHeight), "Reload"))
+        if (
+            GUI.Button(
+                new Rect(
+                    startX + 2 * (buttonWidth + buttonSpacing),
+                    buttonY,
+                    buttonWidth,
+                    buttonHeight
+                ),
+                "Reload"
+            )
+        )
         {
             if (!string.IsNullOrEmpty(csvFilePath) || csvFile != null)
             {
@@ -619,7 +675,11 @@ public class AgentTrajectoryController : MonoBehaviour
         }
 
         // Speed controls
-        GUI.Label(new Rect(startX, buttonY + buttonHeight + 10, 200, 20), $"Playback Speed: {playbackSpeed:F2}x", style);
+        GUI.Label(
+            new Rect(startX, buttonY + buttonHeight + 10, 200, 20),
+            $"Playback Speed: {playbackSpeed:F2}x",
+            style
+        );
 
         if (GUI.Button(new Rect(startX, buttonY + buttonHeight + 35, 40, 25), "-"))
         {
@@ -637,8 +697,16 @@ public class AgentTrajectoryController : MonoBehaviour
         }
 
         // Instructions
-        GUI.Label(new Rect(startX, buttonY + buttonHeight + 70, 400, 20), "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed", style);
-        GUI.Label(new Rect(startX, buttonY + buttonHeight + 95, 400, 20), "Arrow Keys: Frame stepping", style);
+        GUI.Label(
+            new Rect(startX, buttonY + buttonHeight + 70, 400, 20),
+            "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, buttonY + buttonHeight + 95, 400, 20),
+            "Arrow Keys: Frame stepping",
+            style
+        );
     }
 
     #endregion
@@ -681,4 +749,3 @@ public class AgentTrajectoryController : MonoBehaviour
 
     #endregion
 }
-

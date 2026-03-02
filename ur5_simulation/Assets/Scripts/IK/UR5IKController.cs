@@ -1,8 +1,7 @@
-using UnityEngine;
 using System.Collections;
 using System.IO;
 using System.Text.RegularExpressions;
-
+using UnityEngine;
 using static ConstantsUR5;
 
 // helper script, doesn't have any update code
@@ -12,12 +11,16 @@ public class UR5IKController : MonoBehaviour
 {
     [Header("IK Settings")]
     public float moveDuration = 0.3f; // Faster for continuous movement
+
     [HideInInspector]
     public Vector3 endEffectorTargetPosition;
+
     [HideInInspector]
     public bool ikActive = false;
+
     [HideInInspector]
     public bool hasIKSolution = false;
+
     [HideInInspector]
     public double[] ikSolution;
 
@@ -29,6 +32,7 @@ public class UR5IKController : MonoBehaviour
     // Component references
     private RobotArmSetup robotArmSetup;
     private SuctionController suctionController;
+
     // private UR5IKSolver ikSolver;
 
     // Robot references
@@ -86,7 +90,8 @@ public class UR5IKController : MonoBehaviour
         // Configure drives for the 6 robot arm joints (indices 0-5 in robotJoints)
         for (int i = 0; i < JointCount; i++)
         {
-            if (robotJoints[i] == null) continue;
+            if (robotJoints[i] == null)
+                continue;
 
             ArticulationDrive drive = robotJoints[i].xDrive;
             drive.stiffness = JointStiffness;
@@ -130,7 +135,10 @@ public class UR5IKController : MonoBehaviour
         }
     }
 
-    private (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(Vector3 inputPosition, Quaternion inputRotation)
+    private (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(
+        Vector3 inputPosition,
+        Quaternion inputRotation
+    )
     {
         // Debug.Log(inputPosition);
         // Debug.Log(inputRotation);
@@ -185,7 +193,6 @@ public class UR5IKController : MonoBehaviour
         // double[] jointAngles = {0, 0, 0, 0, 0, 0};
         // when script closes get result joint angles and move them
         // SetJointAngles(jointAngles);
-
     }
 
     /// <summary>
@@ -256,36 +263,55 @@ public class UR5IKController : MonoBehaviour
         // GUI.Label(new Rect(Screen.width / 2 - 200, 30, 400, 20), "Press up/down keys to move " + selectedJoint + ".", centeredStyle);
 
         // Display instructions for angle input
-        GUI.Label(new Rect(Screen.width / 2 - 200, 10, 400, 20), "Press 'T' to set target pos for selected joint.", centeredStyle);
+        GUI.Label(
+            new Rect(Screen.width / 2 - 200, 10, 400, 20),
+            "Press 'T' to set target pos for selected joint.",
+            centeredStyle
+        );
 
         if (isWaitingForPosInput)
         {
-            GUI.Label(new Rect(Screen.width / 2 - 200, 40, 400, 20), "Enter target xyz position (m) as 'x, y, z' :", centeredStyle);
-        
+            GUI.Label(
+                new Rect(Screen.width / 2 - 200, 40, 400, 20),
+                "Enter target xyz position (m) as 'x, y, z' :",
+                centeredStyle
+            );
+
             // Create input field
             GUI.SetNextControlName("PosInputField");
             //GUI.TextField(new Rect(Screen.width / 2 - 100, 90, 200, 20), targetAngleInputString);
-            targetPosInputString = GUI.TextField(new Rect(Screen.width / 2 - 100, 70, 200, 20), targetPosInputString);
+            targetPosInputString = GUI.TextField(
+                new Rect(Screen.width / 2 - 100, 70, 200, 20),
+                targetPosInputString
+            );
             targetPosInputString = Regex.Replace(targetPosInputString, "[^0-9 .,-]", "");
-            
+
             // Instructions
-            GUI.Label(new Rect(Screen.width / 2 - 200, 100, 400, 20), "Press Enter to confirm, 'E' to exit", centeredStyle);
-            
+            GUI.Label(
+                new Rect(Screen.width / 2 - 200, 100, 400, 20),
+                "Press Enter to confirm, 'E' to exit",
+                centeredStyle
+            );
+
             // Show current input
             if (!string.IsNullOrEmpty(targetPosInputString))
             {
-                GUI.Label(new Rect(Screen.width / 2 - 200, 130, 400, 20), $"Input: {targetPosInputString}", centeredStyle);
+                GUI.Label(
+                    new Rect(Screen.width / 2 - 200, 130, 400, 20),
+                    $"Input: {targetPosInputString}",
+                    centeredStyle
+                );
             }
-            
+
             // Focus the input field
             GUI.FocusControl("PosInputField");
         }
-
     }
 
     private void HandlePosInput()
     {
-        if (!isWaitingForPosInput) return;
+        if (!isWaitingForPosInput)
+            return;
 
         //Handle character input
         if (Input.inputString.Length > 0)
@@ -297,7 +323,10 @@ public class UR5IKController : MonoBehaviour
                 {
                     if (targetPosInputString.Length > 0)
                     {
-                        targetPosInputString = targetPosInputString.Substring(0, targetPosInputString.Length);
+                        targetPosInputString = targetPosInputString.Substring(
+                            0,
+                            targetPosInputString.Length
+                        );
                     }
                 }
                 else if (c == '\n' || c == '\r') // Enter
@@ -317,12 +346,17 @@ public class UR5IKController : MonoBehaviour
     private void ProcessPosInput()
     {
         // Parse input string into Vector3
-        string[] parts = targetPosInputString.Split(new char[] { ',', ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = targetPosInputString.Split(
+            new char[] { ',', ' ' },
+            System.StringSplitOptions.RemoveEmptyEntries
+        );
         if (parts.Length == 3)
         {
-            if (float.TryParse(parts[0], out float x) &&
-                float.TryParse(parts[1], out float y) &&
-                float.TryParse(parts[2], out float z))
+            if (
+                float.TryParse(parts[0], out float x)
+                && float.TryParse(parts[1], out float y)
+                && float.TryParse(parts[2], out float z)
+            )
             {
                 Vector3 targetPosition = new Vector3(x, y, z);
                 isWaitingForPosInput = false;
@@ -330,10 +364,10 @@ public class UR5IKController : MonoBehaviour
                 MoveToEndEffectorPose(targetPosition);
                 isChangingPos = false;
             }
-        } else // gear colour input
+        }
+        else // gear colour input
         {
             Debug.LogError("Invalid position input. Please enter in format: x,y,z");
         }
     }
-    
 }

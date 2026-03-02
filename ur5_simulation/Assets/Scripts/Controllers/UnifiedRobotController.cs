@@ -1,9 +1,8 @@
-using UnityEngine;
 using System;
 using System.Collections;
 //using System.Collections.Generic;
 using Unity.Robotics.UrdfImporter.Control;
-
+using UnityEngine;
 using static ConstantsUR5;
 
 /// <summary>
@@ -13,14 +12,19 @@ public class UnifiedRobotController : MonoBehaviour
 {
     [HideInInspector]
     public RobotArmSetup robotArmSetup;
+
     [HideInInspector]
     public UR5IKController ur5IkController;
+
     [HideInInspector]
     public PickAndPlaceController pickAndPlaceController;
+
     [HideInInspector]
     public ManualController manualController;
+
     [HideInInspector]
     public CSVTrajectoryController csvTrajectoryController;
+
     [HideInInspector]
     public SuctionController suctionController;
 
@@ -31,12 +35,13 @@ public class UnifiedRobotController : MonoBehaviour
 
     public enum ControlMode
     {
-        Start,           // initial state at start up
-        Manual,      // Keyboard joint control
-        IK,          // Inverse Kinematics end-effector control
-        PickAndPlace,// Automated pick and place
+        Start, // initial state at start up
+        Manual, // Keyboard joint control
+        IK, // Inverse Kinematics end-effector control
+        PickAndPlace, // Automated pick and place
         Programmatic, // Script-based control
         CSVTrajectory // CSV file trajectory playback
+        ,
     }
 
     private ArticulationBody[] articulationChain;
@@ -122,11 +127,16 @@ public class UnifiedRobotController : MonoBehaviour
     void HandleModeSwitching()
     {
         // Switch modes with number keys
-        if (Input.GetKeyDown(KeyCode.Alpha1)) SetControlMode(ControlMode.Manual);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) SetControlMode(ControlMode.IK);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) SetControlMode(ControlMode.PickAndPlace);
-        if (Input.GetKeyDown(KeyCode.Alpha4)) SetControlMode(ControlMode.Programmatic);
-        if (Input.GetKeyDown(KeyCode.Alpha5)) SetControlMode(ControlMode.CSVTrajectory);
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+            SetControlMode(ControlMode.Manual);
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+            SetControlMode(ControlMode.IK);
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+            SetControlMode(ControlMode.PickAndPlace);
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+            SetControlMode(ControlMode.Programmatic);
+        if (Input.GetKeyDown(KeyCode.Alpha5))
+            SetControlMode(ControlMode.CSVTrajectory);
 
         // Suction controls
         if (Input.GetKeyDown(KeyCode.Space))
@@ -237,7 +247,8 @@ public class UnifiedRobotController : MonoBehaviour
     #region Public Control Methods
     public float[] GetCurrentJointAngles(ArticulationBody[] robotJoints)
     {
-        if (robotJoints == null) return null;
+        if (robotJoints == null)
+            return null;
 
         float[] angles = new float[JointCount]; // UR5 has 6 joints
         for (int i = 0; i < angles.Length && i < robotJoints.Length; i++)
@@ -405,7 +416,9 @@ public class UnifiedRobotController : MonoBehaviour
 
     public void SetJointAngles(float[] angles)
     {
-        Debug.Log($"UnifiedRobotController.SetJointAngles called with {angles?.Length ?? 0} angles");
+        Debug.Log(
+            $"UnifiedRobotController.SetJointAngles called with {angles?.Length ?? 0} angles"
+        );
 
         if (robotArmSetup != null && angles != null)
         {
@@ -429,18 +442,24 @@ public class UnifiedRobotController : MonoBehaviour
 
                     robotJoints[i].xDrive = drive;
 
-                    Debug.Log($"Joint {i} drive updated: target={drive.target:F2}, stiffness={drive.stiffness}");
+                    Debug.Log(
+                        $"Joint {i} drive updated: target={drive.target:F2}, stiffness={drive.stiffness}"
+                    );
                 }
                 else
                 {
-                    Debug.LogWarning($"Joint index {i} is out of bounds (joints array length: {robotJoints.Length})");
+                    Debug.LogWarning(
+                        $"Joint index {i} is out of bounds (joints array length: {robotJoints.Length})"
+                    );
                 }
             }
         }
         else
         {
-            if (robotArmSetup == null) Debug.LogError("UnifiedRobotController: robotArmSetup is null!");
-            if (angles == null) Debug.LogError("UnifiedRobotController: angles array is null!");
+            if (robotArmSetup == null)
+                Debug.LogError("UnifiedRobotController: robotArmSetup is null!");
+            if (angles == null)
+                Debug.LogError("UnifiedRobotController: angles array is null!");
         }
     }
 
@@ -556,7 +575,10 @@ public class UnifiedRobotController : MonoBehaviour
         style.fontSize = 16;
         style.normal.textColor = Color.white;
 
-        string modeText = currentMode == ControlMode.Start ? "Control Mode: <Select>" : $"Control Mode: {currentMode}";
+        string modeText =
+            currentMode == ControlMode.Start
+                ? "Control Mode: <Select>"
+                : $"Control Mode: {currentMode}";
         string instructionText = "";
 
         switch (currentMode)
@@ -625,7 +647,11 @@ public class UnifiedRobotController : MonoBehaviour
                 bool inRange = suctionController.IsWithinSuctionRange();
                 bool attached = suctionController.IsBlockAttached();
 
-                GUI.Label(new Rect(10, 210, 400, 20), $"Distance from nearest block: {distance:F3}m", style);
+                GUI.Label(
+                    new Rect(10, 210, 400, 20),
+                    $"Distance from nearest block: {distance:F3}m",
+                    style
+                );
 
                 string statusText = attached ? "ATTACHED" : (inRange ? "IN RANGE" : "OUT OF RANGE");
                 Color statusColor = attached ? Color.green : (inRange ? Color.yellow : Color.red);
@@ -635,7 +661,6 @@ public class UnifiedRobotController : MonoBehaviour
                 GUI.Label(new Rect(10, 235, 400, 20), $"Status: {statusText}", statusStyle);
             }
         }
-
     }
 
     #endregion

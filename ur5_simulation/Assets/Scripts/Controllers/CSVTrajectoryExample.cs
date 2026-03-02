@@ -1,7 +1,6 @@
-using UnityEngine;
-using System.IO;
 using System.Collections.Generic;
-
+using System.IO;
+using UnityEngine;
 using static ConstantsUR5;
 
 /// <summary>
@@ -12,6 +11,7 @@ public class CSVTrajectoryExample : MonoBehaviour
 {
     [HideInInspector]
     public UnifiedRobotController robotController;
+
     [HideInInspector]
     public CSVTrajectoryController csvController;
 
@@ -54,7 +54,7 @@ public class CSVTrajectoryExample : MonoBehaviour
         string[] searchFolders = new string[]
         {
             // Path.Combine(Application.dataPath, "..", "Exports"),
-            Path.Combine(Application.dataPath, "..", "Imports")
+            Path.Combine(Application.dataPath, "..", "Imports"),
         };
 
         int totalFilesFound = 0;
@@ -165,8 +165,12 @@ public class CSVTrajectoryExample : MonoBehaviour
         if (csvController != null)
         {
             Debug.Log($"Trajectory Loaded: {(csvController.totalFrames > 0 ? "YES" : "NO")}");
-            Debug.Log($"Frames: {csvController.totalFrames}, Duration: {csvController.totalDuration:F2}s");
-            Debug.Log($"Playback Status: {(csvController.isPlaying ? (csvController.isPaused ? "Paused" : "Playing") : "Stopped")}");
+            Debug.Log(
+                $"Frames: {csvController.totalFrames}, Duration: {csvController.totalDuration:F2}s"
+            );
+            Debug.Log(
+                $"Playback Status: {(csvController.isPlaying ? (csvController.isPaused ? "Paused" : "Playing") : "Stopped")}"
+            );
         }
 
         // Check file paths for both folders
@@ -271,7 +275,9 @@ public class CSVTrajectoryExample : MonoBehaviour
 
             if (robotController.robotArmSetup.articulationChain != null)
             {
-                Debug.Log($"  - Articulation chain length: {robotController.robotArmSetup.articulationChain.Length}");
+                Debug.Log(
+                    $"  - Articulation chain length: {robotController.robotArmSetup.articulationChain.Length}"
+                );
                 for (int i = 0; i < robotController.robotArmSetup.articulationChain.Length; i++)
                 {
                     var joint = robotController.robotArmSetup.articulationChain[i];
@@ -335,7 +341,11 @@ public class CSVTrajectoryExample : MonoBehaviour
 
         // Test joint movement
         Debug.Log("=== TESTING JOINT MOVEMENT ===");
-        if (robotController != null && robotController.Joints != null && robotController.Joints.Length > 0)
+        if (
+            robotController != null
+            && robotController.Joints != null
+            && robotController.Joints.Length > 0
+        )
         {
             float[] testAngles = new float[] { 0.5f, 0.3f, -0.2f, 0.8f, -0.4f, 0.1f };
             Debug.Log($"Sending test angles: [{string.Join(", ", testAngles)}]");
@@ -349,7 +359,8 @@ public class CSVTrajectoryExample : MonoBehaviour
 
     void OnGUI()
     {
-        if (!showDemoGUI) return;
+        if (!showDemoGUI)
+            return;
 
         GUIStyle style = new GUIStyle(GUI.skin.button);
         style.fontSize = 12;
@@ -360,7 +371,10 @@ public class CSVTrajectoryExample : MonoBehaviour
         int startY = 100;
 
         // Background panel
-        GUI.Box(new Rect(startX - 5, startY - 5, panelWidth + 10, panelHeight + 10), "CSV Trajectory Demo");
+        GUI.Box(
+            new Rect(startX - 5, startY - 5, panelWidth + 10, panelHeight + 10),
+            "CSV Trajectory Demo"
+        );
 
         int currentY = startY;
         int buttonHeight = 30;
@@ -379,11 +393,20 @@ public class CSVTrajectoryExample : MonoBehaviour
         {
             string[] fileNames = csvFileNames.ToArray();
 
-            selectedFileIndex = GUI.SelectionGrid(new Rect(startX, currentY, panelWidth, 120),
-                selectedFileIndex, fileNames, 1);
+            selectedFileIndex = GUI.SelectionGrid(
+                new Rect(startX, currentY, panelWidth, 120),
+                selectedFileIndex,
+                fileNames,
+                1
+            );
             currentY += 130;
 
-            if (GUI.Button(new Rect(startX, currentY, panelWidth, buttonHeight), "Load Selected Trajectory"))
+            if (
+                GUI.Button(
+                    new Rect(startX, currentY, panelWidth, buttonHeight),
+                    "Load Selected Trajectory"
+                )
+            )
             {
                 LoadSelectedTrajectory();
             }
@@ -392,19 +415,29 @@ public class CSVTrajectoryExample : MonoBehaviour
             // Show selected file info
             if (selectedFileIndex >= 0 && selectedFileIndex < csvFileNames.Count)
             {
-                GUI.Label(new Rect(startX, currentY, panelWidth, 20),
-                    $"Selected: {csvFileNames[selectedFileIndex]}", GUI.skin.label);
+                GUI.Label(
+                    new Rect(startX, currentY, panelWidth, 20),
+                    $"Selected: {csvFileNames[selectedFileIndex]}",
+                    GUI.skin.label
+                );
                 currentY += 25;
             }
         }
         else
         {
-            GUI.Label(new Rect(startX, currentY, panelWidth, 40),
-                "No CSV files found.\nPlace CSV files in Exports folder\nor use custom path below.");
+            GUI.Label(
+                new Rect(startX, currentY, panelWidth, 40),
+                "No CSV files found.\nPlace CSV files in Exports folder\nor use custom path below."
+            );
             currentY += 50;
 
             // Add a refresh button
-            if (GUI.Button(new Rect(startX, currentY, panelWidth, buttonHeight), "Refresh CSV Files"))
+            if (
+                GUI.Button(
+                    new Rect(startX, currentY, panelWidth, buttonHeight),
+                    "Refresh CSV Files"
+                )
+            )
             {
                 PopulateCSVFiles();
             }
@@ -425,8 +458,11 @@ public class CSVTrajectoryExample : MonoBehaviour
         //currentY += buttonHeight + spacing;
 
         // Playback controls
-        GUI.Label(new Rect(startX, currentY, panelWidth, 20), "Playback Controls:",
-            new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
+        GUI.Label(
+            new Rect(startX, currentY, panelWidth, 20),
+            "Playback Controls:",
+            new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold }
+        );
         currentY += 25;
 
         // Play/Pause button
@@ -439,7 +475,12 @@ public class CSVTrajectoryExample : MonoBehaviour
             }
         }
 
-        if (GUI.Button(new Rect(startX, currentY, panelWidth / 2 - 2, buttonHeight), firstPlayButtonText))
+        if (
+            GUI.Button(
+                new Rect(startX, currentY, panelWidth / 2 - 2, buttonHeight),
+                firstPlayButtonText
+            )
+        )
         {
             if (robotController != null)
             {
@@ -454,7 +495,12 @@ public class CSVTrajectoryExample : MonoBehaviour
             }
         }
 
-        if (GUI.Button(new Rect(startX + panelWidth / 2 + 2, currentY, panelWidth / 2 - 2, buttonHeight), "Stop"))
+        if (
+            GUI.Button(
+                new Rect(startX + panelWidth / 2 + 2, currentY, panelWidth / 2 - 2, buttonHeight),
+                "Stop"
+            )
+        )
         {
             if (robotController != null)
             {
@@ -470,13 +516,16 @@ public class CSVTrajectoryExample : MonoBehaviour
             string statusText = "No trajectory loaded";
             if (csvController.totalFrames > 0)
             {
-                statusText = $"Loaded: {csvController.totalFrames} frames, {csvController.totalDuration:F2}s";
+                statusText =
+                    $"Loaded: {csvController.totalFrames} frames, {csvController.totalDuration:F2}s";
             }
             GUI.Label(new Rect(startX, currentY, panelWidth, 20), statusText);
             currentY += 25;
 
-            GUI.Label(new Rect(startX, currentY, panelWidth, 20),
-                $"Speed: {csvController.playbackSpeed:F1}x");
+            GUI.Label(
+                new Rect(startX, currentY, panelWidth, 20),
+                $"Speed: {csvController.playbackSpeed:F1}x"
+            );
             currentY += 25;
 
             if (GUI.Button(new Rect(startX, currentY, panelWidth / 2 - 2, buttonHeight), "Slower"))
@@ -484,20 +533,40 @@ public class CSVTrajectoryExample : MonoBehaviour
                 robotController.SetCSVPlaybackSpeed(csvController.playbackSpeed / 1.2f);
             }
 
-            if (GUI.Button(new Rect(startX + panelWidth / 2 + 2, currentY, panelWidth / 2 - 2, buttonHeight), "Faster"))
+            if (
+                GUI.Button(
+                    new Rect(
+                        startX + panelWidth / 2 + 2,
+                        currentY,
+                        panelWidth / 2 - 2,
+                        buttonHeight
+                    ),
+                    "Faster"
+                )
+            )
             {
                 robotController.SetCSVPlaybackSpeed(csvController.playbackSpeed * 1.2f);
             }
             currentY += buttonHeight + spacing;
 
             // Test joint movement button
-            if (GUI.Button(new Rect(startX, currentY, panelWidth, buttonHeight), "Test Joint Movement (T)"))
+            if (
+                GUI.Button(
+                    new Rect(startX, currentY, panelWidth, buttonHeight),
+                    "Test Joint Movement (T)"
+                )
+            )
             {
                 if (csvController != null)
                 {
                     // Access the private TestJointMovement method via reflection
-                    var method = csvController.GetType().GetMethod("TestJointMovement",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    var method = csvController
+                        .GetType()
+                        .GetMethod(
+                            "TestJointMovement",
+                            System.Reflection.BindingFlags.NonPublic
+                                | System.Reflection.BindingFlags.Instance
+                        );
                     if (method != null)
                     {
                         method.Invoke(csvController, null);
@@ -512,11 +581,18 @@ public class CSVTrajectoryExample : MonoBehaviour
             {
                 if (csvController.isPlaying)
                 {
-                    secondPlayButtonText = csvController.isPaused ? "Resume Trajectory" : "Pause Trajectory";
+                    secondPlayButtonText = csvController.isPaused
+                        ? "Resume Trajectory"
+                        : "Pause Trajectory";
                 }
             }
 
-            if (GUI.Button(new Rect(startX, currentY, panelWidth, buttonHeight), secondPlayButtonText))
+            if (
+                GUI.Button(
+                    new Rect(startX, currentY, panelWidth, buttonHeight),
+                    secondPlayButtonText
+                )
+            )
             {
                 if (csvController != null)
                 {
@@ -543,7 +619,12 @@ public class CSVTrajectoryExample : MonoBehaviour
             currentY += buttonHeight + spacing;
 
             // Debug robot state button
-            if (GUI.Button(new Rect(startX, currentY, panelWidth, buttonHeight), "Debug Robot State (F11)"))
+            if (
+                GUI.Button(
+                    new Rect(startX, currentY, panelWidth, buttonHeight),
+                    "Debug Robot State (F11)"
+                )
+            )
             {
                 DebugRobotState();
             }
@@ -551,16 +632,21 @@ public class CSVTrajectoryExample : MonoBehaviour
 
             // Loop toggle
             bool loopTrajectory = csvController.loopTrajectory;
-            csvController.loopTrajectory = GUI.Toggle(new Rect(startX, currentY, panelWidth, 20),
-                csvController.loopTrajectory, "Loop Trajectory");
+            csvController.loopTrajectory = GUI.Toggle(
+                new Rect(startX, currentY, panelWidth, 20),
+                csvController.loopTrajectory,
+                "Loop Trajectory"
+            );
             currentY += 25;
 
             // Progress info
             if (csvController.totalFrames > 0)
             {
                 float progress = robotController.GetCSVProgress();
-                GUI.Label(new Rect(startX, currentY, panelWidth, 20),
-                    $"Progress: {progress:P1} ({csvController.currentFrame}/{csvController.totalFrames})");
+                GUI.Label(
+                    new Rect(startX, currentY, panelWidth, 20),
+                    $"Progress: {progress:P1} ({csvController.currentFrame}/{csvController.totalFrames})"
+                );
                 currentY += 25;
 
                 // Progress bar
@@ -571,35 +657,47 @@ public class CSVTrajectoryExample : MonoBehaviour
         }
         else
         {
-            GUI.Label(new Rect(startX, currentY, panelWidth, 20), "CSV Controller not found!", GUI.skin.label);
+            GUI.Label(
+                new Rect(startX, currentY, panelWidth, 20),
+                "CSV Controller not found!",
+                GUI.skin.label
+            );
             currentY += 25;
         }
 
         // Instructions
         currentY += 10;
-        GUI.Label(new Rect(startX, currentY, panelWidth, 20), "Hotkeys:",
-            new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
+        GUI.Label(
+            new Rect(startX, currentY, panelWidth, 20),
+            "Hotkeys:",
+            new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold }
+        );
         currentY += 20;
 
-        GUI.Label(new Rect(startX, currentY, panelWidth, 125),
-            "F1: Toggle Demo GUI\n" +
-            "F2: Load Selected File\n" +
-            "F3: Load Custom File\n" +
-            "F9: Force Load Sample\n" +
-            "F10: Test File Paths\n" +
-            "F12: Full Debug\n" +
-            "T: Test Joint Movement\n" +
-            "Space: Play/Pause\n" +
-            "S: Stop\n" +
-            "+/-: Speed Control\n" +
-            "5: Switch to CSV Mode\n" +
-            "F11: Debug Robot State");
+        GUI.Label(
+            new Rect(startX, currentY, panelWidth, 125),
+            "F1: Toggle Demo GUI\n"
+                + "F2: Load Selected File\n"
+                + "F3: Load Custom File\n"
+                + "F9: Force Load Sample\n"
+                + "F10: Test File Paths\n"
+                + "F12: Full Debug\n"
+                + "T: Test Joint Movement\n"
+                + "Space: Play/Pause\n"
+                + "S: Stop\n"
+                + "+/-: Speed Control\n"
+                + "5: Switch to CSV Mode\n"
+                + "F11: Debug Robot State"
+        );
 
         currentY += 130;
 
         // Debug info
-        GUI.Label(new Rect(startX, currentY, panelWidth, 20),
-            $"Files found: {csvFileNames.Count}", GUI.skin.label);
+        GUI.Label(
+            new Rect(startX, currentY, panelWidth, 20),
+            $"Files found: {csvFileNames.Count}",
+            GUI.skin.label
+        );
     }
 
     void LoadSelectedTrajectory()
@@ -704,11 +802,14 @@ public class CSVTrajectoryExample : MonoBehaviour
     /// </summary>
     public string GetTrajectoryStatus()
     {
-        if (csvController == null) return "CSV Controller not found";
+        if (csvController == null)
+            return "CSV Controller not found";
 
-        string status = $"Frames: {csvController.totalFrames}, Duration: {csvController.totalDuration:F2}s";
+        string status =
+            $"Frames: {csvController.totalFrames}, Duration: {csvController.totalDuration:F2}s";
         status += $"\nSpeed: {csvController.playbackSpeed:F1}x";
-        status += $"\nStatus: {(csvController.isPlaying ? (csvController.isPaused ? "Paused" : "Playing") : "Stopped")}";
+        status +=
+            $"\nStatus: {(csvController.isPlaying ? (csvController.isPaused ? "Paused" : "Playing") : "Stopped")}";
 
         return status;
     }
@@ -748,4 +849,3 @@ public class CSVTrajectoryExample : MonoBehaviour
 
     #endregion
 }
-

@@ -1,12 +1,11 @@
-using UnityEngine;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Net;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-
+using UnityEngine;
 using static ConstantsUR5;
 
 [DefaultExecutionOrder(100)]
@@ -22,7 +21,7 @@ public class IKSocketSetup : MonoBehaviour
     private string envFilePath = Application.dataPath.Replace(unityAssetsFilePath, "");
     private string hostAddress;
     private int portNumber;
-    
+
     // AI Agent Integration
     private SceneSetup sceneSetup;
     private UR5IKController[] ur5IKControllers;
@@ -35,6 +34,7 @@ public class IKSocketSetup : MonoBehaviour
 
     private Queue<Action> mainThreadActions = new Queue<Action>();
     private object lockObject = new object();
+
     //private string pendingResponse;
     //private bool isProcessingCommand;
 
@@ -42,7 +42,6 @@ public class IKSocketSetup : MonoBehaviour
 
     void Start()
     {
-
         sceneSetup = GetComponent<SceneSetup>();
 
         //GET ALL REQUIRED SCENE DATA
@@ -86,7 +85,7 @@ public class IKSocketSetup : MonoBehaviour
             Debug.LogError("Socket error: " + e.Message);
         }
     }
-    
+
     void Update()
     {
         lock (lockObject)
@@ -156,7 +155,8 @@ public class IKSocketSetup : MonoBehaviour
         }
         catch (Exception e)
         {
-            if (isSocketActive) Debug.LogError("Receive callback error: " + e.Message);
+            if (isSocketActive)
+                Debug.LogError("Receive callback error: " + e.Message);
         }
     }
 
@@ -173,28 +173,32 @@ public class IKSocketSetup : MonoBehaviour
                 case "waiting":
                     return IKWaitJson();
                 default:
-                    return JsonUtility.ToJson(new IKResponse 
-                    { 
-                        success = false, 
-                        message = "Unknown command type: " + command.type 
-                    });
+                    return JsonUtility.ToJson(
+                        new IKResponse
+                        {
+                            success = false,
+                            message = "Unknown command type: " + command.type,
+                        }
+                    );
             }
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             Debug.LogError("Error processing IK command: " + e.Message);
-            return JsonUtility.ToJson(new IKResponse 
-            { 
-                success = false, 
-                message = "Error processing command: " + e.Message 
-            });
+            return JsonUtility.ToJson(
+                new IKResponse
+                {
+                    success = false,
+                    message = "Error processing command: " + e.Message,
+                }
+            );
         }
-        
     }
 
     private string ExecuteMoveToTargetJson(IKCommand command)
     {
         try
-        {                    
+        {
             // Set IK solution ready flag
             // ur5IKControllers[robotIdx].hasIKSolution = true; // IK solution is ready
             // ur5IKControllers[robotIdx].ikSolution = command.joint_angles.Select(a => (double)a).ToArray();
@@ -203,28 +207,33 @@ public class IKSocketSetup : MonoBehaviour
             float[] currentJointAngles = ur5IKControllers[robotIdx].GetJointAngles();
             for (int i = 0; i < JointCount; i++)
             {
-                command.joint_angles[i] = GetBestIKAngle(currentJointAngles[i], command.joint_angles[i]);
-                Debug.Log($"Joint {i}: Setting target to {command.joint_angles[i] * Mathf.Rad2Deg} degrees ({command.joint_angles[i]} radians)");
+                command.joint_angles[i] = GetBestIKAngle(
+                    currentJointAngles[i],
+                    command.joint_angles[i]
+                );
+                Debug.Log(
+                    $"Joint {i}: Setting target to {command.joint_angles[i] * Mathf.Rad2Deg} degrees ({command.joint_angles[i]} radians)"
+                );
             }
-            
+
             // directly set joint angles here
             ur5IKControllers[robotIdx].SetJointAngles(command.joint_angles);
             Debug.Log("Set joint angles in IKSOCKET");
-            
-            return JsonUtility.ToJson(new IKResponse 
-            { 
-                success = true, 
-                message = "Move to target command executed"
-            });
+
+            return JsonUtility.ToJson(
+                new IKResponse { success = true, message = "Move to target command executed" }
+            );
         }
         catch (Exception e)
         {
             Debug.LogError("Error executing move to target: " + e.Message);
-            return JsonUtility.ToJson(new IKResponse 
-            { 
-                success = false, 
-                message = "Error executing move to target: " + e.Message 
-            });
+            return JsonUtility.ToJson(
+                new IKResponse
+                {
+                    success = false,
+                    message = "Error executing move to target: " + e.Message,
+                }
+            );
         }
     }
 
@@ -246,23 +255,23 @@ public class IKSocketSetup : MonoBehaviour
                     {
                         ur5IKController.endEffectorTargetPosition.x,
                         ur5IKController.endEffectorTargetPosition.y,
-                        ur5IKController.endEffectorTargetPosition.z
-                    }
+                        ur5IKController.endEffectorTargetPosition.z,
+                    },
                 };
-                return JsonUtility.ToJson(new IKResponse 
-                { 
-                    success = true, 
-                    message = "Ik active",
-                    robot_state = robot_state_data
-                });
+                return JsonUtility.ToJson(
+                    new IKResponse
+                    {
+                        success = true,
+                        message = "Ik active",
+                        robot_state = robot_state_data,
+                    }
+                );
             }
         }
 
-        return JsonUtility.ToJson(new IKResponse 
-        { 
-            success = true, 
-            message = "Waiting for user IK input"
-        });
+        return JsonUtility.ToJson(
+            new IKResponse { success = true, message = "Waiting for user IK input" }
+        );
     }
 
     private float GetBestIKAngle(float currentAngle, float targetAngle)
@@ -272,20 +281,25 @@ public class IKSocketSetup : MonoBehaviour
         float angleDifference = targetAngle - currentAngleRadian;
 
         // Normalize the angle difference to the range [-π, π]
-        while (angleDifference > Mathf.PI) angleDifference -= twoPi;
-        while (angleDifference < -Mathf.PI) angleDifference += twoPi;
+        while (angleDifference > Mathf.PI)
+            angleDifference -= twoPi;
+        while (angleDifference < -Mathf.PI)
+            angleDifference += twoPi;
 
         // Calculate the best target angle
         float bestTargetAngle = currentAngleRadian + angleDifference;
         return bestTargetAngle;
     }
-    
+
     public void closeSocket()
     {
         isSocketActive = false;
-        if (stream != null) stream.Close();
-        if (client != null) client.Close();
-        if (listener != null) listener.Stop();
+        if (stream != null)
+            stream.Close();
+        if (client != null)
+            client.Close();
+        if (listener != null)
+            listener.Stop();
     }
 
     void OnApplicationQuit()

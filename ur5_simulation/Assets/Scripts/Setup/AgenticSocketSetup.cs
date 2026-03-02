@@ -1,12 +1,11 @@
-using UnityEngine;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Net;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-
+using UnityEngine;
 using static ConstantsUR5;
 
 [DefaultExecutionOrder(100)]
@@ -22,7 +21,7 @@ public class AgenticSocketSetup : MonoBehaviour
     private string envFilePath = Application.dataPath.Replace(unityAssetsFilePath, "");
     private string hostAddress;
     private int portNumber;
-    
+
     // AI Agent Integration
     private AgentRobotController agentController;
     private IKResponse ik_response;
@@ -36,6 +35,7 @@ public class AgenticSocketSetup : MonoBehaviour
 
     private Queue<Action> mainThreadActions = new Queue<Action>();
     private object lockObject = new object();
+
     //private string pendingResponse;
     //private bool isProcessingCommand;
 
@@ -46,11 +46,14 @@ public class AgenticSocketSetup : MonoBehaviour
         // Initialize AI components
         sceneSetup = GetComponent<SceneSetup>();
 
-        if (sceneSetup != null) agentController = sceneSetup.agentRobotController;
+        if (sceneSetup != null)
+            agentController = sceneSetup.agentRobotController;
 
         if (agentController == null)
         {
-            Debug.LogWarning("PythonSocketSetup: AgentRobotController not found. AI features may be limited.");
+            Debug.LogWarning(
+                "PythonSocketSetup: AgentRobotController not found. AI features may be limited."
+            );
         }
 
         //GET ALL REQUIRED SCENE DATA
@@ -96,7 +99,7 @@ public class AgenticSocketSetup : MonoBehaviour
             Debug.LogError("Socket error: " + e.Message);
         }
     }
-    
+
     void Update()
     {
         lock (lockObject)
@@ -162,7 +165,7 @@ public class AgenticSocketSetup : MonoBehaviour
 
                 // // Process AI command
                 // string response = ProcessAICommand(receivedData);
-                
+
                 // // Send response back to Python
                 // byte[] responseData = Encoding.UTF8.GetBytes(response);
                 // stream.Write(responseData, 0, responseData.Length);
@@ -174,44 +177,49 @@ public class AgenticSocketSetup : MonoBehaviour
         }
         catch (Exception e)
         {
-            if (isSocketActive) Debug.LogError("Receive callback error: " + e.Message);
+            if (isSocketActive)
+                Debug.LogError("Receive callback error: " + e.Message);
         }
     }
-    
+
     private string ProcessAICommand(string commandJson)
     {
         try
         {
             // Parse JSON command
             var command = JsonUtility.FromJson<AICommand>(commandJson);
-            
+
             switch (command.type)
             {
                 case "get_scene_state":
                     return GetSceneStateJson();
-                    
+
                 case "execute_action":
                     return ExecuteActionJson(command);
-                    
+
                 default:
-                    return JsonUtility.ToJson(new AIResponse 
-                    { 
-                        success = false, 
-                        message = "Unknown command type: " + command.type 
-                    });
+                    return JsonUtility.ToJson(
+                        new AIResponse
+                        {
+                            success = false,
+                            message = "Unknown command type: " + command.type,
+                        }
+                    );
             }
         }
         catch (Exception e)
         {
             Debug.LogError("Error processing AI command: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse 
-            { 
-                success = false, 
-                message = "Error processing command: " + e.Message 
-            });
+            return JsonUtility.ToJson(
+                new AIResponse
+                {
+                    success = false,
+                    message = "Error processing command: " + e.Message,
+                }
+            );
         }
     }
-    
+
     private string GetSceneStateJson()
     {
         try
@@ -220,22 +228,24 @@ public class AgenticSocketSetup : MonoBehaviour
             {
                 robots = GetRobotStates(),
                 // objects = GetObjectStates(),
-                timestamp = Time.time
+                timestamp = Time.time,
             };
-            
+
             return JsonUtility.ToJson(sceneState);
         }
         catch (Exception e)
         {
             Debug.LogError("Error getting scene state: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse 
-            { 
-                success = false, 
-                message = "Error getting scene state: " + e.Message 
-            });
+            return JsonUtility.ToJson(
+                new AIResponse
+                {
+                    success = false,
+                    message = "Error getting scene state: " + e.Message,
+                }
+            );
         }
     }
-    
+
     private RobotStateData[] GetRobotStates()
     {
         //if (robots == null) return new RobotStateData[0];
@@ -243,7 +253,7 @@ public class AgenticSocketSetup : MonoBehaviour
         RobotStateData[] robotStates = new RobotStateData[robotCount];
 
         //List<RobotStateData> robotStates = new List<RobotStateData>();
-        
+
         for (int i = 0; i < robotCount; i++)
         {
             var robot = robots[i];
@@ -260,16 +270,17 @@ public class AgenticSocketSetup : MonoBehaviour
                 robotTargets[j] = new ObjectStateData
                 {
                     name = target.name,
-                    position = new float[] { 
-                        targetPosition.x,
-                        targetPosition.y,
-                        targetPosition.z
-                    },
-                    is_attached = target.transform.parent != null // && block.transform.parent.name.Contains("suction")
+                    position = new float[] { targetPosition.x, targetPosition.y, targetPosition.z },
+                    is_attached =
+                        target.transform.parent
+                        != null // && block.transform.parent.name.Contains("suction")
+                    ,
                 };
             }
 
-            var endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
+            var endEffector = robotArmSetup
+                .robotJoints[robotArmSetup.robotJoints.Length - 1]
+                .transform;
             robotStates[i] = new RobotStateData
             {
                 name = robot.name,
@@ -278,47 +289,47 @@ public class AgenticSocketSetup : MonoBehaviour
                 {
                     endEffector.position.x,
                     endEffector.position.y,
-                    endEffector.position.z
+                    endEffector.position.z,
                 },
                 objects = robotTargets,
                 suction_active = suctionController != null && suctionController.enableSuction,
                 //is_moving = unifiedController != null && unifiedController.currentMode != UnifiedRobotController.ControlMode.Start
             };
-            
+
             //robotStates[i] = robotState;
         }
-        
+
         // foreach (var robot in robots)
         // {
         //     var robotArmSetup = robot.GetComponent<RobotArmSetup>();
         //     var suctionController = robot.GetComponent<SuctionController>();
         //     //var unifiedController = robot.GetComponent<UnifiedRobotController>();
-            
+
         //     if (robotArmSetup != null)
         //     {
         //         var endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
-                
+
         //         var robotState = new RobotStateData
         //         {
         //             name = robot.name,
         //             joint_angles = GetJointAngles(robotArmSetup.robotJoints),
-        //             end_effector_position = new float[] 
-        //             { 
-        //                 endEffector.position.x, 
-        //                 endEffector.position.y, 
-        //                 endEffector.position.z 
+        //             end_effector_position = new float[]
+        //             {
+        //                 endEffector.position.x,
+        //                 endEffector.position.y,
+        //                 endEffector.position.z
         //             },
         //             suction_active = suctionController != null && suctionController.enableSuction,
         //             //is_moving = unifiedController != null && unifiedController.currentMode != UnifiedRobotController.ControlMode.Start
         //         };
-                
+
         //         robotStates.Add(robotState);
         //     }
         // }
-        
+
         return robotStates;
     }
-    
+
     private float[] GetJointAngles(ArticulationBody[] robotJoints)
     {
         float[] angles = new float[JointCount]; //UR5 has 6 joints
@@ -329,7 +340,7 @@ public class AgenticSocketSetup : MonoBehaviour
         }
         return angles;
     }
-    
+
     private ObjectStateData[] GetObjectStates()
     {
         //List<ObjectStateData> objects = new List<ObjectStateData>();
@@ -347,12 +358,15 @@ public class AgenticSocketSetup : MonoBehaviour
             {
                 name = target.name,
                 position = new float[] { targetPosition.x, targetPosition.y, targetPosition.z },
-                is_attached = target.transform.parent != null // && block.transform.parent.name.Contains("suction")
+                is_attached =
+                    target.transform.parent
+                    != null // && block.transform.parent.name.Contains("suction")
+                ,
             };
         }
 
         return objects;
-        
+
         // foreach (var block in targets)
         // {
         //     objects.Add(new ObjectStateData
@@ -363,33 +377,35 @@ public class AgenticSocketSetup : MonoBehaviour
         //         is_attached = block.transform.parent != null // && block.transform.parent.name.Contains("suction")
         //     });
         // }
-        
+
         // return objects.ToArray();
     }
-    
+
     private string ExecuteActionJson(AICommand command)
     {
         try
         {
             bool success = false;
             string message = "";
-            
+
             // Find the target robot
             GameObject targetRobot = null;
             if (sceneSetup != null && sceneSetup.robots != null)
             {
                 targetRobot = sceneSetup.robots.FirstOrDefault(r => r.name == command.robot_name);
             }
-            
+
             if (targetRobot == null)
             {
-                return JsonUtility.ToJson(new AIResponse 
-                { 
-                    success = false, 
-                    message = "Robot not found: " + command.robot_name 
-                });
+                return JsonUtility.ToJson(
+                    new AIResponse
+                    {
+                        success = false,
+                        message = "Robot not found: " + command.robot_name,
+                    }
+                );
             }
-            
+
             // Execute the action based on type
             switch (command.action_type)
             {
@@ -404,41 +420,39 @@ public class AgenticSocketSetup : MonoBehaviour
                 case "move_robot":
                     ExecuteMoveRobot(targetRobot, command.parameters);
                     return JsonUtility.ToJson(ik_response);
-                    
+
                 case "activate_suction":
                     success = ExecuteActivateSuction(targetRobot);
                     message = success ? "Suction activated" : "Suction activation failed";
                     break;
-                    
+
                 case "deactivate_suction":
                     success = ExecuteDeactivateSuction(targetRobot);
                     message = success ? "Suction deactivated" : "Suction deactivation failed";
                     break;
-                    
+
                 default:
                     message = "Unknown action type: " + command.action_type;
                     break;
             }
-            
+
             return JsonUtility.ToJson(new AIResponse { success = success, message = message });
         }
         catch (Exception e)
         {
             Debug.LogError("Error executing action: " + e.Message);
-            return JsonUtility.ToJson(new AIResponse 
-            { 
-                success = false, 
-                message = "Error executing action: " + e.Message 
-            });
+            return JsonUtility.ToJson(
+                new AIResponse { success = false, message = "Error executing action: " + e.Message }
+            );
         }
     }
 
     private bool ExecuteSolveIK(GameObject robot, ActionParameters parameters)
-    {       
+    {
         // set joint angles for specified robot
         return agentController.SetJointAngles(robot, parameters.joint_angles);
     }
-    
+
     private void ExecuteMoveRobot(GameObject robot, ActionParameters parameters)
     {
         try
@@ -450,7 +464,9 @@ public class AgenticSocketSetup : MonoBehaviour
             );
 
             targetInputPosition.y += SuctionIKOffsetY; // slight offset to account for suction cup height
-            Vector3 endEffectorTargetPosition = robot.transform.InverseTransformPoint(targetInputPosition);
+            Vector3 endEffectorTargetPosition = robot.transform.InverseTransformPoint(
+                targetInputPosition
+            );
 
             var robot_state_data = new IKRobotStateData
             {
@@ -460,17 +476,17 @@ public class AgenticSocketSetup : MonoBehaviour
                 {
                     endEffectorTargetPosition.x,
                     endEffectorTargetPosition.y,
-                    endEffectorTargetPosition.z
-                }
+                    endEffectorTargetPosition.z,
+                },
             };
-            
+
             ik_response = new IKResponse
             {
                 success = true,
                 message = "run_ik",
                 robot_state = robot_state_data,
             };
-        } 
+        }
         catch (Exception e)
         {
             Debug.LogError("Error in ExecuteMoveRobot: " + e.Message);
@@ -478,17 +494,17 @@ public class AgenticSocketSetup : MonoBehaviour
             {
                 success = false,
                 message = "Error in ExecuteMoveRobot: " + e.Message,
-                robot_state = null
+                robot_state = null,
             };
         }
-        
     }
-    
+
     private bool ExecuteActivateSuction(GameObject robot)
     {
         var suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController == null) return false;
-        
+        if (suctionController == null)
+            return false;
+
         suctionController.ToggleSuction();
         return true;
     }
@@ -496,7 +512,8 @@ public class AgenticSocketSetup : MonoBehaviour
     private bool ExecuteDeactivateSuction(GameObject robot)
     {
         var suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController == null) return false;
+        if (suctionController == null)
+            return false;
 
         if (suctionController.enableSuction)
         {
@@ -504,13 +521,16 @@ public class AgenticSocketSetup : MonoBehaviour
         }
         return true;
     }
-    
+
     public void closeSocket()
     {
         isSocketActive = false;
-        if (stream != null) stream.Close();
-        if (client != null) client.Close();
-        if (listener != null) listener.Stop();
+        if (stream != null)
+            stream.Close();
+        if (client != null)
+            client.Close();
+        if (listener != null)
+            listener.Stop();
     }
 
     void OnApplicationQuit()

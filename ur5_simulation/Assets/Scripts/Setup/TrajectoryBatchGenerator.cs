@@ -1,17 +1,32 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 public class TrajectoryBatchGenerator : MonoBehaviour
 {
     [Header("Trajectory Batch Generation")]
-    [SerializeField] private PoseAndImageRecorder[] trajectoryRecorders;
-    [SerializeField] private int defaultTrajectoryCount = 10;
-    [SerializeField] private float settleAfterResetSeconds = 0.25f;
-    [SerializeField] private float betweenTrajectoryDelaySeconds = 0.25f;
-    [SerializeField] private float maxTrajectoryRunSeconds = 10f;
-    [SerializeField] private float minTrajectoryRunSeconds = 0.5f;
-    [SerializeField] private float settleDistanceThreshold = 0.0005f;
-    [SerializeField] private float requiredSettledSeconds = 0.5f;
+    [SerializeField]
+    private PoseAndImageRecorder[] trajectoryRecorders;
+
+    [SerializeField]
+    private int defaultTrajectoryCount = 10;
+
+    [SerializeField]
+    private float settleAfterResetSeconds = 0.25f;
+
+    [SerializeField]
+    private float betweenTrajectoryDelaySeconds = 0.25f;
+
+    [SerializeField]
+    private float maxTrajectoryRunSeconds = 10f;
+
+    [SerializeField]
+    private float minTrajectoryRunSeconds = 0.5f;
+
+    [SerializeField]
+    private float settleDistanceThreshold = 0.0005f;
+
+    [SerializeField]
+    private float requiredSettledSeconds = 0.5f;
 
     private SceneSetup sceneSetup;
     private Coroutine trajectoryBatchRoutine;
@@ -36,7 +51,9 @@ public class TrajectoryBatchGenerator : MonoBehaviour
 
         if (trajectoryCount <= 0)
         {
-            Debug.LogWarning("Trajectory generation skipped: trajectoryCount must be greater than zero.");
+            Debug.LogWarning(
+                "Trajectory generation skipped: trajectoryCount must be greater than zero."
+            );
             return;
         }
 
@@ -46,7 +63,9 @@ public class TrajectoryBatchGenerator : MonoBehaviour
             return;
         }
 
-        trajectoryBatchRoutine = StartCoroutine(GenerateMultipleTrajectoriesRoutine(trajectoryCount));
+        trajectoryBatchRoutine = StartCoroutine(
+            GenerateMultipleTrajectoriesRoutine(trajectoryCount)
+        );
     }
 
     private IEnumerator GenerateMultipleTrajectoriesRoutine(int trajectoryCount)
@@ -75,32 +94,39 @@ public class TrajectoryBatchGenerator : MonoBehaviour
 
     private void EnsureTrajectoryRecordersAreAssigned()
     {
-        if (trajectoryRecorders != null && trajectoryRecorders.Length > 0) return;
+        if (trajectoryRecorders != null && trajectoryRecorders.Length > 0)
+            return;
 
         trajectoryRecorders = FindObjectsByType<PoseAndImageRecorder>(FindObjectsSortMode.None);
         if (trajectoryRecorders == null || trajectoryRecorders.Length == 0)
         {
-            Debug.LogWarning("No PoseAndImageRecorder components found. Trajectories will run without recording.");
+            Debug.LogWarning(
+                "No PoseAndImageRecorder components found. Trajectories will run without recording."
+            );
         }
     }
 
     private void StartTrajectoryRecording()
     {
-        if (trajectoryRecorders == null) return;
+        if (trajectoryRecorders == null)
+            return;
 
         foreach (PoseAndImageRecorder recorder in trajectoryRecorders)
         {
-            if (recorder != null) recorder.StartRecording();
+            if (recorder != null)
+                recorder.StartRecording();
         }
     }
 
     private void StopTrajectoryRecording()
     {
-        if (trajectoryRecorders == null) return;
+        if (trajectoryRecorders == null)
+            return;
 
         foreach (PoseAndImageRecorder recorder in trajectoryRecorders)
         {
-            if (recorder != null) recorder.StopRecording();
+            if (recorder != null)
+                recorder.StopRecording();
         }
     }
 
@@ -119,17 +145,24 @@ public class TrajectoryBatchGenerator : MonoBehaviour
             elapsed += Time.deltaTime;
 
             Vector3[] currentEndEffectorPositions = GetEndEffectorPositions();
-            float maxDelta = GetMaxEndEffectorDelta(previousEndEffectorPositions, currentEndEffectorPositions);
+            float maxDelta = GetMaxEndEffectorDelta(
+                previousEndEffectorPositions,
+                currentEndEffectorPositions
+            );
             previousEndEffectorPositions = currentEndEffectorPositions;
-            if (maxDelta > settleDistanceThreshold) movementObserved = true;
+            if (maxDelta > settleDistanceThreshold)
+                movementObserved = true;
 
-            if (elapsed < minTrajectoryRunSeconds) continue;
-            if (!movementObserved) continue;
+            if (elapsed < minTrajectoryRunSeconds)
+                continue;
+            if (!movementObserved)
+                continue;
 
             if (maxDelta <= settleDistanceThreshold)
             {
                 settledFor += Time.deltaTime;
-                if (settledFor >= requiredSettledSeconds) break;
+                if (settledFor >= requiredSettledSeconds)
+                    break;
             }
             else
             {
@@ -145,16 +178,21 @@ public class TrajectoryBatchGenerator : MonoBehaviour
 
     private void StopSceneAfterTrajectory()
     {
-        if (sceneSetup == null || sceneSetup.robots == null) return;
+        if (sceneSetup == null || sceneSetup.robots == null)
+            return;
 
-        if (sceneSetup.agentRobotController != null && sceneSetup.agentRobotController.IsCSVPlaying())
+        if (
+            sceneSetup.agentRobotController != null
+            && sceneSetup.agentRobotController.IsCSVPlaying()
+        )
         {
             sceneSetup.agentRobotController.StopCSVPlayback();
         }
 
         foreach (GameObject robot in sceneSetup.robots)
         {
-            if (robot == null) continue;
+            if (robot == null)
+                continue;
 
             SuctionController suctionController = robot.GetComponent<SuctionController>();
             if (suctionController != null)
@@ -172,7 +210,8 @@ public class TrajectoryBatchGenerator : MonoBehaviour
 
     private Vector3[] GetEndEffectorPositions()
     {
-        if (sceneSetup == null || sceneSetup.robots == null) return new Vector3[0];
+        if (sceneSetup == null || sceneSetup.robots == null)
+            return new Vector3[0];
 
         Vector3[] positions = new Vector3[sceneSetup.robots.Length];
         for (int i = 0; i < sceneSetup.robots.Length; i++)
@@ -185,13 +224,20 @@ public class TrajectoryBatchGenerator : MonoBehaviour
             }
 
             RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
-            if (robotArmSetup == null || robotArmSetup.robotJoints == null || robotArmSetup.robotJoints.Length == 0)
+            if (
+                robotArmSetup == null
+                || robotArmSetup.robotJoints == null
+                || robotArmSetup.robotJoints.Length == 0
+            )
             {
                 positions[i] = robot.transform.position;
                 continue;
             }
 
-            positions[i] = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform.position;
+            positions[i] = robotArmSetup
+                .robotJoints[robotArmSetup.robotJoints.Length - 1]
+                .transform
+                .position;
         }
 
         return positions;
@@ -199,7 +245,8 @@ public class TrajectoryBatchGenerator : MonoBehaviour
 
     private float GetMaxEndEffectorDelta(Vector3[] previousPositions, Vector3[] currentPositions)
     {
-        if (previousPositions == null || currentPositions == null) return float.MaxValue;
+        if (previousPositions == null || currentPositions == null)
+            return float.MaxValue;
 
         int count = Mathf.Min(previousPositions.Length, currentPositions.Length);
         float maxDelta = 0f;
@@ -207,7 +254,8 @@ public class TrajectoryBatchGenerator : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             float delta = Vector3.Distance(previousPositions[i], currentPositions[i]);
-            if (delta > maxDelta) maxDelta = delta;
+            if (delta > maxDelta)
+                maxDelta = delta;
         }
 
         return maxDelta;

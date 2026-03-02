@@ -1,20 +1,20 @@
-using UnityEngine;
-using System.IO;
 using System.Collections.Generic;
-
+using System.IO;
+using UnityEngine;
 using static ConstantsUR5;
 
 /// <summary>
 /// Example script demonstrating how to use CSV trajectory functionality
 /// This script shows how to load and control CSV trajectories in Unity
 /// </summary>
-/// 
+///
 
 [DefaultExecutionOrder(-1)] // Ensure this runs after AgentRobotController
 public class AgentTrajectory : MonoBehaviour
 {
     [HideInInspector]
     public AgentRobotController robotController;
+
     [HideInInspector]
     public AgentTrajectoryController agentController;
 
@@ -56,9 +56,7 @@ public class AgentTrajectory : MonoBehaviour
         if (agentController == null)
             //csvController = FindObjectOfType<AgentTrajectoryController>();
             agentController = GetComponent<AgentTrajectoryController>();
-
     }
-
 
     void PopulateCSVFiles()
     {
@@ -68,7 +66,7 @@ public class AgentTrajectory : MonoBehaviour
         // Define search folders (both Exports and Imports)
         string[] searchFolders = new string[]
         {
-            Path.Combine(Application.dataPath, "..", "AgenticAIPaths")
+            Path.Combine(Application.dataPath, "..", "AgenticAIPaths"),
         };
 
         int totalFilesFound = 0;
@@ -115,12 +113,10 @@ public class AgentTrajectory : MonoBehaviour
 
     void Update()
     {
-        
         if (Input.GetKeyDown(KeyCode.F1))
         {
             ForceLoadSampleTrajectory();
         }
-
     }
 
     /// <summary>
@@ -155,8 +151,12 @@ public class AgentTrajectory : MonoBehaviour
         if (agentController != null)
         {
             Debug.Log($"Trajectory Loaded: {(agentController.totalFrames > 0 ? "YES" : "NO")}");
-            Debug.Log($"Frames: {agentController.totalFrames}, Duration: {agentController.totalDuration:F2}s");
-            Debug.Log($"Playback Status: {(agentController.isPlaying ? (agentController.isPaused ? "Paused" : "Playing") : "Stopped")}");
+            Debug.Log(
+                $"Frames: {agentController.totalFrames}, Duration: {agentController.totalDuration:F2}s"
+            );
+            Debug.Log(
+                $"Playback Status: {(agentController.isPlaying ? (agentController.isPaused ? "Paused" : "Playing") : "Stopped")}"
+            );
         }
 
         // Check file paths for both folders
@@ -189,7 +189,12 @@ public class AgentTrajectory : MonoBehaviour
         foreach (GameObject robot in robots)
         {
             string defaultFile = robot.name + ".csv";
-            string samplePath = Path.Combine(Application.dataPath, "..", "AgenticAIPaths", defaultFile);
+            string samplePath = Path.Combine(
+                Application.dataPath,
+                "..",
+                "AgenticAIPaths",
+                defaultFile
+            );
 
             Debug.Log($"=== FORCE LOADING SAMPLE TRAJECTORY ===");
             Debug.Log($"Sample path: {samplePath}");
@@ -209,5 +214,4 @@ public class AgentTrajectory : MonoBehaviour
             Debug.LogError("Robot controller is null!");
         }
     }
-    
 }

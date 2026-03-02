@@ -2,7 +2,12 @@ using UnityEngine;
 
 namespace Unity.Robotics.UrdfImporter.Control
 {
-    public enum RotationDirection { None = 0, Positive = 1, Negative = -1 };
+    public enum RotationDirection
+    {
+        None = 0,
+        Positive = 1,
+        Negative = -1,
+    };
 
     public class JointControl : MonoBehaviour
     {

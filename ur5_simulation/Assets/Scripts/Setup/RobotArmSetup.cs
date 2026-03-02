@@ -1,11 +1,10 @@
-using UnityEngine;
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
-
-using static ConstantsUR5;
+using UnityEngine;
 using static Config;
+using static ConstantsUR5;
 
 public class RobotArmSetup : MonoBehaviour
 {
@@ -14,21 +13,24 @@ public class RobotArmSetup : MonoBehaviour
     private float nextSampleTime;
     private bool isRecording;
     private List<JointCoordinateRecord> coordinates;
-    private readonly string coordinateHeaders = "Timestamp,base_PosX,base_PosY,base_PosZ,base_RotX,base_RotY,base_RotZ,base_RotW,base_jointAngle," +
-                                              "shoulder_PosX,shoulder_PosY,shoulder_PosZ,shoulder_RotX,shoulder_RotY,shoulder_RotZ,shoulder_RotW,shoulder_jointAngle," +
-                                              "elbow_PosX,elbow_PosY,elbow_PosZ,elbow_RotX,elbow_RotY,elbow_RotZ,elbow_RotW,elbow_jointAngle," +
-                                              "wrist1_PosX,wrist1_PosY,wrist1_PosZ,wrist1_RotX,wrist1_RotY,wrist1_RotZ,wrist1_RotW,wrist1_jointAngle," +
-                                              "wrist2_PosX,wrist2_PosY,wrist2_PosZ,wrist2_RotX,wrist2_RotY,wrist2_RotZ,wrist2_RotW,wrist2_jointAngle," +
-                                              "wrist3_PosX,wrist3_PosY,wrist3_PosZ,wrist3_RotX,wrist3_RotY,wrist3_RotZ,wrist3_RotW,wrist3_jointAngle," +
-                                              "ee_PosX,ee_PosY,ee_PosZ,ee_RotX,ee_RotY,ee_RotZ,ee_RotW,suctionOn,blockAttracted"; //+
+    private readonly string coordinateHeaders =
+        "Timestamp,base_PosX,base_PosY,base_PosZ,base_RotX,base_RotY,base_RotZ,base_RotW,base_jointAngle,"
+        + "shoulder_PosX,shoulder_PosY,shoulder_PosZ,shoulder_RotX,shoulder_RotY,shoulder_RotZ,shoulder_RotW,shoulder_jointAngle,"
+        + "elbow_PosX,elbow_PosY,elbow_PosZ,elbow_RotX,elbow_RotY,elbow_RotZ,elbow_RotW,elbow_jointAngle,"
+        + "wrist1_PosX,wrist1_PosY,wrist1_PosZ,wrist1_RotX,wrist1_RotY,wrist1_RotZ,wrist1_RotW,wrist1_jointAngle,"
+        + "wrist2_PosX,wrist2_PosY,wrist2_PosZ,wrist2_RotX,wrist2_RotY,wrist2_RotZ,wrist2_RotW,wrist2_jointAngle,"
+        + "wrist3_PosX,wrist3_PosY,wrist3_PosZ,wrist3_RotX,wrist3_RotY,wrist3_RotZ,wrist3_RotW,wrist3_jointAngle,"
+        + "ee_PosX,ee_PosY,ee_PosZ,ee_RotX,ee_RotY,ee_RotZ,ee_RotW,suctionOn,blockAttracted"; //+
 
     [HideInInspector]
     public ArticulationBody[] articulationChain; // Automatically populated articulation chain
+
     [HideInInspector]
     public ArticulationBody[] robotJoints;
+
     //private BlockSetup blockSetup;
     [HideInInspector]
-    public GameObject blockToPickup;        // Reference to the block
+    public GameObject blockToPickup; // Reference to the block
     private SuctionController suctionController;
 
     [Header("Export Settings")]
@@ -85,7 +87,6 @@ public class RobotArmSetup : MonoBehaviour
             robotJoints[i].name = JointNames[robotJoints[i].name];
         }
         robotJoints[JointCount] = articulationChain[EndEffectorIndex];
-
     }
 
     public void ResetArmPosition()
@@ -140,10 +141,14 @@ public class RobotArmSetup : MonoBehaviour
         public bool suctionState;
         public bool attractedState;
 
-        public JointCoordinateRecord(float time, bool currentSuctionState, bool currentAttractedState)
+        public JointCoordinateRecord(
+            float time,
+            bool currentSuctionState,
+            bool currentAttractedState
+        )
         {
             timestamp = time;
-            positions = new Vector3[7];  // 6 joints (indices 3-8) + ee
+            positions = new Vector3[7]; // 6 joints (indices 3-8) + ee
             rotations = new Quaternion[7];
             jointAngles = new float[JointCount];
             suctionState = currentSuctionState;
@@ -161,7 +166,9 @@ public class RobotArmSetup : MonoBehaviour
                 {
                     case 6: // End Effector
                         sb.Append($",{positions[i].x:F3},{positions[i].y:F3},{positions[i].z:F3}");
-                        sb.Append($",{rotations[i].x:F3},{rotations[i].y:F3},{rotations[i].z:F3},{rotations[i].w:F3}");
+                        sb.Append(
+                            $",{rotations[i].x:F3},{rotations[i].y:F3},{rotations[i].z:F3},{rotations[i].w:F3}"
+                        );
                         sb.Append($",{suctionState}"); // Suction state for end effector
                         sb.Append($",{attractedState}"); // Block attracted state
                         break;
@@ -171,7 +178,9 @@ public class RobotArmSetup : MonoBehaviour
                     //     break;
                     default:
                         sb.Append($",{positions[i].x:F3},{positions[i].y:F3},{positions[i].z:F3}");
-                        sb.Append($",{rotations[i].x:F3},{rotations[i].y:F3},{rotations[i].z:F3},{rotations[i].w:F3}");
+                        sb.Append(
+                            $",{rotations[i].x:F3},{rotations[i].y:F3},{rotations[i].z:F3},{rotations[i].w:F3}"
+                        );
                         sb.Append($",{jointAngles[i]:F3}");
                         break;
                 }
@@ -184,7 +193,9 @@ public class RobotArmSetup : MonoBehaviour
     private void SetupExportFile()
     {
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string filename = appendTimestamp ? $"{exportFilePath}_{timestamp}.csv" : $"{exportFilePath}.csv";
+        string filename = appendTimestamp
+            ? $"{exportFilePath}_{timestamp}.csv"
+            : $"{exportFilePath}.csv";
         currentFilePath = Path.Combine(Application.dataPath, "..", "Exports", filename);
 
         // Create exports directory if it doesn't exist
@@ -201,7 +212,11 @@ public class RobotArmSetup : MonoBehaviour
 
     private void RecordJointCoordinates()
     {
-        JointCoordinateRecord record = new JointCoordinateRecord(Time.time, suctionController.enableSuction, suctionController.isBlockAttached);
+        JointCoordinateRecord record = new JointCoordinateRecord(
+            Time.time,
+            suctionController.enableSuction,
+            suctionController.isBlockAttached
+        );
 
         // Record joint positions and rotations for actual joints (0 to JointCount-1)
         for (int i = 0; i < JointCount; i++)
@@ -230,7 +245,8 @@ public class RobotArmSetup : MonoBehaviour
 
     private void SaveCoordinates()
     {
-        if (coordinates.Count == 0) return;
+        if (coordinates.Count == 0)
+            return;
 
         try
         {
@@ -251,7 +267,8 @@ public class RobotArmSetup : MonoBehaviour
 
     public void StartRecording()
     {
-        if (isRecording) return;
+        if (isRecording)
+            return;
 
         SetupExportFile();
         isRecording = true;
@@ -261,7 +278,8 @@ public class RobotArmSetup : MonoBehaviour
 
     public void StopRecording()
     {
-        if (!isRecording) return;
+        if (!isRecording)
+            return;
 
         SaveCoordinates();
         coordinates.Clear();

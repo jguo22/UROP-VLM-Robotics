@@ -8,8 +8,11 @@ using UnityEngine;
 public class UR5KeyboardIKController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float ikMoveSpeed = 1f;       // meters per second
-    [SerializeField] private float ikRotateSpeed = 30.0f;    // degrees per second
+    [SerializeField]
+    private float ikMoveSpeed = 1f; // meters per second
+
+    [SerializeField]
+    private float ikRotateSpeed = 30.0f; // degrees per second
 
     private UR5Controller ur5Controller;
 
@@ -23,12 +26,18 @@ public class UR5KeyboardIKController : MonoBehaviour
         // Translation (WASDQE)
         Vector3 deltaPosition = Vector3.zero;
         float moveStep = ikMoveSpeed * Time.deltaTime;
-        if (Input.GetKey(KeyCode.W)) deltaPosition.z += moveStep;
-        if (Input.GetKey(KeyCode.S)) deltaPosition.z -= moveStep;
-        if (Input.GetKey(KeyCode.A)) deltaPosition.x -= moveStep;
-        if (Input.GetKey(KeyCode.D)) deltaPosition.x += moveStep;
-        if (Input.GetKey(KeyCode.Q)) deltaPosition.y -= moveStep;
-        if (Input.GetKey(KeyCode.E)) deltaPosition.y += moveStep;
+        if (Input.GetKey(KeyCode.W))
+            deltaPosition.z += moveStep;
+        if (Input.GetKey(KeyCode.S))
+            deltaPosition.z -= moveStep;
+        if (Input.GetKey(KeyCode.A))
+            deltaPosition.x -= moveStep;
+        if (Input.GetKey(KeyCode.D))
+            deltaPosition.x += moveStep;
+        if (Input.GetKey(KeyCode.Q))
+            deltaPosition.y -= moveStep;
+        if (Input.GetKey(KeyCode.E))
+            deltaPosition.y += moveStep;
 
         // Rotation (arrow keys + PgUp/PgDn)
         // Vector3 deltaRotation = Vector3.zero;
@@ -44,8 +53,9 @@ public class UR5KeyboardIKController : MonoBehaviour
         //     ur5Controller.MoveDelta(deltaPosition, Quaternion.Euler(deltaRotation));
         // }
 
-        Quaternion deltaRotation = Quaternion.Euler(180, 0, 0) * Quaternion.Inverse(
-                ur5Controller.GetEndEffectorPose().rotation);
+        Quaternion deltaRotation =
+            Quaternion.Euler(180, 0, 0)
+            * Quaternion.Inverse(ur5Controller.GetEndEffectorPose().rotation);
         if (deltaPosition != Vector3.zero)
         {
             ur5Controller.MoveDelta(deltaPosition, deltaRotation);

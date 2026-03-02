@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class SceneResetController : MonoBehaviour
 {
@@ -10,11 +10,11 @@ public class SceneResetController : MonoBehaviour
         public Quaternion rotation;
     }
 
-    [SerializeField] private float positionRandomRadius = 0.05f;
+    [SerializeField]
+    private float positionRandomRadius = 0.05f;
 
     private SceneSetup sceneSetup;
-    private readonly Dictionary<GameObject, SceneObjectInitialState> initialTargetStates
-        = new();
+    private readonly Dictionary<GameObject, SceneObjectInitialState> initialTargetStates = new();
 
     public void Initialize(SceneSetup setup)
     {
@@ -22,17 +22,19 @@ public class SceneResetController : MonoBehaviour
 
         initialTargetStates.Clear();
 
-        if (sceneSetup == null || sceneSetup.targets == null) return;
+        if (sceneSetup == null || sceneSetup.targets == null)
+            return;
 
         foreach (GameObject target in sceneSetup.targets)
         {
-            if (target == null) continue;
+            if (target == null)
+                continue;
 
             initialTargetStates[target] = new SceneObjectInitialState
             {
                 parent = target.transform.parent,
                 position = target.transform.position,
-                rotation = target.transform.rotation
+                rotation = target.transform.rotation,
             };
         }
     }
@@ -53,7 +55,8 @@ public class SceneResetController : MonoBehaviour
 
         foreach (GameObject robot in sceneSetup.robots)
         {
-            if (robot == null) continue;
+            if (robot == null)
+                continue;
 
             SuctionController robotSuction = robot.GetComponent<SuctionController>();
             if (robotSuction != null)
@@ -67,7 +70,11 @@ public class SceneResetController : MonoBehaviour
         List<SceneObjectInitialState> states = new List<SceneObjectInitialState>();
         foreach (GameObject target in sceneSetup.targets)
         {
-            if (target == null || !initialTargetStates.TryGetValue(target, out SceneObjectInitialState state)) continue;
+            if (
+                target == null
+                || !initialTargetStates.TryGetValue(target, out SceneObjectInitialState state)
+            )
+                continue;
             validTargets.Add(target);
             states.Add(state);
         }
@@ -86,7 +93,8 @@ public class SceneResetController : MonoBehaviour
             Vector2 offset = Random.insideUnitCircle * positionRandomRadius;
 
             validTargets[i].transform.SetParent(state.parent, true);
-            validTargets[i].transform.position = state.position + new Vector3(offset.x, 0f, offset.y);
+            validTargets[i].transform.position =
+                state.position + new Vector3(offset.x, 0f, offset.y);
             validTargets[i].transform.rotation = state.rotation;
 
             Rigidbody rb = validTargets[i].GetComponent<Rigidbody>();
@@ -112,7 +120,8 @@ public class SceneResetController : MonoBehaviour
         {
             foreach (GameObject robot in sceneSetup.robots)
             {
-                if (robot == null) continue;
+                if (robot == null)
+                    continue;
 
                 RobotArmSetup armSetup = robot.GetComponent<RobotArmSetup>();
                 if (armSetup != null)

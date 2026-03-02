@@ -1,9 +1,8 @@
-using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Robotics.UrdfImporter.Control;
-
+using UnityEngine;
 using static ConstantsUR5;
 
 /// <summary>
@@ -11,7 +10,6 @@ using static ConstantsUR5;
 /// </summary>
 public class AgentRobotController : MonoBehaviour
 {
-
     [HideInInspector]
     public AgentTrajectoryController agentTrajectoryController;
 
@@ -21,18 +19,19 @@ public class AgentRobotController : MonoBehaviour
 
     public enum ControlMode
     {
-        Start,           // initial state at start up
+        Start, // initial state at start up
         CSVTrajectory, // CSV file trajectory playback
-        AgenticAI     // Agentic AI control mode
+        AgenticAI // Agentic AI control mode
+        ,
     }
 
     //private ArticulationBody[] articulationChain;
     private List<ArticulationBody[]> robotJointsList = new List<ArticulationBody[]>();
     private Transform endEffector;
 
-
     [HideInInspector]
     public GameObject[] robots;
+
     [HideInInspector]
     public int defaultJointAngleY = 35;
 
@@ -54,11 +53,14 @@ public class AgentRobotController : MonoBehaviour
         foreach (GameObject robot in robots)
         {
             RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
-            if (robotArmSetup != null) robotJointsList.Add(robotArmSetup.robotJoints);
+            if (robotArmSetup != null)
+                robotJointsList.Add(robotArmSetup.robotJoints);
         }
 
         agentTrajectoryController = GetComponent<AgentTrajectoryController>();
-        Debug.Log($"{robotJointsList.Count}, {robotJointsList[0].Length}, {robotJointsList[1].Length}");
+        Debug.Log(
+            $"{robotJointsList.Count}, {robotJointsList[0].Length}, {robotJointsList[1].Length}"
+        );
 
         // Get joints from robotArmSetup
         // if (robotArmSetup != null && robotArmSetup.articulationChain != null)
@@ -103,9 +105,10 @@ public class AgentRobotController : MonoBehaviour
     void HandleModeSwitching()
     {
         // Switch modes with number keys
-        if (Input.GetKeyDown(KeyCode.Alpha1)) SetControlMode(ControlMode.CSVTrajectory);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) SetControlMode(ControlMode.AgenticAI);
-        
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+            SetControlMode(ControlMode.CSVTrajectory);
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+            SetControlMode(ControlMode.AgenticAI);
     }
 
     void HandleCurrentMode()
@@ -121,7 +124,6 @@ public class AgentRobotController : MonoBehaviour
         }
     }
 
-
     #region CSV Trajectory Control
 
     void HandleCSVTrajectoryControl()
@@ -134,7 +136,8 @@ public class AgentRobotController : MonoBehaviour
         {
             if (agentTrajectoryController != null)
             {
-                agentTrajectoryController.loopTrajectory = !agentTrajectoryController.loopTrajectory;
+                agentTrajectoryController.loopTrajectory =
+                    !agentTrajectoryController.loopTrajectory;
                 Debug.Log($"CSV Trajectory loop: {agentTrajectoryController.loopTrajectory}");
             }
         }
@@ -156,7 +159,8 @@ public class AgentRobotController : MonoBehaviour
     public float[] GetJointAngles(GameObject robot)
     {
         RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
-        if (robotArmSetup == null) return null;
+        if (robotArmSetup == null)
+            return null;
 
         ArticulationBody[] robotJoints = robotArmSetup.robotJoints;
         float[] angles = new float[JointCount]; // Assuming 6-DOF UR5 robot
@@ -201,10 +205,7 @@ public class AgentRobotController : MonoBehaviour
     //     StartCoroutine(MoveToPosition(StableStartingRotations));
     // }
 
-    public void MoveEndEffectorTo(Vector3 targetPosition)
-    {
-        
-    }
+    public void MoveEndEffectorTo(Vector3 targetPosition) { }
 
     #endregion
 
@@ -323,7 +324,8 @@ public class AgentRobotController : MonoBehaviour
     public bool SetJointAngles(GameObject robot, float[] angles)
     {
         RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
-        if (robotArmSetup == null || angles == null) return false;
+        if (robotArmSetup == null || angles == null)
+            return false;
 
         ArticulationBody[] robotJoints = robotArmSetup.robotJoints;
         for (int i = 0; i < Mathf.Min(6, angles.Length); i++)
@@ -505,15 +507,23 @@ public class AgentRobotController : MonoBehaviour
 
                     //GUI.Label(new Rect(10, 160, 400, 20), $"Distance from nearest block: {distance:F3}m", style);
 
-                    string statusText = attached ? "ATTACHED" : (inRange ? "IN RANGE" : "OUT OF RANGE");
-                    Color statusColor = attached ? Color.green : (inRange ? Color.yellow : Color.red);
+                    string statusText = attached
+                        ? "ATTACHED"
+                        : (inRange ? "IN RANGE" : "OUT OF RANGE");
+                    Color statusColor = attached
+                        ? Color.green
+                        : (inRange ? Color.yellow : Color.red);
                     GUIStyle statusStyle = new GUIStyle(style);
                     statusStyle.normal.textColor = statusColor;
 
-                    GUI.Label(new Rect(210, jointAngle_y, 400, 20), $"Status: {statusText}", statusStyle); //y=185
+                    GUI.Label(
+                        new Rect(210, jointAngle_y, 400, 20),
+                        $"Status: {statusText}",
+                        statusStyle
+                    ); //y=185
                 }
             }
-            
+
             jointAngle_y += 25;
         }
     }
