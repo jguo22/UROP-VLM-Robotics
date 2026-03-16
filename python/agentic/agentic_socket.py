@@ -20,6 +20,9 @@ SIMULATION_MEASUREMENT_PRECISION = 5  # Decimal places for rounding positions
 DEBUG_LOG_PATH = PROJECT_DIR / ".cursor" / "debug-9a7441.log"
 DEBUG_SESSION_ID = "9a7441"
 
+IDLE_POLL_INTERVAL = 0.5   # seconds between motion status polls
+IDLE_TIMEOUT = 30.0        # max seconds to wait for robots to stop
+
 ik_solver = UR5IKSolver()
 
 
@@ -50,17 +53,6 @@ def solve_ik(ik_response):
 
     if not ik_success or ik_joint_angles is None:
         return None
-
-    """
-    {
-        "type": "execute_action",
-        "action_type": "solve_ik",
-        "robot_name": "ur5_left" | "ur5_right",
-        "parameters": {
-            "joint_angles": [angle1, angle2, angle3, angle4, angle5, angle6]
-        }
-    }
-    """
 
     ik_dict = {
         "type": "execute_action",
@@ -124,6 +116,116 @@ def round_floats(obj, precision=SIMULATION_MEASUREMENT_PRECISION):
     return obj
 
 
+def send_recv(s, payload: dict) -> dict:
+    """Send a JSON payload and return the parsed JSON response."""
+    s.sendall(json.dumps(payload).encode('utf-8'))
+    data = s.recv(SOCKET_CONN_MAX_BYTES)
+    if not data:
+        raise ConnectionError("Connection closed by Unity")
+    return json.loads(data.decode('utf-8'))
+
+
+def send_control(s, control_type: str) -> bool:
+    """Send a scene control command (reset_scene / start_recording / stop_recording)."""
+    resp = send_recv(s, {"type": control_type, "timestamp": time.time()})
+    return resp.get("success", False)
+
+
+def fetch_scene_state(s) -> dict:
+    """Request and return the current scene state from Unity."""
+    resp = send_recv(s, {"type": "get_scene_state", "timestamp": time.time()})
+    return round_floats(resp)
+
+
+def wait_for_idle(s, timeout: float = IDLE_TIMEOUT) -> bool:
+    """
+    Poll Unity until all robot joints are idle (velocity near zero) or timeout.
+    Returns True if idle was reached, False if timed out.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        resp = send_recv(s, {"type": "get_motion_status", "timestamp": time.time()})
+        if resp.get("is_idle", False):
+            return True
+        time.sleep(IDLE_POLL_INTERVAL)
+    return False
+
+
+def execute_command(s, agent, command: dict) -> bool:
+    """
+    Send one AI command to Unity and handle the IK round-trip if needed.
+    Returns False on fatal failure.
+    """
+    resp = send_recv(s, command)
+    if not resp.get("success", False):
+        agent.error(f"Unity execution failure: {resp.get('message')}")
+        return False
+
+    msg = resp.get("message")
+    if msg == "run_ik":
+        agent.info("Running IK solver...")
+        ik_cmd = solve_ik(resp)
+        if ik_cmd is None:
+            agent.debug("IK solver failed — target likely out of range.")
+            return True  # non-fatal
+        ik_resp = send_recv(s, json.loads(ik_cmd))
+        if not ik_resp.get("success", False):
+            agent.error(f"IK execution failure: {ik_resp.get('message')}")
+        agent.info(f"Unity IK response: {ik_resp.get('message')}")
+    elif msg == "run_simul_ik":
+        agent.info("Running simul IK solver...")
+        ik_cmd = solve_simul_ik(resp)
+        if ik_cmd is None:
+            agent.debug("Simul IK solver failed — target likely out of range.")
+            return True
+        ik_resp = send_recv(s, json.loads(ik_cmd))
+        if not ik_resp.get("success", False):
+            agent.error(f"Simul IK execution failure: {ik_resp.get('message')}")
+        agent.info(f"Unity simul IK response: {ik_resp.get('message')}")
+    return True
+
+
+def run_episode(s, agent, profiler) -> bool:
+    """
+    Execute one full episode: get scene state → AI planning → command loop.
+    Returns True on success, False on fatal error.
+    """
+    profiler.start_frame()
+
+    agent.info("Requesting scene state from Unity...")
+    scene_state = fetch_scene_state(s)
+    agent.info(f"Scene state: {scene_state}")
+    profiler.record("get_scene_state")
+
+    agent.info("AI is thinking...")
+    ai_response = agent.get_ai_decision(scene_state)
+    profiler.record("openai_api")
+
+    if not ai_response:
+        agent.error("No AI response received.")
+        return False
+
+    agent.info(f"AI Response: {ai_response}")
+
+    json_block = ai_response.split("```")[1].lstrip("json\n")
+    clean = "\n".join(line.split("//")[0] for line in json_block.splitlines())
+    agent.info(f"Extracted and cleaned JSON commands: {clean}")
+    commands = json.loads(clean)
+    if isinstance(commands, dict):
+        commands = [commands]
+    profiler.record("parse_response")
+
+    for command in commands:
+        agent.info(f"Executing: {command}")
+        if not execute_command(s, agent, command):
+            return False
+        time.sleep(LOOP_PERIOD)
+
+    profiler.record("command_loop")
+    profiler.end_frame()
+    return True
+
+
 def main():
     profiler = Profiler()
     run_id = f"run-{int(time.time() * 1000)}"
@@ -145,7 +247,7 @@ def main():
     agent.info("Initialized OpenAI Agent")
     print(f"Host: {repr(agent.host)}")
     print(f"Port: {repr(agent.port)}")
-    profiler.start_frame()
+
     # #region agent log
     debug_log(
         run_id,
@@ -160,7 +262,6 @@ def main():
     )
     # #endregion
 
-    # Sending data (client)
     attempts = 0
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         # #region agent log
@@ -252,138 +353,31 @@ def main():
                 raise
 
         agent.info("Connected to Unity")
-        profiler.record("connect")
         time.sleep(2)  # Wait for Unity to be ready
-        agent.info("Requesting initial scene state from Unity...")
 
-        # First, request scene state from Unity
-        get_state_command = {
-            "type": "get_scene_state",
-            "timestamp": time.time()
-        }
-        s.sendall(json.dumps(get_state_command).encode('utf-8'))
-        agent.info(f"Sent to Unity: {get_state_command['type']}")
+        episode = 0
+        while True:
+            agent.info(f"--- Episode {episode} ---")
 
-        # Wait for Unity's response with scene state
-        data = s.recv(SOCKET_CONN_MAX_BYTES)
-        if not data:
-            agent.error("Connection closed by Unity")
-            return
+            # Wait for any lingering motion from previous episode (idempotent on first)
+            wait_for_idle(s)
+            send_control(s, "stop_recording")
+            send_control(s, "reset_scene")
+            wait_for_idle(s)        # wait for arms to finish returning to home
+            time.sleep(2.0)         # let gear rigidbodies settle onto the table
+            send_control(s, "start_recording")
 
-        scene_state = json.loads(data.decode('utf-8'))
-        scene_state = round_floats(scene_state)
-        robot_data = scene_state.get('robots', [])
-        robot_name_list = []
-        agent.info("Received scene state from Unity:")
-        agent.info(scene_state)
-        agent.info("---")
-        agent.info(f"Robots in scene: {len(robot_data)}")
-        for robot in robot_data:
-            agent.info(f"Robot Name: {robot.get('name')}")
-            robot_name_list.append(robot.get('name'))
-        profiler.record("get_scene_state")
+            success = run_episode(s, agent, profiler)
 
-        # Get AI decision based on scene state
-        agent.info("AI is thinking...")
-        ai_response = agent.get_ai_decision(scene_state)
-        profiler.record("openai_api")
+            wait_for_idle(s)  # ensure final movement finishes before stopping record
+            send_control(s, "stop_recording")
+            profiler.save_profile()
 
-        if not ai_response:
-            agent.error("No AI response received, exiting...")
-            return
-
-        agent.info(f"Prompt: {agent.prompt}")
-        agent.info(f"AI Response: {ai_response}")
-
-        # find list of JSON commands in response
-        json_commands = ai_response.split("```")[1].lstrip("json\n")
-        # agent.info(f"Extracted JSON commands: {json_commands}")
-
-        json_command_lines = json_commands.splitlines()
-        clean_json_commands = ''
-        for line in json_command_lines:
-            # Remove comments
-            clean_json_commands += line.split("//")[0] + "\n"
-        agent.info(
-            f"Extracted and cleaned JSON commands: {clean_json_commands}")
-
-        data_commands = json.loads(clean_json_commands)
-        profiler.record("parse_response")
-
-        # for robot_name in robot_name_list:
-        #     with open(f"{robot_name}.py", "w") as f: # write json commands to robot specific files
-        #         f.write(f"data_commands = {json.dumps(data_commands, indent=4)}\n")
-
-        """
-        In main loop, send each command to Unity
-        Wait for Unity response, if Unity requests IK, run IK solver and send joint angles back to Unity
-        Repeat until all commands are executed
-        """
-
-        for command in data_commands:
-            print("command")
-            print(command)
-            s.sendall(json.dumps(command).encode('utf-8'))
-            agent.info(f"Processing command and sending to Unity: {command}")
-
-            data = s.recv(SOCKET_CONN_MAX_BYTES)
-            if not data:
-                agent.error("Connection closed by Unity")
-                return
-
-            response = json.loads(data.decode('utf-8'))
-            success = response.get('success', False)
             if not success:
-                agent.error(
-                    f"Unity reported execution failure: {response.get('message')}")
-                return
+                agent.error(f"Episode {episode} failed, stopping.")
+                break
 
-            if response.get('message') == 'run_ik':  # RUN IK SOLVER
-                agent.info("Running IK solver...")
-                ik_command = solve_ik(response)
-                if ik_command is not None:
-                    s.sendall(ik_command.encode('utf-8'))
-                    agent.info("Executing IK movement...")
-                    ik_response_data = s.recv(SOCKET_CONN_MAX_BYTES)
-                    if ik_response_data:
-                        ik_response = json.loads(
-                            ik_response_data.decode('utf-8'))
-                        ik_success = ik_response.get('success', False)
-                        if not ik_success:
-                            agent.error(
-                                f"Unity reported IK execution failure: {ik_response.get('message')}")
-                        agent.info(
-                            f"Unity response: {ik_response.get('message')}")
-                else:
-                    agent.debug(
-                        "IK solver failed to find a solution, target gear likely out of range of arm.")
-
-            elif response.get('message') == 'run_simul_ik':
-                agent.info("Running IK solver...")
-                ik_command = solve_simul_ik(response)
-                if ik_command is not None:
-                    s.sendall(ik_command.encode('utf-8'))
-                    agent.info("Executing IK movement...")
-                    ik_response_data = s.recv(SOCKET_CONN_MAX_BYTES)
-                    if ik_response_data:
-                        ik_response = json.loads(
-                            ik_response_data.decode('utf-8'))
-                        ik_success = ik_response.get('success', False)
-                        if not ik_success:
-                            agent.error(
-                                f"Unity reported IK execution failure: {ik_response.get('message')}")
-                        agent.info(
-                            f"Unity response: {ik_response.get('message')}")
-                else:
-                    agent.debug(
-                        "IK solver failed to find a solution, target gear likely out of range of arm.")
-
-            time.sleep(LOOP_PERIOD)  # Control loop period
-
-        profiler.record("command_loop")
-        profiler.end_frame()
-        profiler.save_profile()
-        agent.info("All commands processed. Closing connection.")
+            episode += 1
 
 
 if __name__ == "__main__":

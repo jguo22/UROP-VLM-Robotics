@@ -67,7 +67,6 @@ public class SceneSetup : MonoBehaviour
     [HideInInspector]
     public CSVTrajectoryExample csvTrajectoryExample;
     private SceneResetController sceneResetController;
-    private TrajectoryBatchGenerator trajectoryBatchGenerator;
 
     // [HideInInspector]
     // public UR5IKController ikController;
@@ -125,11 +124,6 @@ public class SceneSetup : MonoBehaviour
         if (sceneResetController == null)
             sceneResetController = this.gameObject.AddComponent<SceneResetController>();
         sceneResetController.Initialize(this);
-
-        trajectoryBatchGenerator = this.gameObject.GetComponent<TrajectoryBatchGenerator>();
-        if (trajectoryBatchGenerator == null)
-            trajectoryBatchGenerator = this.gameObject.AddComponent<TrajectoryBatchGenerator>();
-        trajectoryBatchGenerator.Initialize(this);
 
         if (allRobotsActive)
             agentRobotController = this.gameObject.AddComponent<AgentRobotController>();
@@ -279,28 +273,6 @@ public class SceneSetup : MonoBehaviour
         }
 
         sceneResetController.ResetSceneState();
-    }
-
-    public void GenerateMultipleTrajectories()
-    {
-        if (trajectoryBatchGenerator == null)
-        {
-            Debug.LogWarning("Trajectory generation skipped: TrajectoryBatchGenerator is missing.");
-            return;
-        }
-
-        trajectoryBatchGenerator.GenerateMultipleTrajectories();
-    }
-
-    public void GenerateMultipleTrajectories(int trajectoryCount)
-    {
-        if (trajectoryBatchGenerator == null)
-        {
-            Debug.LogWarning("Trajectory generation skipped: TrajectoryBatchGenerator is missing.");
-            return;
-        }
-
-        trajectoryBatchGenerator.GenerateMultipleTrajectories(trajectoryCount);
     }
 
     void Update()

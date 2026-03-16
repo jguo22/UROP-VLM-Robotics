@@ -92,18 +92,21 @@ public class SceneResetController : MonoBehaviour
             SceneObjectInitialState state = states[i];
             Vector2 offset = Random.insideUnitCircle * positionRandomRadius;
 
+            Rigidbody rb = validTargets[i].GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true; // freeze during teleport to prevent physics glitch
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
             validTargets[i].transform.SetParent(state.parent, true);
             validTargets[i].transform.position =
                 state.position + new Vector3(offset.x, 0f, offset.y);
             validTargets[i].transform.rotation = state.rotation;
 
-            Rigidbody rb = validTargets[i].GetComponent<Rigidbody>();
             if (rb != null)
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                rb.isKinematic = true;
-            }
+                rb.isKinematic = false; // release physics so attraction force and gravity work
         }
 
         if (sceneSetup.agentRobotController != null)

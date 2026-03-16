@@ -119,3 +119,26 @@ public class ObjectStateData
     // public float[] rotation;
     public bool is_attached;
 }
+
+[System.Serializable]
+public class ControlCommand
+{
+    public string type; // "reset_scene" | "start_recording" | "stop_recording" | "get_motion_status"
+    public float timestamp;
+}
+
+[System.Serializable]
+public class ControlResponse
+{
+    public bool success;
+    public string message;
+    public float timestamp;
+}
+
+[System.Serializable]
+public class MotionStatusResponse
+{
+    public bool success;
+    public bool is_idle;
+    public float timestamp;
+}

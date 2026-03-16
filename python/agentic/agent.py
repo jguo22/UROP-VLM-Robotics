@@ -29,12 +29,12 @@ class OpenAIAgent:
         
     def get_ai_decision(self, scene_data): # TEST_PROMPT
         """Get AI decision based on current scene state"""
-        self.prompt = self.prompt.replace("<scene_data>", json.dumps(scene_data))
+        prompt = self.prompt.replace("<scene_data>", json.dumps(scene_data))
 
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role": "user", "content": self.prompt}
+                {"role": "user", "content": prompt}
             ],
             temperature = self.temperature
         )

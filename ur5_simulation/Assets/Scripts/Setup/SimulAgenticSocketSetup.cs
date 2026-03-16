@@ -22,6 +22,8 @@ public class SimulAgenticSocketSetup : MonoBehaviour
     private string hostAddress;
     private int portNumber;
 
+    [SerializeField] private PoseAndImageRecorder recorder;
+
     // AI Agent Integration
     private AgentRobotController agentController;
     private SimulIKResponse ik_response;
@@ -209,6 +211,26 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             {
                 case "get_scene_state":
                     return GetSceneStateJson();
+
+                case "reset_scene":
+                    sceneSetup.ResetSceneState();
+                    return JsonUtility.ToJson(new ControlResponse {
+                        success = true, message = "scene_reset", timestamp = Time.time });
+
+                case "start_recording":
+                    if (recorder != null) recorder.StartRecording();
+                    return JsonUtility.ToJson(new ControlResponse {
+                        success = true, message = "recording_started", timestamp = Time.time });
+
+                case "stop_recording":
+                    if (recorder != null) recorder.StopRecording();
+                    return JsonUtility.ToJson(new ControlResponse {
+                        success = true, message = "recording_stopped", timestamp = Time.time });
+
+                case "get_motion_status":
+                    bool idle = IsAllRobotsIdle();
+                    return JsonUtility.ToJson(new MotionStatusResponse {
+                        success = true, is_idle = idle, timestamp = Time.time });
 
                 default: // simultaenous AI command
                     return ExecuteActionJson(command);
@@ -626,6 +648,29 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             suctionController.ToggleSuction();
         }
         return true;
+    }
+
+    private const float IdleVelocityThreshold = 0.05f;
+
+    private bool IsAllRobotsIdle()
+    {
+        bool isIdle = true;
+        foreach (GameObject robot in robots)
+        {
+            RobotArmSetup setup = robot.GetComponent<RobotArmSetup>();
+            if (setup == null) continue;
+            foreach (ArticulationBody joint in setup.robotJoints)
+            {
+                if (joint == null || joint.dofCount == 0) continue;
+                if (Mathf.Abs(joint.jointVelocity[0]) > IdleVelocityThreshold)
+                {
+                    int jointIndex = System.Array.IndexOf(setup.robotJoints, joint);
+                    print($"{robot.name} joint[{jointIndex}] vel={joint.jointVelocity[0]:F4}");
+                    isIdle = false;
+                }
+            }
+        }
+        return isIdle;
     }
 
     public void closeSocket()
