@@ -1,7 +1,12 @@
+import sys
 import socket
 import json
 import time
+from pathlib import Path
 from sys import argv
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from profiler import Profiler
 
 from ik_solver import UR5IKSolver
 from agent import OpenAIAgent
@@ -120,6 +125,7 @@ def round_floats(obj, precision=SIMULATION_MEASUREMENT_PRECISION):
 
 
 def main():
+    profiler = Profiler()
     run_id = f"run-{int(time.time() * 1000)}"
     prompt = ''
     if len(argv) < 2:
@@ -139,6 +145,7 @@ def main():
     agent.info("Initialized OpenAI Agent")
     print(f"Host: {repr(agent.host)}")
     print(f"Port: {repr(agent.port)}")
+    profiler.start_frame()
     # #region agent log
     debug_log(
         run_id,
@@ -245,6 +252,7 @@ def main():
                 raise
 
         agent.info("Connected to Unity")
+        profiler.record("connect")
         time.sleep(2)  # Wait for Unity to be ready
         agent.info("Requesting initial scene state from Unity...")
 
@@ -273,10 +281,12 @@ def main():
         for robot in robot_data:
             agent.info(f"Robot Name: {robot.get('name')}")
             robot_name_list.append(robot.get('name'))
+        profiler.record("get_scene_state")
 
         # Get AI decision based on scene state
         agent.info("AI is thinking...")
         ai_response = agent.get_ai_decision(scene_state)
+        profiler.record("openai_api")
 
         if not ai_response:
             agent.error("No AI response received, exiting...")
@@ -298,6 +308,7 @@ def main():
             f"Extracted and cleaned JSON commands: {clean_json_commands}")
 
         data_commands = json.loads(clean_json_commands)
+        profiler.record("parse_response")
 
         # for robot_name in robot_name_list:
         #     with open(f"{robot_name}.py", "w") as f: # write json commands to robot specific files
@@ -369,6 +380,9 @@ def main():
 
             time.sleep(LOOP_PERIOD)  # Control loop period
 
+        profiler.record("command_loop")
+        profiler.end_frame()
+        profiler.save_profile()
         agent.info("All commands processed. Closing connection.")
 
 

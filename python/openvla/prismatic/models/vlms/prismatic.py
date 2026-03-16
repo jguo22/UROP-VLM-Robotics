@@ -308,7 +308,6 @@ class PrismaticVLM(VLM):
     # Note =>> We're not explicitly subclassing `PreTrainedModel` because we don't need the bloat; however, `forward()`
     #          *must* match the signature of a `{Model}ForCausalLM` so that we can inherit from `GenerationMixin`
 
-    # ruff: noqa: C901
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,

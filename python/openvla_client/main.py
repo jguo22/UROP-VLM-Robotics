@@ -107,7 +107,7 @@ if __name__ == "__main__":
             print("\nStopping...")
             profiler.save_profile()
             raise
-        except Exception as e:
+        except Exception:
             print("\n=== Error ===")
             traceback.print_exc()
             profiler.save_profile()

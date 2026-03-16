@@ -20,7 +20,7 @@ import socket
 import struct
 import numpy as np
 import roboticstoolbox as rtb
-from spatialmath import SE3, UnitQuaternion
+from spatialmath import SE3
 import os
 
 from constants import (

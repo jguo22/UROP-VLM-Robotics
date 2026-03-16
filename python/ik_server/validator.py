@@ -303,7 +303,7 @@ class UR5FKValidator:
             return
 
         print(
-            f"\nValidating forward and inverse kinematics (BINARY protocol)")
+            "\nValidating forward and inverse kinematics (BINARY protocol)")
         print(f"Position tolerance: {self.tolerance}m")
         print(
             f"Rotation tolerance: {self.rotation_tolerance} rad ({np.degrees(self.rotation_tolerance):.2f}°)")
@@ -372,7 +372,7 @@ class UR5FKValidator:
                 print(
                     f"Original Joint Angles (rad): {[f'{j:.4f}' for j in joint_angles]}")
 
-                print(f"\nForward Kinematics - Position Validation:")
+                print("\nForward Kinematics - Position Validation:")
                 print(
                     f"	Unity EE:		[{reported_ee_pos[0]:.6f}, {reported_ee_pos[1]:.6f}, {reported_ee_pos[2]:.6f}]")
                 print(
@@ -385,7 +385,7 @@ class UR5FKValidator:
                 print(
                     f"	Status: {'✓ VALID' if pos_valid else '✗ INVALID (exceeds tolerance)'}")
 
-                print(f"\nForward Kinematics - Rotation Validation:")
+                print("\nForward Kinematics - Rotation Validation:")
                 print(
                     f"	Unity Quat [x,y,z,w]:       [{reported_ee_quat[0]:.6f}, {reported_ee_quat[1]:.6f}, {reported_ee_quat[2]:.6f}, {reported_ee_quat[3]:.6f}]")
                 print(
@@ -397,7 +397,7 @@ class UR5FKValidator:
                 print(
                     f"	Status: {'✓ VALID' if rot_valid else '✗ INVALID (exceeds tolerance)'}")
 
-                print(f"\nInverse Kinematics - Round-trip Validation:")
+                print("\nInverse Kinematics - Round-trip Validation:")
                 if ik_success:
                     print(
                         f"	IK Joint Angles (rad): {[f'{j:.4f}' for j in ik_joint_angles]}")
@@ -409,7 +409,7 @@ class UR5FKValidator:
                     print(
                         f"	Status: {'✓ VALID' if ik_valid else '✗ INVALID (exceeds tolerance)'}")
                 else:
-                    print(f"  Status: ✗ IK FAILED TO CONVERGE")
+                    print("  Status: ✗ IK FAILED TO CONVERGE")
 
                 print(
                     f"\nOverall: {'✓ ALL VALID' if overall_valid else '✗ VALIDATION FAILED'}")

@@ -138,7 +138,7 @@ class SimpleAIDemo:
         """Demo: Get and display scene state"""
         scene_state = self.get_scene_state()
         if scene_state:
-            print(f"📊 Scene State:")
+            print("📊 Scene State:")
             if 'robots' in scene_state:
                 for robot in scene_state['robots']:
                     pos = robot['end_effector_position']

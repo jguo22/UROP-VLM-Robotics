@@ -172,8 +172,8 @@ public class UR5Controller : MonoBehaviour
     void MoveToAngles(float[] newTargetAngles)
     {
         // prevent having a delta calculated from an undesirable mid-movement pose
-        if (isMoving)
-            return;
+        // if (isMoving)
+        //     return;
         startAngles = GetJointAngles();
         lastAngles = startAngles;
         targetAngles = newTargetAngles;

@@ -3178,8 +3178,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 563f25c410f1a4402ba115ac8d0aca8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UR5KeyboardIKController
-  ikMoveSpeed: 1
-  ikRotateSpeed: 30
+  ikMoveSpeed: 30
+  ikRotateSpeed: 3000
 --- !u!114 &818199195
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -98,7 +98,7 @@ def main():
             except ConnectionAbortedError:
                 print("❌ Connection aborted while waiting for Unity response")
                 break
-            if not ik_waiting: print(f"📥 Received scene state from Unity")
+            if not ik_waiting: print("📥 Received scene state from Unity")
 
             if not scene_state["success"]:
                 print("❌ Unity reported failure: ", scene_state["message"])
@@ -111,7 +111,7 @@ def main():
                 try:
                     print("\n🧠 IK calculated")
                     s.sendall(ik_command.encode('utf-8'))
-                    print(f"🔧 Executing IK movement")
+                    print("🔧 Executing IK movement")
 
                     # Wait for Unity's response
                     response_data = s.recv(4096)

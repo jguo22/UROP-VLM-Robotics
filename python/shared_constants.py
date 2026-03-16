@@ -119,6 +119,3 @@ ACTION_VECTOR_SIZE: Final[int] = 7
 
 UR5_URDF_FILENAME: Final[str] = "ur5.urdf"
 """Filename for UR5 URDF model"""
-
-PROFILE_DIR: Final[str] = "profiles"
-"""Directory for saving profiling data"""
