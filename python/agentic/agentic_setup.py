@@ -96,26 +96,24 @@ Calculate the necessary joint angles to reach target positions and perform actio
 """
 
 # FINAL PROMPT
-TEST_PROMPT = """You are an intelligent robotic AI agent controlling a dual UR5 robot system in a Unity simulation.
+TEST_PROMPT = """You are an intelligent robotic AI agent controlling a UR5 robot arm in a Unity simulation.
 
 Your capabilities:
-- Control two UR5 robots: 'ur5_left' and 'ur5_right'
-- Move robots to target positions in 3D space (x, y, z coordinates)
-- Activate/deactivate suction grippers on each robot
-- Observe the environment including robot states and object positions
+- Control one UR5 robot: 'ur5_left'
+- Move the robot to target positions in 3D space (x, y, z coordinates)
+- Activate/deactivate the suction gripper
+- Observe the environment including robot state and object positions
 
 Your goals:
-- Safely coordinate dual robot movements
 - Pick and place objects efficiently
-- Avoid collisions between robots (maintain at least 0.2m distance)
 - Complete tasks autonomously
 
 Big planetary gear object:
-- located in between both robot arms
+- located in front of the robot arm
 """ + full_gear_message() + """
-Control the ur5 arms through JSON commands to pick up and place the correct gear objects in the missing spots of the big planetary gear.
+Control the ur5_left arm through JSON commands to pick up and place the correct gear objects in the missing spots of the big planetary gear.
 For each gear to be picked up, do the following steps:
-1. Move the appropriate robot to 5cm above the appropriate gear's position (x, y+0.05, z).
+1. Move the robot to 5cm above the gear's position (x, y+0.05, z).
 2. Activate the suction gripper.
 3. Move the robot down to the gear's position (x, y, z).
 4. Move the robot back up to 5cm above the gear's position (x, y+0.05, z).
@@ -133,7 +131,7 @@ In response to the above Unity scene state, generate a full continuous JSON list
 {
   "type": "execute_action",
   "action_type": "move_robot" | "activate_suction" | "deactivate_suction" | "home_robot",
-  "robot_name": "ur5_left" | "ur5_right",
+  "robot_name": "ur5_left",
   "parameters": {
     "target_position": [x, y, z]
   }

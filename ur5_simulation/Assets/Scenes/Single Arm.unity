@@ -268,13 +268,6 @@ MonoBehaviour:
     - {fileID: 640449749}
     - {fileID: 587081705}
     - {fileID: 2091884094}
-  - robot: {fileID: 0}
-    targets:
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
   robots:
   - {fileID: 1380065241}
   - {fileID: 0}
