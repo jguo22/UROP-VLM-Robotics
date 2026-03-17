@@ -14,31 +14,22 @@ using static ConstantsUR5;
 [DefaultExecutionOrder(100)]
 public class EpisodePlayback : MonoBehaviour
 {
-    [HideInInspector]
-    public UnifiedRobotController robotController;
+    private UnifiedRobotController robotController;
 
     [Header("Trajectory Settings")]
-    public TextAsset csvFile; // Drag and drop CSV file in Inspector
-    public string csvFilePath = ""; // Alternative: specify file path
+    public string episodeFolderPath = ""; // Path to episode folder (contains poses.csv and blocks.csv)
+    private string csvFilePath => string.IsNullOrEmpty(episodeFolderPath) ? "" : Path.Combine(episodeFolderPath, "poses.csv");
     public float playbackSpeed = 1.0f;
     public bool loopTrajectory = false;
     public bool autoStart = false;
 
-    [Header("Playback Control")]
-    public bool isPlaying = false;
-    public bool isPaused = false;
-    public float currentTime = 0f;
-    public int currentFrame = 0;
-
-    [Header("Trajectory Data")]
-    [Tooltip("Total number of frames in the loaded trajectory")]
-    public int totalFrames = 0;
-
-    [Tooltip("Total duration of the trajectory in seconds")]
-    public float totalDuration = 0f;
-
-    [Tooltip("Current playback time position")]
-    public float currentPlaybackTime = 0f;
+    private bool isPlaying = false;
+    private bool isPaused = false;
+    private float currentTime = 0f;
+    private int currentFrame = 0;
+    private int totalFrames = 0;
+    private float totalDuration = 0f;
+    private float currentPlaybackTime = 0f;
 
     // Internal data structures
     private List<float> timestamps = new List<float>();
@@ -57,7 +48,7 @@ public class EpisodePlayback : MonoBehaviour
     {
         InitializeController();
 
-        if (autoStart && (csvFile != null || !string.IsNullOrEmpty(csvFilePath)))
+        if (autoStart && !string.IsNullOrEmpty(csvFilePath))
         {
             LoadTrajectory();
             StartPlayback();
@@ -157,15 +148,11 @@ public class EpisodePlayback : MonoBehaviour
         }
     }
 
-    /// <summary>Returns the episode folder directory derived from csvFilePath.</summary>
+    /// <summary>Returns the episode folder path.</summary>
     private string GetEpisodeFolder()
     {
-        if (!string.IsNullOrEmpty(csvFilePath))
-            return Path.GetDirectoryName(Path.GetFullPath(csvFilePath));
-
-        // TextAsset has no filesystem path at runtime — warn and return null
-        if (csvFile != null)
-            Debug.LogWarning("EpisodePlayback: block setup requires csvFilePath (not TextAsset).");
+        if (!string.IsNullOrEmpty(episodeFolderPath))
+            return episodeFolderPath;
 
         return null;
     }
@@ -181,13 +168,7 @@ public class EpisodePlayback : MonoBehaviour
     {
         string csvContent = "";
 
-        // Try to load from TextAsset first
-        if (csvFile != null)
-        {
-            csvContent = csvFile.text;
-        }
-        // Try to load from file path
-        else if (!string.IsNullOrEmpty(csvFilePath))
+        if (!string.IsNullOrEmpty(csvFilePath))
         {
             try
             {
@@ -201,7 +182,7 @@ public class EpisodePlayback : MonoBehaviour
         }
         else
         {
-            Debug.LogError("No CSV file specified. Set csvFile or csvFilePath.");
+            Debug.LogError("No episode folder specified. Set episodeFolderPath.");
             return false;
         }
 
@@ -514,7 +495,7 @@ public class EpisodePlayback : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.R))
         {
-            if (!string.IsNullOrEmpty(csvFilePath) || csvFile != null)
+            if (!string.IsNullOrEmpty(csvFilePath) )
                 LoadTrajectory();
         }
 
@@ -589,7 +570,7 @@ public class EpisodePlayback : MonoBehaviour
         if (GUI.Button(new Rect(startX + 2 * (buttonWidth + buttonSpacing), buttonY, buttonWidth, buttonHeight),
             "Reload", buttonStyle))
         {
-            if (!string.IsNullOrEmpty(csvFilePath) || csvFile != null)
+            if (!string.IsNullOrEmpty(csvFilePath) )
                 LoadTrajectory();
         }
 
@@ -617,13 +598,7 @@ public class EpisodePlayback : MonoBehaviour
 
     public void LoadTrajectoryFromPath(string path)
     {
-        csvFilePath = path;
-        LoadTrajectory();
-    }
-
-    public void LoadTrajectoryFromTextAsset(TextAsset textAsset)
-    {
-        csvFile = textAsset;
+        episodeFolderPath = path;
         LoadTrajectory();
     }
 

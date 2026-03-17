@@ -142,6 +142,7 @@ def wait_for_idle(s, timeout: float = IDLE_TIMEOUT) -> bool:
     Poll Unity until all robot joints are idle (velocity near zero) or timeout.
     Returns True if idle was reached, False if timed out.
     """
+    time.sleep(0.5)  # let motion start before polling
     deadline = time.time() + timeout
     while time.time() < deadline:
         resp = send_recv(s, {"type": "get_motion_status", "timestamp": time.time()})
@@ -215,14 +216,12 @@ def run_episode(s, agent, profiler) -> bool:
         commands = [commands]
     profiler.record("parse_response")
 
-    for i, command in enumerate(commands):
+    send_control(s, "start_recording")
+    for command in commands:
         agent.info(f"Executing: {command}")
-        send_control(s, "start_recording" if i == 0 else "resume_recording")
         if not execute_command(s, agent, command):
-            send_control(s, "pause_recording")
             return False
         wait_for_idle(s)
-        send_control(s, "pause_recording")
 
     profiler.record("command_loop")
     profiler.end_frame()
