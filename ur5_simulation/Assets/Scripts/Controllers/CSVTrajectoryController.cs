@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Unity.Robotics.UrdfImporter.Control;
 using UnityEngine;
 using static ConstantsUR5;
 
@@ -43,9 +42,9 @@ public class CSVTrajectoryController : MonoBehaviour
     private List<float> timestamps = new List<float>();
     private List<bool> suctionStates = new List<bool>();
     private List<bool> attractedStates = new List<bool>();
-    private List<float[]> jointAnglesTrajectory = new List<float[]>(); // 6 joints per frame
-    private List<Vector3[]> jointPositionsTrajectory = new List<Vector3[]>(); // For IK fallback
-    private List<Quaternion[]> jointRotationsTrajectory = new List<Quaternion[]>(); // For IK fallback
+
+    // 6 joints per frame
+    private List<float[]> jointAnglesTrajectory = new List<float[]>();
 
     // Playback coroutine
     private Coroutine playbackCoroutine;
@@ -156,38 +155,17 @@ public class CSVTrajectoryController : MonoBehaviour
             // Parse header to understand column structure
             string[] headers = lines[0].Split(',').Select(h => h.Trim()).ToArray();
 
-            // Find joint angle columns (we're looking for joint position data)
-            // The CSV has PosX, PosY, PosZ for each joint, but we need to convert to joint angles
-            Dictionary<string, int> jointColumnMap = new Dictionary<string, int>();
-
-            // Map joint names to their position column indices
             string[] jointNames = { "base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3" };
-            foreach (string jointName in jointNames)
-            {
-                string posXCol = $"{jointName}_PosX";
-                string posYCol = $"{jointName}_PosY";
-                string posZCol = $"{jointName}_PosZ";
-                string rotXCol = $"{jointName}_RotX";
-                string rotYCol = $"{jointName}_RotY";
-                string rotZCol = $"{jointName}_RotZ";
-                string rotWCol = $"{jointName}_RotW";
-                string jointAngleCol = $"{jointName}_jointAngle";
 
-                if (Array.IndexOf(headers, posXCol) >= 0)
-                {
-                    jointColumnMap[jointName] = Array.IndexOf(headers, posXCol);
-                }
-            }
+            // Map joint names directly to their jointAngle column indices
+            int[] jointAngleCols = new int[jointNames.Length];
+            for (int j = 0; j < jointNames.Length; j++)
+                jointAngleCols[j] = Array.IndexOf(headers, $"{jointNames[j]}_jointAngle");
 
-            string suctionCol = "suctionOn";
-            int suctionColIndex = Array.IndexOf(headers, suctionCol);
+            int suctionColIndex = Array.IndexOf(headers, "suctionOn");
+            int attractedColIndex = Array.IndexOf(headers, "blockAttracted");
 
-            string attractedCol = "blockAttracted";
-            int attractedColIndex = Array.IndexOf(headers, attractedCol);
-
-            // Find timestamp column
             int timestampCol = Array.IndexOf(headers, "Timestamp");
-
             if (timestampCol < 0)
             {
                 Debug.LogError("Timestamp column not found in CSV");
@@ -205,74 +183,30 @@ public class CSVTrajectoryController : MonoBehaviour
                 if (values.Length < headers.Length)
                     continue;
 
-                // Parse timestamp
-                if (float.TryParse(values[timestampCol], out float timestamp))
-                {
-                    timestamps.Add(timestamp);
-                }
-                else
-                {
-                    continue; // Skip invalid rows
-                }
+                if (!float.TryParse(values[timestampCol], out float timestamp))
+                    continue;
 
-                // Parse joint positions and rotations
-                Vector3[] positions = new Vector3[6]; // 6 joints
-                Quaternion[] rotations = new Quaternion[6];
-                float[] jointAngles = new float[6];
+                timestamps.Add(timestamp);
 
-                // For each joint, extract position and rotation
+                float[] jointAngles = new float[jointNames.Length];
                 for (int j = 0; j < jointNames.Length; j++)
                 {
-                    string jointName = jointNames[j];
-                    if (jointColumnMap.ContainsKey(jointName))
-                    {
-                        int baseCol = jointColumnMap[jointName];
-
-                        // Parse position
-                        if (baseCol + 2 < values.Length)
-                        {
-                            float.TryParse(values[baseCol], out positions[j].x);
-                            float.TryParse(values[baseCol + 1], out positions[j].y);
-                            float.TryParse(values[baseCol + 2], out positions[j].z);
-                        }
-
-                        // Parse rotation (quaternion)
-                        if (baseCol + 6 < values.Length)
-                        {
-                            float.TryParse(values[baseCol + 3], out rotations[j].x);
-                            float.TryParse(values[baseCol + 4], out rotations[j].y);
-                            float.TryParse(values[baseCol + 5], out rotations[j].z);
-                            float.TryParse(values[baseCol + 6], out rotations[j].w);
-                        }
-
-                        if (baseCol + 7 < values.Length)
-                        {
-                            float.TryParse(values[baseCol + 7], out jointAngles[j]);
-                        }
-                    }
+                    if (jointAngleCols[j] >= 0 && jointAngleCols[j] < values.Length)
+                        float.TryParse(values[jointAngleCols[j]], out jointAngles[j]);
                 }
 
-                // Parse suction state
                 suctionStates.Add(
                     suctionColIndex >= 0
                         && suctionColIndex < values.Length
                         && values[suctionColIndex].Trim() == "True"
                 );
 
-                // Parse attracted state
                 attractedStates.Add(
                     attractedColIndex >= 0
                         && attractedColIndex < values.Length
                         && values[attractedColIndex].Trim() == "True"
                 );
 
-                jointPositionsTrajectory.Add(positions);
-                jointRotationsTrajectory.Add(rotations);
-
-                // For now, we'll use IK to convert positions to joint angles
-                // This is a simplified approach - in practice you might want to store joint angles directly
-                //float[] jointAngles = ConvertPositionsToJointAngles(positions, rotations);
-                //float[] jointAngles =
                 jointAnglesTrajectory.Add(jointAngles);
             }
 
@@ -295,37 +229,14 @@ public class CSVTrajectoryController : MonoBehaviour
     }
 
     /// <summary>
-    /// Convert joint positions/rotations to joint angles (simplified IK approach)
-    /// This is a basic implementation - you may want to use proper IK solver
-    /// </summary>
-    private float[] ConvertPositionsToJointAngles(Vector3[] positions, Quaternion[] rotations)
-    {
-        float[] angles = new float[JointCount];
-
-        // This is a simplified conversion
-        // In a real implementation, you'd use the actual IK solver from your project
-        // For now, we'll try to extract meaningful joint angles from the rotation data
-
-        for (int i = 0; i < Mathf.Min(angles.Length, rotations.Length); i++)
-        {
-            // Extract joint angle from quaternion (simplified - assumes revolute joints)
-            // This is a very basic approximation and may need refinement
-            Vector3 euler = rotations[i].eulerAngles;
-            angles[i] = euler.y; // Use Y component as primary rotation (adjust based on your joint configuration)
-        }
-
-        return angles;
-    }
-
-    /// <summary>
     /// Clear all trajectory data
     /// </summary>
     private void ClearTrajectoryData()
     {
         timestamps.Clear();
         jointAnglesTrajectory.Clear();
-        jointPositionsTrajectory.Clear();
-        jointRotationsTrajectory.Clear();
+        suctionStates.Clear();
+        attractedStates.Clear();
         totalFrames = 0;
         totalDuration = 0f;
         currentTime = 0f;
@@ -441,8 +352,6 @@ public class CSVTrajectoryController : MonoBehaviour
     /// </summary>
     private IEnumerator PlaybackTrajectory()
     {
-        float startTime = Time.time;
-
         while (isPlaying && currentFrame < totalFrames)
         {
             if (!isPaused)
@@ -583,35 +492,6 @@ public class CSVTrajectoryController : MonoBehaviour
         // {
         //     TestJointMovement();
         // }
-    }
-
-    #endregion
-
-    #region Testing Methods
-
-    /// <summary>
-    /// Test joint movement with simple values
-    /// </summary>
-    private void TestJointMovement()
-    {
-        Debug.Log("=== TESTING JOINT MOVEMENT ===");
-
-        // Test with simple joint angles
-        float[] testAngles = new float[] { 0.5f, 0.3f, -0.2f, 0.8f, -0.4f, 0.1f };
-
-        Debug.Log(
-            $"Testing with angles: [{string.Join(", ", testAngles.Select(a => a.ToString("F3")))}]"
-        );
-
-        if (robotController != null)
-        {
-            robotController.SetJointAngles(testAngles);
-            Debug.Log("Test joint movement command sent");
-        }
-        else
-        {
-            Debug.LogError("Robot controller not found for testing!");
-        }
     }
 
     #endregion

@@ -45,13 +45,26 @@ public class PoseAndImageRecorder : MonoBehaviour
     // Buffer rows — is_last/is_terminal/reward only known on StopRecording()
     private List<string> frameBuffer = new List<string>();
 
-    private const string PoseHeader =
-        "frame,timestamp,"
-        + "joint_0,joint_1,joint_2,joint_3,joint_4,joint_5,"
-        + "delta_pos_x,delta_pos_y,delta_pos_z,"
-        + "delta_rot_x,delta_rot_y,delta_rot_z,delta_rot_w,"
-        + "suction_on,"
-        + "is_first,is_last,is_terminal,reward,discount";
+    private static readonly string[] JointColumnNames =
+        { "base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3" };
+
+    private static string BuildPoseHeader()
+    {
+        string h =
+            "frame,Timestamp,"
+            + "joint_0,joint_1,joint_2,joint_3,joint_4,joint_5,"
+            + "delta_pos_x,delta_pos_y,delta_pos_z,"
+            + "delta_rot_x,delta_rot_y,delta_rot_z,delta_rot_w,"
+            + "suctionOn,";
+        foreach (string j in JointColumnNames)
+            h += $"{j}_PosX,{j}_PosY,{j}_PosZ,{j}_RotX,{j}_RotY,{j}_RotZ,{j}_RotW,{j}_jointAngle,";
+        h += "ee_PosX,ee_PosY,ee_PosZ,ee_RotX,ee_RotY,ee_RotZ,ee_RotW,";
+        h += "blockAttracted,";
+        h += "is_first,is_last,is_terminal,reward,discount";
+        return h;
+    }
+
+    private static readonly string PoseHeader = BuildPoseHeader();
 
     // -------------------------------------------------------------------------
 
@@ -180,7 +193,26 @@ public class PoseAndImageRecorder : MonoBehaviour
         prevRot = rot;
 
         // --- Suction (action) ---
-        int suction = (suctionController != null && suctionController.enableSuction) ? 1 : 0;
+        bool suction = suctionController != null && suctionController.enableSuction;
+
+        // --- Per-joint absolute position, rotation, and angle (degrees) ---
+        string jointPosRotCols = "";
+        for (int i = 0; i < JointCount; i++)
+        {
+            Vector3 jPos = joints[i].transform.position;
+            Quaternion jRot = joints[i].transform.rotation;
+            float jAngleDeg = joints[i].jointPosition[0] * Mathf.Rad2Deg;
+            jointPosRotCols += $"{jPos.x:F5},{jPos.y:F5},{jPos.z:F5},"
+                + $"{jRot.x:F5},{jRot.y:F5},{jRot.z:F5},{jRot.w:F5},"
+                + $"{jAngleDeg:F5},";
+        }
+
+        // --- Absolute EE position and rotation ---
+        string eeCols = $"{pos.x:F5},{pos.y:F5},{pos.z:F5},"
+            + $"{rot.x:F5},{rot.y:F5},{rot.z:F5},{rot.w:F5},";
+
+        // --- Block attracted ---
+        bool blockAttracted = suctionController != null && suctionController.isBlockAttached;
 
         // --- Episode flags (is_last/is_terminal/reward appended at flush) ---
         int isFirst = frameIndex == 0 ? 1 : 0;
@@ -191,6 +223,9 @@ public class PoseAndImageRecorder : MonoBehaviour
             + $"{deltaPos.x:F5},{deltaPos.y:F5},{deltaPos.z:F5},"
             + $"{deltaRot.x:F5},{deltaRot.y:F5},{deltaRot.z:F5},{deltaRot.w:F5},"
             + $"{suction},"
+            + jointPosRotCols
+            + eeCols
+            + $"{blockAttracted},"
             + $"{isFirst}";
 
         frameBuffer.Add(row);
