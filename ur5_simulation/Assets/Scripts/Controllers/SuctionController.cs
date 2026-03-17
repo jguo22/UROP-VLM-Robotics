@@ -78,17 +78,15 @@ public class SuctionController : MonoBehaviour
             return;
         }
 
-        foreach (ArticulationBody joint in articulationChain)
+        for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
         {
-            if (JointNames.ContainsKey(joint.name))
-            {
-                joint.gameObject.AddComponent<JointControl>();
-                joint.jointFriction = JointFriction;
-                joint.angularDamping = AngularDamping;
-                ArticulationDrive currentDrive = joint.xDrive;
-                currentDrive.forceLimit = ForceLimit;
-                joint.xDrive = currentDrive;
-            }
+            ArticulationBody joint = articulationChain[i];
+            joint.gameObject.AddComponent<JointControl>();
+            joint.jointFriction = JointFriction;
+            joint.angularDamping = AngularDamping;
+            ArticulationDrive currentDrive = joint.xDrive;
+            currentDrive.forceLimit = ForceLimit;
+            joint.xDrive = currentDrive;
         }
 
         robotJoints = new ArticulationBody[JointCount + 1];

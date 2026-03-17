@@ -1,22 +1,9 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 //using Preliy.Flange;
 
 public static class ConstantsUR5
 {
-    public static readonly Dictionary<string, string> JointNames = new Dictionary<string, string>()
-    {
-        { "shoulder_link", "base_joint" },
-        { "upper_arm_link", "shoulder_joint" },
-        { "forearm_link", "elbow_joint" },
-        { "wrist_1_link", "wrist_1_joint" },
-        { "wrist_2_link", "wrist_2_joint" },
-        { "wrist_3_link", "wrist_3_joint" },
-        { "ee_link", "end_effector" },
-    };
-
     public const int JointStiffness = 10000;
     public const int JointDamping = 100;
     public const int JointFriction = 10;

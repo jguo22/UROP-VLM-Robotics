@@ -155,7 +155,7 @@ public class CSVTrajectoryController : MonoBehaviour
             // Parse header to understand column structure
             string[] headers = lines[0].Split(',').Select(h => h.Trim()).ToArray();
 
-            string[] jointNames = { "base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3" };
+            string[] jointNames = { "joint_0", "joint_1", "joint_2", "joint_3", "joint_4", "joint_5" };
 
             // Map joint names directly to their jointAngle column indices
             int[] jointAngleCols = new int[jointNames.Length];

@@ -67,17 +67,15 @@ namespace Unity.Robotics.UrdfImporter.Control
             this.gameObject.AddComponent<FKRobot>();
             articulationChain = this.GetComponentsInChildren<ArticulationBody>();
 
-            foreach (ArticulationBody joint in articulationChain)
+            for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
             {
-                if (JointNames.ContainsKey(joint.name))
-                {
-                    joint.gameObject.AddComponent<ManualJointControl>();
-                    joint.jointFriction = JointFriction;
-                    joint.angularDamping = AngularDamping;
-                    ArticulationDrive currentDrive = joint.xDrive;
-                    currentDrive.forceLimit = ForceLimit;
-                    joint.xDrive = currentDrive;
-                }
+                ArticulationBody joint = articulationChain[i];
+                joint.gameObject.AddComponent<ManualJointControl>();
+                joint.jointFriction = JointFriction;
+                joint.angularDamping = AngularDamping;
+                ArticulationDrive currentDrive = joint.xDrive;
+                currentDrive.forceLimit = ForceLimit;
+                joint.xDrive = currentDrive;
             }
 
             robotJoints = new ArticulationBody[JointCount + 1];
@@ -415,16 +413,7 @@ namespace Unity.Robotics.UrdfImporter.Control
             {
                 return;
             }
-            string originalJointName = robotJoints[selectedIndex].name;
-            selectedJoint =
-                (
-                    JointNames.ContainsKey(originalJointName)
-                        ? JointNames[originalJointName]
-                        : originalJointName
-                )
-                + " ("
-                + selectedIndex
-                + ")";
+            selectedJoint = robotJoints[selectedIndex].name + " (" + selectedIndex + ")";
         }
 
         /// <summary>

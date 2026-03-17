@@ -66,26 +66,18 @@ public class RobotArmSetup : MonoBehaviour
             return;
         }
 
-        foreach (ArticulationBody joint in articulationChain)
+        for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
         {
-            if (JointNames.ContainsKey(joint.name))
-            {
-                // Debug.Log($"Adding JointControl to {JointNames[joint.name]}");
-                // joint.gameObject.AddComponent<JointControl>();
-                joint.jointFriction = JointFriction;
-                joint.angularDamping = AngularDamping;
-                ArticulationDrive currentDrive = joint.xDrive;
-                currentDrive.forceLimit = ForceLimit;
-                joint.xDrive = currentDrive;
-            }
+            ArticulationBody joint = articulationChain[i];
+            joint.jointFriction = JointFriction;
+            joint.angularDamping = AngularDamping;
+            ArticulationDrive currentDrive = joint.xDrive;
+            currentDrive.forceLimit = ForceLimit;
+            joint.xDrive = currentDrive;
         }
 
         robotJoints = new ArticulationBody[JointCount + 1];
         Array.Copy(articulationChain, BaseIndex, robotJoints, 0, JointCount);
-        for (int i = 0; i < JointCount; i++)
-        {
-            robotJoints[i].name = JointNames[robotJoints[i].name];
-        }
         robotJoints[JointCount] = articulationChain[EndEffectorIndex];
     }
 
