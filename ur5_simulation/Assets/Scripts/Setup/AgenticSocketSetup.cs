@@ -22,7 +22,6 @@ public class AgenticSocketSetup : MonoBehaviour
     private string hostAddress;
     private int portNumber;
 
-    [SerializeField]
     private PoseAndImageRecorder recorder;
 
     // AI Agent Integration
@@ -51,6 +50,10 @@ public class AgenticSocketSetup : MonoBehaviour
 
         if (sceneSetup != null)
             agentController = sceneSetup.agentRobotController;
+
+        recorder = GetComponent<PoseAndImageRecorder>();
+        if (recorder == null)
+            recorder = gameObject.AddComponent<PoseAndImageRecorder>();
 
         if (agentController == null)
         {

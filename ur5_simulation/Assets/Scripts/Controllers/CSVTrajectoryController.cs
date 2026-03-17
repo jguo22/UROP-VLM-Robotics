@@ -155,12 +155,10 @@ public class CSVTrajectoryController : MonoBehaviour
             // Parse header to understand column structure
             string[] headers = lines[0].Split(',').Select(h => h.Trim()).ToArray();
 
-            string[] jointNames = { "joint_0", "joint_1", "joint_2", "joint_3", "joint_4", "joint_5" };
-
-            // Map joint names directly to their jointAngle column indices
-            int[] jointAngleCols = new int[jointNames.Length];
-            for (int j = 0; j < jointNames.Length; j++)
-                jointAngleCols[j] = Array.IndexOf(headers, $"{jointNames[j]}_jointAngle");
+            // Map joint indices directly to their column indices
+            int[] jointAngleCols = new int[JointCount];
+            for (int j = 0; j < JointCount; j++)
+                jointAngleCols[j] = Array.IndexOf(headers, $"joint_{j}");
 
             int suctionColIndex = Array.IndexOf(headers, "suctionOn");
             int attractedColIndex = Array.IndexOf(headers, "blockAttracted");
@@ -188,8 +186,8 @@ public class CSVTrajectoryController : MonoBehaviour
 
                 timestamps.Add(timestamp);
 
-                float[] jointAngles = new float[jointNames.Length];
-                for (int j = 0; j < jointNames.Length; j++)
+                float[] jointAngles = new float[JointCount];
+                for (int j = 0; j < JointCount; j++)
                 {
                     if (jointAngleCols[j] >= 0 && jointAngleCols[j] < values.Length)
                         float.TryParse(values[jointAngleCols[j]], out jointAngles[j]);

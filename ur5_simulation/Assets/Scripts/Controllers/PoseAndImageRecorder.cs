@@ -52,6 +52,8 @@ public class PoseAndImageRecorder : MonoBehaviour
             + "delta_pos_x,delta_pos_y,delta_pos_z,"
             + "delta_rot_x,delta_rot_y,delta_rot_z,delta_rot_w,"
             + "suctionOn,";
+        for (int i = 0; i < JointCount; i++)
+            h += $"joint_{i},";
         h += "blockAttracted,";
         h += "is_first,is_last,is_terminal,reward,discount";
         return h;
