@@ -58,9 +58,7 @@ public class AgentRobotController : MonoBehaviour
         }
 
         agentTrajectoryController = GetComponent<AgentTrajectoryController>();
-        Debug.Log(
-            $"{robotJointsList.Count}, {robotJointsList[0].Length}, {robotJointsList[1].Length}"
-        );
+        Debug.Log($"AgentRobotController: {robotJointsList.Count} robot(s) initialized.");
 
         // Get joints from robotArmSetup
         // if (robotArmSetup != null && robotArmSetup.articulationChain != null)

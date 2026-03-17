@@ -51,10 +51,6 @@ public class AgenticSocketSetup : MonoBehaviour
         if (sceneSetup != null)
             agentController = sceneSetup.agentRobotController;
 
-        recorder = GetComponent<PoseAndImageRecorder>();
-        if (recorder == null)
-            recorder = gameObject.AddComponent<PoseAndImageRecorder>();
-
         if (agentController == null)
         {
             Debug.LogWarning(
@@ -79,6 +75,13 @@ public class AgenticSocketSetup : MonoBehaviour
             SuctionController suctionController = robots[i].GetComponent<SuctionController>();
             suctionControllers[i] = suctionController;
         }
+
+        recorder = GetComponent<PoseAndImageRecorder>();
+        if (recorder == null)
+            recorder = gameObject.AddComponent<PoseAndImageRecorder>();
+        recorder.robotArmSetup = robotArmSetups[0];
+        recorder.suctionController = suctionControllers[0];
+        recorder.recordingCamera = Camera.main;
 
         // Read environment variables for socket configuration
         ReadEnv();

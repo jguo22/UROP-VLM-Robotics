@@ -95,9 +95,9 @@ public class SceneResetController : MonoBehaviour
             Rigidbody rb = validTargets[i].GetComponent<Rigidbody>();
             if (rb != null)
             {
-                rb.isKinematic = true; // freeze during teleport to prevent physics glitch
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
+                rb.isKinematic = true; // freeze during teleport to prevent physics glitch
             }
 
             validTargets[i].transform.SetParent(state.parent, true);

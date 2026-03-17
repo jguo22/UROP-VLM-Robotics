@@ -18,7 +18,6 @@ public class PoseAndImageRecorder : MonoBehaviour
     public float recordingFPS = 5f;
 
     [Header("References")]
-    public Transform endEffectorTransform;
     public Camera recordingCamera;
     public SuctionController suctionController;
     public RobotArmSetup robotArmSetup;
@@ -37,6 +36,9 @@ public class PoseAndImageRecorder : MonoBehaviour
     private RenderTexture renderTexture;
     private Texture2D screenshotBuffer;
     private bool renderResourcesReady = false;
+
+    // Cached end effector transform
+    private Transform endEffector;
 
     // Previous frame pose for delta calculation
     private Vector3 prevPos;
@@ -80,12 +82,6 @@ public class PoseAndImageRecorder : MonoBehaviour
         nextSampleTime = Time.time + (1f / recordingFPS);
     }
 
-    private void OnDisable()
-    {
-        if (isRecording)
-            StopRecording();
-    }
-
     private void OnDestroy()
     {
         if (renderTexture != null)
@@ -105,11 +101,6 @@ public class PoseAndImageRecorder : MonoBehaviour
     {
         if (isRecording)
             return;
-        if (endEffectorTransform == null)
-        {
-            Debug.LogError("PoseAndImageRecorder: endEffectorTransform not assigned.");
-            return;
-        }
         if (recordingCamera == null)
         {
             Debug.LogError("PoseAndImageRecorder: recordingCamera not assigned.");
@@ -120,6 +111,8 @@ public class PoseAndImageRecorder : MonoBehaviour
             Debug.LogError("PoseAndImageRecorder: robotArmSetup not assigned.");
             return;
         }
+
+        endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
 
         InitRenderResources();
         SetupEpisode();
@@ -167,15 +160,15 @@ public class PoseAndImageRecorder : MonoBehaviour
 
         frameBuffer.Clear();
         frameIndex = 0;
-        prevPos = endEffectorTransform.position;
-        prevRot = endEffectorTransform.rotation;
+        prevPos = endEffector.position;
+        prevRot = endEffector.rotation;
     }
 
     private void CaptureFrame()
     {
         // --- Delta pose ---
-        Vector3 pos = endEffectorTransform.position;
-        Quaternion rot = endEffectorTransform.rotation;
+        Vector3 pos = endEffector.position;
+        Quaternion rot = endEffector.rotation;
         Vector3 deltaPos = pos - prevPos;
         Quaternion deltaRot = rot * Quaternion.Inverse(prevRot);
         prevPos = pos;
