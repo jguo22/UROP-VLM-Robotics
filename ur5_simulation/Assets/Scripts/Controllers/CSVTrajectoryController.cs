@@ -10,6 +10,7 @@ using static ConstantsUR5;
 /// CSV Trajectory Controller - Loads and executes robot trajectories from CSV files
 /// Compatible with exported RobotJointCoordinates CSV format
 /// </summary>
+[DefaultExecutionOrder(100)]
 public class CSVTrajectoryController : MonoBehaviour
 {
     [HideInInspector]
@@ -417,7 +418,7 @@ public class CSVTrajectoryController : MonoBehaviour
             {
                 robotController.SetJointAngles(jointAngles);
                 robotController.SetSuctionState(suctionOn);
-                robotController.SetBlockAttractedState(attracted); //uncomment this line to enable reliable attraction state setting
+                // robotController.SetBlockAttractedState(attracted); //uncomment this line to enable reliable attraction state setting
                 Debug.Log($"Joint angles and suction state sent to robot controller");
                 if (attracted)
                     Debug.Log("Block is attracted to suction");
@@ -498,27 +499,37 @@ public class CSVTrajectoryController : MonoBehaviour
 
     private void DrawTrajectoryGUI()
     {
+        float scale = Screen.height / 1080f;
+
         GUIStyle style = new GUIStyle(GUI.skin.label);
-        style.fontSize = 14;
+        style.fontSize = Mathf.RoundToInt(14 * scale);
         style.normal.textColor = Color.white;
 
-        int startX = 10;
-        int startY = 300;
-        int lineHeight = 25;
+        GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
+        buttonStyle.fontSize = Mathf.RoundToInt(13 * scale);
+
+        float startX = 10 * scale;
+        float lineHeight = 25 * scale;
+        float labelW = 350 * scale;
+        float labelH = lineHeight;
+
+        // Anchor to bottom-left, leaving room for all elements below
+        float totalH = 8 * lineHeight + 30 * scale + 95 * scale;
+        float startY = Screen.height - totalH - 10 * scale;
 
         // Trajectory info
         GUI.Label(
-            new Rect(startX, startY, 300, 20),
+            new Rect(startX, startY, labelW, labelH),
             $"Trajectory: {totalFrames} frames, {totalDuration:F2}s",
             style
         );
         GUI.Label(
-            new Rect(startX, startY + lineHeight, 300, 20),
+            new Rect(startX, startY + lineHeight, labelW, labelH),
             $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s",
             style
         );
         GUI.Label(
-            new Rect(startX, startY + 2 * lineHeight, 300, 20),
+            new Rect(startX, startY + 2 * lineHeight, labelW, labelH),
             $"Speed: {playbackSpeed:F1}x, Status: {(isPlaying ? (isPaused ? "Paused" : "Playing") : "Stopped")}",
             style
         );
@@ -527,20 +538,23 @@ public class CSVTrajectoryController : MonoBehaviour
         if (totalDuration > 0)
         {
             float progress = currentPlaybackTime / totalDuration;
-            GUI.Box(new Rect(startX, startY + 3 * lineHeight, 200, 20), "");
-            GUI.Box(new Rect(startX, startY + 3 * lineHeight, 200 * progress, 20), "");
+            float barW = 200 * scale;
+            float barH = 18 * scale;
+            GUI.Box(new Rect(startX, startY + 3 * lineHeight, barW, barH), "");
+            GUI.Box(new Rect(startX, startY + 3 * lineHeight, barW * progress, barH), "");
         }
 
         // Control buttons
-        int buttonY = startY + 5 * lineHeight;
-        int buttonWidth = 80;
-        int buttonHeight = 30;
-        int buttonSpacing = 5;
+        float buttonY = startY + 5 * lineHeight;
+        float buttonWidth = 80 * scale;
+        float buttonHeight = 30 * scale;
+        float buttonSpacing = 5 * scale;
 
         if (
             GUI.Button(
                 new Rect(startX, buttonY, buttonWidth, buttonHeight),
-                isPlaying ? "Pause" : "Play"
+                isPlaying ? "Pause" : "Play",
+                buttonStyle
             )
         )
         {
@@ -553,7 +567,8 @@ public class CSVTrajectoryController : MonoBehaviour
         if (
             GUI.Button(
                 new Rect(startX + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight),
-                "Stop"
+                "Stop",
+                buttonStyle
             )
         )
         {
@@ -568,41 +583,51 @@ public class CSVTrajectoryController : MonoBehaviour
                     buttonWidth,
                     buttonHeight
                 ),
-                "Reload"
+                "Reload",
+                buttonStyle
             )
         )
         {
             if (!string.IsNullOrEmpty(csvFilePath) || csvFile != null)
-            {
                 LoadTrajectory();
-            }
         }
 
         // Speed controls
+        float speedY = buttonY + buttonHeight + 10 * scale;
         GUI.Label(
-            new Rect(startX, buttonY + buttonHeight + 10, 200, 20),
+            new Rect(startX, speedY, labelW, labelH),
             $"Playback Speed: {playbackSpeed:F1}x",
             style
         );
 
-        if (GUI.Button(new Rect(startX, buttonY + buttonHeight + 35, 40, 25), "-"))
-        {
+        float smallBtnW = 40 * scale;
+        float smallBtnH = 25 * scale;
+        if (
+            GUI.Button(
+                new Rect(startX, speedY + lineHeight, smallBtnW, smallBtnH),
+                "-",
+                buttonStyle
+            )
+        )
             SetPlaybackSpeed(playbackSpeed / 1.2f);
-        }
-
-        if (GUI.Button(new Rect(startX + 45, buttonY + buttonHeight + 35, 40, 25), "+"))
-        {
+        if (
+            GUI.Button(
+                new Rect(startX + smallBtnW + 5 * scale, speedY + lineHeight, smallBtnW, smallBtnH),
+                "+",
+                buttonStyle
+            )
+        )
             SetPlaybackSpeed(playbackSpeed * 1.2f);
-        }
 
         // Instructions
+        float infoY = speedY + lineHeight + smallBtnH + 5 * scale;
         GUI.Label(
-            new Rect(startX, buttonY + buttonHeight + 70, 400, 20),
+            new Rect(startX, infoY, labelW, labelH),
             "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed",
             style
         );
         GUI.Label(
-            new Rect(startX, buttonY + buttonHeight + 95, 400, 20),
+            new Rect(startX, infoY + lineHeight, labelW, labelH),
             "Arrow Keys: Frame stepping",
             style
         );

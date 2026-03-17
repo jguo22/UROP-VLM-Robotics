@@ -53,16 +53,17 @@ public class UnifiedRobotController : MonoBehaviour
     /// </summary>
     public ArticulationBody[] Joints => robotJoints;
 
-    void Start()
+    void Awake()
     {
         InitializeComponents();
     }
+
+    void Start() { }
 
     void InitializeComponents()
     {
         // Find or assign robot components
         if (robotArmSetup == null)
-            //robotArmSetup = FindObjectOfType<RobotArmSetup>();
             robotArmSetup = GetComponent<RobotArmSetup>();
 
         if (ur5IkController == null)
@@ -427,7 +428,7 @@ public class UnifiedRobotController : MonoBehaviour
                 if (i < robotJoints.Length)
                 {
                     //Debug.Log($"Setting joint {i} to angle {angles[i] * Mathf.Rad2Deg:F2} degrees");
-                    Debug.Log($"Setting joint {i} to angle {angles[i]:F2} degrees");
+                    // Debug.Log($"Setting joint {i} to angle {angles[i]:F2} degrees");
 
                     ArticulationDrive drive = robotJoints[i].xDrive;
                     drive.target = angles[i];

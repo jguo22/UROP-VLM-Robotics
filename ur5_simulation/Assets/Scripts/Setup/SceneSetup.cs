@@ -130,10 +130,6 @@ public class SceneSetup : MonoBehaviour
         if (allRobotsActive && !agenticSocket && !simulAgenticSocket)
         {
             agentRobotController.defaultJointAngleY = 60;
-            agentTrajectoryController = this.gameObject.AddComponent<AgentTrajectoryController>();
-            agentTrajectory = this.gameObject.AddComponent<AgentTrajectory>();
-            agentTrajectoryController.robots = robots;
-            agentTrajectory.robots = robots;
         }
 
         // int idx = 0;
@@ -152,11 +148,6 @@ public class SceneSetup : MonoBehaviour
             else
             {
                 agenticSocket = false;
-                agentTrajectoryController =
-                    this.gameObject.AddComponent<AgentTrajectoryController>();
-                agentTrajectory = this.gameObject.AddComponent<AgentTrajectory>();
-                agentTrajectoryController.robots = robots;
-                agentTrajectory.robots = robots;
             }
             simulAgenticSocket = false;
         }
@@ -173,11 +164,6 @@ public class SceneSetup : MonoBehaviour
             else
             {
                 simulAgenticSocket = false;
-                agentTrajectoryController =
-                    this.gameObject.AddComponent<AgentTrajectoryController>();
-                agentTrajectory = this.gameObject.AddComponent<AgentTrajectory>();
-                agentTrajectoryController.robots = robots;
-                agentTrajectory.robots = robots;
             }
         }
         else

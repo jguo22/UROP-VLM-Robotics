@@ -4796,7 +4796,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryController
   robotController: {fileID: 0}
   csvFile: {fileID: 0}
-  csvFilePath: Exports/dataset/recording_20260317_133309/poses.csv
+  csvFilePath: Exports/dataset/recording_20260317_132939/poses.csv
   playbackSpeed: 1
   loopTrajectory: 0
   autoStart: 1
