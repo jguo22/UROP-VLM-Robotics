@@ -22,7 +22,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
     private string hostAddress;
     private int portNumber;
 
-    private PoseAndImageRecorder recorder;
+    private EpisodeRecorder recorder;
 
     // AI Agent Integration
     private AgentRobotController agentController;
@@ -63,9 +63,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         if (sceneSetup != null)
             agentController = sceneSetup.agentRobotController;
 
-        recorder = GetComponent<PoseAndImageRecorder>();
+        recorder = GetComponent<EpisodeRecorder>();
         if (recorder == null)
-            recorder = gameObject.AddComponent<PoseAndImageRecorder>();
+            recorder = gameObject.AddComponent<EpisodeRecorder>();
 
         if (agentController == null)
         {

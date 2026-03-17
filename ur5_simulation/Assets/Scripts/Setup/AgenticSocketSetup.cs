@@ -22,7 +22,7 @@ public class AgenticSocketSetup : MonoBehaviour
     private string hostAddress;
     private int portNumber;
 
-    private PoseAndImageRecorder recorder;
+    private EpisodeRecorder recorder;
 
     // AI Agent Integration
     private AgentRobotController agentController;
@@ -76,9 +76,9 @@ public class AgenticSocketSetup : MonoBehaviour
             suctionControllers[i] = suctionController;
         }
 
-        recorder = GetComponent<PoseAndImageRecorder>();
+        recorder = GetComponent<EpisodeRecorder>();
         if (recorder == null)
-            recorder = gameObject.AddComponent<PoseAndImageRecorder>();
+            recorder = gameObject.AddComponent<EpisodeRecorder>();
         recorder.robotArmSetup = robotArmSetups[0];
         recorder.suctionController = suctionControllers[0];
         recorder.recordingCamera = Camera.main;
@@ -207,6 +207,8 @@ public class AgenticSocketSetup : MonoBehaviour
                     return ExecuteActionJson(command);
 
                 case "reset_scene":
+                    if (recorder != null)
+                        recorder.StopRecording();
                     sceneSetup.ResetSceneState();
                     return JsonUtility.ToJson(
                         new ControlResponse
@@ -237,6 +239,30 @@ public class AgenticSocketSetup : MonoBehaviour
                         {
                             success = true,
                             message = "recording_stopped",
+                            timestamp = Time.time,
+                        }
+                    );
+
+                case "pause_recording":
+                    if (recorder != null)
+                        recorder.PauseRecording();
+                    return JsonUtility.ToJson(
+                        new ControlResponse
+                        {
+                            success = true,
+                            message = "recording_paused",
+                            timestamp = Time.time,
+                        }
+                    );
+
+                case "resume_recording":
+                    if (recorder != null)
+                        recorder.ResumeRecording();
+                    return JsonUtility.ToJson(
+                        new ControlResponse
+                        {
+                            success = true,
+                            message = "recording_resumed",
                             timestamp = Time.time,
                         }
                     );
@@ -510,6 +536,9 @@ public class AgenticSocketSetup : MonoBehaviour
 
     private void ExecuteMoveRobot(GameObject robot, ActionParameters parameters)
     {
+        if (recorder != null)
+            recorder.StartRecording();
+
         try
         {
             Vector3 targetInputPosition = new Vector3(

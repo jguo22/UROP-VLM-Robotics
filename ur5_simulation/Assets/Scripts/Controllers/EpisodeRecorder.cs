@@ -7,11 +7,12 @@ using static ConstantsUR5;
 /// <summary>
 /// Records per-step RLDS-compatible data: joint state, delta EE action, suction,
 /// episode boundary flags, reward, and a camera screenshot at an adjustable FPS.
+/// Also saves starting block positions at the beginning of each episode.
 /// Attach to any GameObject. Assign references in Inspector.
 /// StartRecording/StopRecording can be called repeatedly without reinitializing.
 /// language_instruction is left empty — populate externally before training.
 /// </summary>
-public class PoseAndImageRecorder : MonoBehaviour
+public class EpisodeRecorder : MonoBehaviour
 {
     [Header("Recording Settings")]
     public bool recordOnStart = false;
@@ -28,6 +29,7 @@ public class PoseAndImageRecorder : MonoBehaviour
 
     // Runtime state
     private bool isRecording = false;
+    private bool isPaused = false;
     private float nextSampleTime = 0f;
     private string sessionFolder;
     private int frameIndex = 0;
@@ -73,7 +75,7 @@ public class PoseAndImageRecorder : MonoBehaviour
 
     private void Update()
     {
-        if (!isRecording)
+        if (!isRecording || isPaused)
             return;
         if (Time.time < nextSampleTime)
             return;
@@ -103,12 +105,12 @@ public class PoseAndImageRecorder : MonoBehaviour
             return;
         if (recordingCamera == null)
         {
-            Debug.LogError("PoseAndImageRecorder: recordingCamera not assigned.");
+            Debug.LogError("EpisodeRecorder: recordingCamera not assigned.");
             return;
         }
         if (robotArmSetup == null)
         {
-            Debug.LogError("PoseAndImageRecorder: robotArmSetup not assigned.");
+            Debug.LogError("EpisodeRecorder: robotArmSetup not assigned.");
             return;
         }
 
@@ -120,7 +122,7 @@ public class PoseAndImageRecorder : MonoBehaviour
         isRecording = true;
         nextSampleTime = Time.time;
 
-        Debug.Log($"PoseAndImageRecorder: started recording → {sessionFolder}");
+        Debug.Log($"EpisodeRecorder: started recording → {sessionFolder}");
     }
 
     public void StopRecording()
@@ -128,10 +130,26 @@ public class PoseAndImageRecorder : MonoBehaviour
         if (!isRecording)
             return;
         isRecording = false;
+        isPaused = false;
 
         FlushBufferToDisk();
 
-        Debug.Log($"PoseAndImageRecorder: stopped. {frameIndex} frames saved → {sessionFolder}");
+        Debug.Log($"EpisodeRecorder: stopped. {frameIndex} frames saved → {sessionFolder}");
+    }
+
+    /// <summary>Pauses frame capture without ending the episode.</summary>
+    public void PauseRecording()
+    {
+        isPaused = true;
+    }
+
+    /// <summary>Resumes frame capture after a pause.</summary>
+    public void ResumeRecording()
+    {
+        if (!isRecording)
+            return;
+        isPaused = false;
+        nextSampleTime = Time.time; // capture immediately on resume
     }
 
     // -------------------------------------------------------------------------
@@ -149,7 +167,7 @@ public class PoseAndImageRecorder : MonoBehaviour
         renderResourcesReady = true;
     }
 
-    /// <summary>Creates a new episode folder and resets per-episode state.</summary>
+    /// <summary>Creates a new episode folder, saves starting block positions, and resets per-episode state.</summary>
     private void SetupEpisode()
     {
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -158,10 +176,33 @@ public class PoseAndImageRecorder : MonoBehaviour
 
         Directory.CreateDirectory(Path.Combine(sessionFolder, "images"));
 
+        SaveBlockPositions();
+
         frameBuffer.Clear();
         frameIndex = 0;
         prevPos = endEffector.position;
         prevRot = endEffector.rotation;
+    }
+
+    /// <summary>Writes blocks.csv with the name and world position of each target block at episode start.</summary>
+    private void SaveBlockPositions()
+    {
+        SceneSetup sceneSetup = FindObjectOfType<SceneSetup>();
+        if (sceneSetup == null || sceneSetup.targets == null || sceneSetup.targets.Length == 0)
+            return;
+
+        string blocksPath = Path.Combine(sessionFolder, "blocks.csv");
+        using (StreamWriter writer = new StreamWriter(blocksPath, false))
+        {
+            writer.WriteLine("name,pos_x,pos_y,pos_z");
+            foreach (GameObject block in sceneSetup.targets)
+            {
+                if (block == null)
+                    continue;
+                Vector3 p = block.transform.position;
+                writer.WriteLine($"{block.name},{p.x:F5},{p.y:F5},{p.z:F5}");
+            }
+        }
     }
 
     private void CaptureFrame()

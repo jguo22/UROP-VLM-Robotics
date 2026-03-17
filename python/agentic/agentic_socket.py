@@ -215,11 +215,14 @@ def run_episode(s, agent, profiler) -> bool:
         commands = [commands]
     profiler.record("parse_response")
 
-    for command in commands:
+    for i, command in enumerate(commands):
         agent.info(f"Executing: {command}")
+        send_control(s, "start_recording" if i == 0 else "resume_recording")
         if not execute_command(s, agent, command):
+            send_control(s, "pause_recording")
             return False
-        time.sleep(LOOP_PERIOD)
+        wait_for_idle(s)
+        send_control(s, "pause_recording")
 
     profiler.record("command_loop")
     profiler.end_frame()
@@ -365,11 +368,8 @@ def main():
             send_control(s, "reset_scene")
             wait_for_idle(s)        # wait for arms to finish returning to home
             time.sleep(2.0)         # let gear rigidbodies settle onto the table
-            send_control(s, "start_recording")
-
             success = run_episode(s, agent, profiler)
 
-            wait_for_idle(s)  # ensure final movement finishes before stopping record
             send_control(s, "stop_recording")
             profiler.save_profile()
 

@@ -226,7 +226,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3861005}
   - component: {fileID: 3861006}
-  - component: {fileID: 3861007}
   m_Layer: 0
   m_Name: SceneSetup
   m_TagString: Untagged
@@ -274,7 +273,7 @@ MonoBehaviour:
   - {fileID: 0}
   targets: []
   ikSocket: 0
-  allRobotsActive: 0
+  allRobotsActive: 1
   agenticSocket: 1
   simulAgenticSocket: 0
   agentRobotController: {fileID: 0}
@@ -288,25 +287,6 @@ MonoBehaviour:
   suctionController: {fileID: 0}
   csvTrajectoryController: {fileID: 0}
   csvTrajectoryExample: {fileID: 0}
---- !u!114 &3861007
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3861003}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8ab7df5d4327b4355ac70287587cf4aa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PoseAndImageRecorder
-  recordOnStart: 0
-  recordingFPS: 5
-  recordingCamera: {fileID: 963194227}
-  suctionController: {fileID: 1380065255}
-  robotArmSetup: {fileID: 1380065248}
-  sessionName: recording
-  appendTimestamp: 1
 --- !u!1 &71188741
 GameObject:
   m_ObjectHideFlags: 8
