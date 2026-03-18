@@ -17,9 +17,9 @@ public class EpisodePlayback : MonoBehaviour
     private UnifiedRobotController robotController;
 
     [Header("Trajectory Settings")]
-    public string episodeFolderPath = ""; // Path to episode folder (contains poses.csv and blocks.csv)
-    private string csvFilePath =>
-        string.IsNullOrEmpty(episodeFolderPath) ? "" : Path.Combine(episodeFolderPath, "poses.csv");
+    public string episodeFolderPath = ""; // Path to episode folder; used to fill in empty paths below
+    public string csvFilePath = ""; // Path to trajectory CSV (defaults to episodeFolderPath/poses.csv)
+    public string blocksFilePath = ""; // Path to blocks CSV (defaults to episodeFolderPath/blocks.csv)
     public float playbackSpeed = 1.0f;
     public bool loopTrajectory = false;
     public bool autoStart = false;
@@ -49,7 +49,7 @@ public class EpisodePlayback : MonoBehaviour
     {
         InitializeController();
 
-        if (autoStart && !string.IsNullOrEmpty(csvFilePath))
+        if (autoStart && (!string.IsNullOrEmpty(csvFilePath) || !string.IsNullOrEmpty(episodeFolderPath)))
         {
             LoadTrajectory();
             StartPlayback();
@@ -95,14 +95,18 @@ public class EpisodePlayback : MonoBehaviour
     /// </summary>
     private void LoadAndApplyBlockPositions()
     {
-        string episodeFolder = GetEpisodeFolder();
-        if (string.IsNullOrEmpty(episodeFolder))
+        string resolvedBlocksPath = !string.IsNullOrEmpty(blocksFilePath)
+            ? blocksFilePath
+            : !string.IsNullOrEmpty(episodeFolderPath)
+                ? Path.Combine(episodeFolderPath, "blocks.csv")
+                : "";
+
+        if (string.IsNullOrEmpty(resolvedBlocksPath))
             return;
 
-        string blocksPath = Path.Combine(episodeFolder, "blocks.csv");
-        if (!File.Exists(blocksPath))
+        if (!File.Exists(resolvedBlocksPath))
         {
-            Debug.LogWarning($"EpisodePlayback: blocks.csv not found at {blocksPath}");
+            Debug.LogWarning($"EpisodePlayback: blocks.csv not found at {resolvedBlocksPath}");
             return;
         }
 
@@ -123,7 +127,7 @@ public class EpisodePlayback : MonoBehaviour
                 blockMap[block.name] = block;
         }
 
-        string[] lines = File.ReadAllLines(blocksPath);
+        string[] lines = File.ReadAllLines(resolvedBlocksPath);
         for (int i = 1; i < lines.Length; i++) // skip header
         {
             if (string.IsNullOrWhiteSpace(lines[i]))
@@ -155,15 +159,6 @@ public class EpisodePlayback : MonoBehaviour
         }
     }
 
-    /// <summary>Returns the episode folder path.</summary>
-    private string GetEpisodeFolder()
-    {
-        if (!string.IsNullOrEmpty(episodeFolderPath))
-            return episodeFolderPath;
-
-        return null;
-    }
-
     #endregion
 
     #region CSV Loading and Parsing
@@ -175,21 +170,25 @@ public class EpisodePlayback : MonoBehaviour
     {
         string csvContent = "";
 
-        if (!string.IsNullOrEmpty(csvFilePath))
+        string resolvedCsvPath = !string.IsNullOrEmpty(csvFilePath)
+            ? csvFilePath
+            : !string.IsNullOrEmpty(episodeFolderPath)
+                ? Path.Combine(episodeFolderPath, "poses.csv")
+                : "";
+
+        if (string.IsNullOrEmpty(resolvedCsvPath))
         {
-            try
-            {
-                csvContent = File.ReadAllText(csvFilePath);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Failed to load CSV file from path: {csvFilePath}\n{e.Message}");
-                return false;
-            }
+            Debug.LogError("No trajectory CSV specified. Set csvFilePath or episodeFolderPath.");
+            return false;
         }
-        else
+
+        try
         {
-            Debug.LogError("No episode folder specified. Set episodeFolderPath.");
+            csvContent = File.ReadAllText(resolvedCsvPath);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to load CSV file from path: {resolvedCsvPath}\n{e.Message}");
             return false;
         }
 
@@ -218,9 +217,15 @@ public class EpisodePlayback : MonoBehaviour
             string[] headers = lines[0].Split(',').Select(h => h.Trim()).ToArray();
 
             // Map joint indices directly to their column indices
+            // Supports both "joint_0" format and "{jointName}_jointAngle" format
+            string[] jointNames = { "base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3" };
             int[] jointAngleCols = new int[JointCount];
             for (int j = 0; j < JointCount; j++)
+            {
                 jointAngleCols[j] = Array.IndexOf(headers, $"joint_{j}");
+                if (jointAngleCols[j] < 0 && j < jointNames.Length)
+                    jointAngleCols[j] = Array.IndexOf(headers, $"{jointNames[j]}_jointAngle");
+            }
 
             int suctionColIndex = Array.IndexOf(headers, "suctionOn");
             int attractedColIndex = Array.IndexOf(headers, "blockAttracted");
@@ -504,7 +509,7 @@ public class EpisodePlayback : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.R))
         {
-            if (!string.IsNullOrEmpty(csvFilePath))
+            if (!string.IsNullOrEmpty(csvFilePath) || !string.IsNullOrEmpty(episodeFolderPath))
                 LoadTrajectory();
         }
 
@@ -610,7 +615,7 @@ public class EpisodePlayback : MonoBehaviour
             )
         )
         {
-            if (!string.IsNullOrEmpty(csvFilePath))
+            if (!string.IsNullOrEmpty(csvFilePath) || !string.IsNullOrEmpty(episodeFolderPath))
                 LoadTrajectory();
         }
 
@@ -659,7 +664,18 @@ public class EpisodePlayback : MonoBehaviour
 
     public void LoadTrajectoryFromPath(string path)
     {
-        episodeFolderPath = path;
+        if (path.EndsWith(".csv", System.StringComparison.OrdinalIgnoreCase))
+        {
+            csvFilePath = path;
+            episodeFolderPath = "";
+            blocksFilePath = "";
+        }
+        else
+        {
+            episodeFolderPath = path;
+            csvFilePath = "";
+            blocksFilePath = "";
+        }
         LoadTrajectory();
     }
 

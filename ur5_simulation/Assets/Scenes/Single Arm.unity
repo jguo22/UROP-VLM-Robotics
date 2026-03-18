@@ -4806,7 +4806,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 027f2fbc52b334d8284479616cf4b6a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EpisodePlayback
-  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260317_171714
+  episodeFolderPath: 
+  csvFilePath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/RobotJointCoordinates_ur5_left_20260225_150932.csv
+  blocksFilePath: 
   playbackSpeed: 1
   loopTrajectory: 0
   autoStart: 1
