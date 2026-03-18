@@ -16,7 +16,7 @@ public class EpisodeRecorder : MonoBehaviour
 {
     [Header("Recording Settings")]
     public bool recordOnStart = false;
-    public float recordingFPS = 5f;
+    public float recordingFPS = 10f;
 
     [Header("References")]
     public Camera recordingCamera;

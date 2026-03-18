@@ -18,7 +18,8 @@ public class EpisodePlayback : MonoBehaviour
 
     [Header("Trajectory Settings")]
     public string episodeFolderPath = ""; // Path to episode folder (contains poses.csv and blocks.csv)
-    private string csvFilePath => string.IsNullOrEmpty(episodeFolderPath) ? "" : Path.Combine(episodeFolderPath, "poses.csv");
+    private string csvFilePath =>
+        string.IsNullOrEmpty(episodeFolderPath) ? "" : Path.Combine(episodeFolderPath, "poses.csv");
     public float playbackSpeed = 1.0f;
     public bool loopTrajectory = false;
     public bool autoStart = false;
@@ -108,7 +109,9 @@ public class EpisodePlayback : MonoBehaviour
         SceneSetup sceneSetup = FindObjectOfType<SceneSetup>();
         if (sceneSetup == null || sceneSetup.targets == null)
         {
-            Debug.LogWarning("EpisodePlayback: SceneSetup or targets not found, skipping block setup.");
+            Debug.LogWarning(
+                "EpisodePlayback: SceneSetup or targets not found, skipping block setup."
+            );
             return;
         }
 
@@ -131,9 +134,11 @@ public class EpisodePlayback : MonoBehaviour
                 continue;
 
             string blockName = cols[0].Trim();
-            if (!float.TryParse(cols[1], out float x) ||
-                !float.TryParse(cols[2], out float y) ||
-                !float.TryParse(cols[3], out float z))
+            if (
+                !float.TryParse(cols[1], out float x)
+                || !float.TryParse(cols[2], out float y)
+                || !float.TryParse(cols[3], out float z)
+            )
                 continue;
 
             if (blockMap.TryGetValue(blockName, out GameObject block))
@@ -143,7 +148,9 @@ public class EpisodePlayback : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"EpisodePlayback: block '{blockName}' not found in scene targets.");
+                Debug.LogWarning(
+                    $"EpisodePlayback: block '{blockName}' not found in scene targets."
+                );
             }
         }
     }
@@ -457,11 +464,13 @@ public class EpisodePlayback : MonoBehaviour
         {
             float[] jointAngles = jointAnglesTrajectory[frameIndex];
             bool suctionOn = suctionStates[frameIndex];
+            bool attracted = attractedStates[frameIndex];
 
             if (robotController != null)
             {
                 robotController.SetJointAngles(jointAngles);
                 robotController.SetSuctionState(suctionOn);
+                // robotController.SetBlockAttractedState(attracted);
             }
             else
             {
@@ -495,7 +504,7 @@ public class EpisodePlayback : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.R))
         {
-            if (!string.IsNullOrEmpty(csvFilePath) )
+            if (!string.IsNullOrEmpty(csvFilePath))
                 LoadTrajectory();
         }
 
@@ -535,12 +544,21 @@ public class EpisodePlayback : MonoBehaviour
         float totalH = 8 * lineHeight + 30 * scale + 95 * scale;
         float startY = Screen.height - totalH - 10 * scale;
 
-        GUI.Label(new Rect(startX, startY, labelW, labelH),
-            $"Trajectory: {totalFrames} frames, {totalDuration:F2}s", style);
-        GUI.Label(new Rect(startX, startY + lineHeight, labelW, labelH),
-            $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s", style);
-        GUI.Label(new Rect(startX, startY + 2 * lineHeight, labelW, labelH),
-            $"Speed: {playbackSpeed:F1}x, Status: {(isPlaying ? (isPaused ? "Paused" : "Playing") : "Stopped")}", style);
+        GUI.Label(
+            new Rect(startX, startY, labelW, labelH),
+            $"Trajectory: {totalFrames} frames, {totalDuration:F2}s",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, startY + lineHeight, labelW, labelH),
+            $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, startY + 2 * lineHeight, labelW, labelH),
+            $"Speed: {playbackSpeed:F1}x, Status: {(isPlaying ? (isPaused ? "Paused" : "Playing") : "Stopped")}",
+            style
+        );
 
         if (totalDuration > 0)
         {
@@ -556,40 +574,83 @@ public class EpisodePlayback : MonoBehaviour
         float buttonHeight = 30 * scale;
         float buttonSpacing = 5 * scale;
 
-        if (GUI.Button(new Rect(startX, buttonY, buttonWidth, buttonHeight),
-            isPlaying ? "Pause" : "Play", buttonStyle))
+        if (
+            GUI.Button(
+                new Rect(startX, buttonY, buttonWidth, buttonHeight),
+                isPlaying ? "Pause" : "Play",
+                buttonStyle
+            )
+        )
         {
-            if (isPlaying) PausePlayback();
-            else StartPlayback();
+            if (isPlaying)
+                PausePlayback();
+            else
+                StartPlayback();
         }
 
-        if (GUI.Button(new Rect(startX + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight),
-            "Stop", buttonStyle))
+        if (
+            GUI.Button(
+                new Rect(startX + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight),
+                "Stop",
+                buttonStyle
+            )
+        )
             StopPlayback();
 
-        if (GUI.Button(new Rect(startX + 2 * (buttonWidth + buttonSpacing), buttonY, buttonWidth, buttonHeight),
-            "Reload", buttonStyle))
+        if (
+            GUI.Button(
+                new Rect(
+                    startX + 2 * (buttonWidth + buttonSpacing),
+                    buttonY,
+                    buttonWidth,
+                    buttonHeight
+                ),
+                "Reload",
+                buttonStyle
+            )
+        )
         {
-            if (!string.IsNullOrEmpty(csvFilePath) )
+            if (!string.IsNullOrEmpty(csvFilePath))
                 LoadTrajectory();
         }
 
         float speedY = buttonY + buttonHeight + 10 * scale;
-        GUI.Label(new Rect(startX, speedY, labelW, labelH),
-            $"Playback Speed: {playbackSpeed:F1}x", style);
+        GUI.Label(
+            new Rect(startX, speedY, labelW, labelH),
+            $"Playback Speed: {playbackSpeed:F1}x",
+            style
+        );
 
         float smallBtnW = 40 * scale;
         float smallBtnH = 25 * scale;
-        if (GUI.Button(new Rect(startX, speedY + lineHeight, smallBtnW, smallBtnH), "-", buttonStyle))
+        if (
+            GUI.Button(
+                new Rect(startX, speedY + lineHeight, smallBtnW, smallBtnH),
+                "-",
+                buttonStyle
+            )
+        )
             SetPlaybackSpeed(playbackSpeed / 1.2f);
-        if (GUI.Button(new Rect(startX + smallBtnW + 5 * scale, speedY + lineHeight, smallBtnW, smallBtnH), "+", buttonStyle))
+        if (
+            GUI.Button(
+                new Rect(startX + smallBtnW + 5 * scale, speedY + lineHeight, smallBtnW, smallBtnH),
+                "+",
+                buttonStyle
+            )
+        )
             SetPlaybackSpeed(playbackSpeed * 1.2f);
 
         float infoY = speedY + lineHeight + smallBtnH + 5 * scale;
-        GUI.Label(new Rect(startX, infoY, labelW, labelH),
-            "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed", style);
-        GUI.Label(new Rect(startX, infoY + lineHeight, labelW, labelH),
-            "Arrow Keys: Frame stepping", style);
+        GUI.Label(
+            new Rect(startX, infoY, labelW, labelH),
+            "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed",
+            style
+        );
+        GUI.Label(
+            new Rect(startX, infoY + lineHeight, labelW, labelH),
+            "Arrow Keys: Frame stepping",
+            style
+        );
     }
 
     #endregion
