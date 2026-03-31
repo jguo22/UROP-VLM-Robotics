@@ -15,6 +15,7 @@ using static ConstantsUR5;
 public class EpisodePlayback : MonoBehaviour
 {
     private UnifiedRobotController robotController;
+    private UR5Controller ur5Controller;
 
     [Header("Trajectory Settings")]
     public string episodeFolderPath = ""; // Path to episode folder; used to fill in empty paths below
@@ -23,6 +24,8 @@ public class EpisodePlayback : MonoBehaviour
     public float playbackSpeed = 1.0f;
     public bool loopTrajectory = false;
     public bool autoStart = false;
+    public bool useDeltaMovement = false; // Use UR5Controller.MoveDelta instead of direct joint angles
+    public float minFrameInterval = 0f; // Minimum seconds between frame advances
 
     private bool isPlaying = false;
     private bool isPaused = false;
@@ -40,8 +43,14 @@ public class EpisodePlayback : MonoBehaviour
     // 6 joints per frame
     private List<float[]> jointAnglesTrajectory = new List<float[]>();
 
+    // Delta pose per frame (Unity world space)
+    private List<Vector3> deltaPositions = new List<Vector3>();
+    private List<Quaternion> deltaRotations = new List<Quaternion>();
+
     // Playback timing (FixedUpdate-based)
     private float playbackElapsed = 0f;
+    private int lastAppliedDeltaFrame = -1;
+    private float timeSinceLastFrameAdvance = 0f;
 
     #region Unity Methods
 
@@ -70,11 +79,20 @@ public class EpisodePlayback : MonoBehaviour
             return;
 
         playbackElapsed += Time.fixedDeltaTime * playbackSpeed;
+        timeSinceLastFrameAdvance += Time.fixedDeltaTime * playbackSpeed;
         float targetTime = timestamps[0] + playbackElapsed;
 
+        // Enforce minimum time between frame advances
+        if (minFrameInterval > 0f && timeSinceLastFrameAdvance < minFrameInterval)
+            return;
+
         // Advance currentFrame to match elapsed time
+        int prevFrame = currentFrame;
         while (currentFrame < totalFrames - 1 && timestamps[currentFrame + 1] <= targetTime)
             currentFrame++;
+
+        if (currentFrame != prevFrame)
+            timeSinceLastFrameAdvance = 0f;
 
         currentTime = timestamps[currentFrame];
         currentPlaybackTime = currentTime;
@@ -82,7 +100,18 @@ public class EpisodePlayback : MonoBehaviour
         // Apply one frame ahead so the robot reaches the pose before the
         // physics step that corresponds to the next timestamp.
         int applyFrame = Mathf.Min(currentFrame + 1, totalFrames - 1);
-        SetRobotToFrame(applyFrame);
+
+        if (useDeltaMovement)
+        {
+            // Apply each delta exactly once, catching up if frames were skipped
+            for (int f = lastAppliedDeltaFrame + 1; f <= applyFrame; f++)
+                ApplyDeltaFrame(f);
+            lastAppliedDeltaFrame = applyFrame;
+        }
+        else
+        {
+            SetRobotToFrame(applyFrame);
+        }
 
         // End of trajectory
         if (currentFrame >= totalFrames - 1)
@@ -92,6 +121,8 @@ public class EpisodePlayback : MonoBehaviour
                 LoadAndApplyBlockPositions();
                 currentFrame = 0;
                 playbackElapsed = 0f;
+                timeSinceLastFrameAdvance = 0f;
+                lastAppliedDeltaFrame = -1;
                 currentTime = timestamps[0];
             }
             else
@@ -118,6 +149,10 @@ public class EpisodePlayback : MonoBehaviour
 
         if (robotController == null)
             Debug.LogError("EpisodePlayback: No UnifiedRobotController found!");
+
+        ur5Controller = GetComponent<UR5Controller>();
+        if (useDeltaMovement && ur5Controller == null)
+            Debug.LogError("EpisodePlayback: useDeltaMovement is enabled but no UR5Controller found!");
     }
 
     #endregion
@@ -266,6 +301,15 @@ public class EpisodePlayback : MonoBehaviour
             int suctionColIndex = Array.IndexOf(headers, "suctionOn");
             int attractedColIndex = Array.IndexOf(headers, "blockAttracted");
 
+            // Delta pose columns (Unity world space, matches UR5Controller.MoveDelta)
+            int dpxCol = Array.IndexOf(headers, "delta_pos_x");
+            int dpyCol = Array.IndexOf(headers, "delta_pos_y");
+            int dpzCol = Array.IndexOf(headers, "delta_pos_z");
+            int drxCol = Array.IndexOf(headers, "delta_rot_x");
+            int dryCol = Array.IndexOf(headers, "delta_rot_y");
+            int drzCol = Array.IndexOf(headers, "delta_rot_z");
+            int drwCol = Array.IndexOf(headers, "delta_rot_w");
+
             int timestampCol = Array.IndexOf(headers, "Timestamp");
             if (timestampCol < 0)
             {
@@ -309,6 +353,19 @@ public class EpisodePlayback : MonoBehaviour
                 );
 
                 jointAnglesTrajectory.Add(jointAngles);
+
+                // Parse delta pose
+                float dpx = 0f, dpy = 0f, dpz = 0f;
+                float drx = 0f, dry = 0f, drz = 0f, drw = 1f;
+                if (dpxCol >= 0) float.TryParse(values[dpxCol], out dpx);
+                if (dpyCol >= 0) float.TryParse(values[dpyCol], out dpy);
+                if (dpzCol >= 0) float.TryParse(values[dpzCol], out dpz);
+                if (drxCol >= 0) float.TryParse(values[drxCol], out drx);
+                if (dryCol >= 0) float.TryParse(values[dryCol], out dry);
+                if (drzCol >= 0) float.TryParse(values[drzCol], out drz);
+                if (drwCol >= 0) float.TryParse(values[drwCol], out drw);
+                deltaPositions.Add(new Vector3(dpx, dpy, dpz));
+                deltaRotations.Add(new Quaternion(drx, dry, drz, drw));
             }
 
             totalFrames = jointAnglesTrajectory.Count;
@@ -336,6 +393,8 @@ public class EpisodePlayback : MonoBehaviour
     {
         timestamps.Clear();
         jointAnglesTrajectory.Clear();
+        deltaPositions.Clear();
+        deltaRotations.Clear();
         suctionStates.Clear();
         attractedStates.Clear();
         totalFrames = 0;
@@ -343,6 +402,8 @@ public class EpisodePlayback : MonoBehaviour
         currentTime = 0f;
         currentFrame = 0;
         currentPlaybackTime = 0f;
+        lastAppliedDeltaFrame = -1;
+        timeSinceLastFrameAdvance = 0f;
     }
 
     #endregion
@@ -366,6 +427,8 @@ public class EpisodePlayback : MonoBehaviour
         isPaused = false;
         currentFrame = 0;
         playbackElapsed = 0f;
+        timeSinceLastFrameAdvance = 0f;
+        lastAppliedDeltaFrame = -1;
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
 
         Debug.Log("Started episode playback");
@@ -390,6 +453,8 @@ public class EpisodePlayback : MonoBehaviour
 
         currentFrame = 0;
         playbackElapsed = 0f;
+        timeSinceLastFrameAdvance = 0f;
+        lastAppliedDeltaFrame = -1;
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
         Debug.Log("Episode playback stopped");
     }
@@ -440,32 +505,58 @@ public class EpisodePlayback : MonoBehaviour
     }
 
     /// <summary>
-    /// Set robot joints to specific frame
+    /// Apply a single delta frame via UR5Controller.MoveDelta, with logging.
+    /// </summary>
+    private void ApplyDeltaFrame(int frameIndex)
+    {
+        if (frameIndex < 0 || frameIndex >= deltaPositions.Count)
+            return;
+
+        if (ur5Controller == null)
+        {
+            Debug.LogError("EpisodePlayback: useDeltaMovement is enabled but UR5Controller is null!");
+            return;
+        }
+
+        Vector3 posBefore = robotController != null ? robotController.GetEndEffectorPosition() : Vector3.zero;
+
+        Vector3 intendedDelta = deltaPositions[frameIndex];
+        ur5Controller.MoveDelta(intendedDelta, deltaRotations[frameIndex]);
+        ur5Controller.SetGripper(suctionStates[frameIndex]);
+
+        Vector3 posAfter = robotController != null ? robotController.GetEndEffectorPosition() : Vector3.zero;
+        Vector3 actualDelta = posAfter - posBefore;
+
+        Debug.Log(
+            $"EpisodePlayback delta frame {frameIndex}: "
+            + $"intended=({intendedDelta.x:F5}, {intendedDelta.y:F5}, {intendedDelta.z:F5}), "
+            + $"actual=({actualDelta.x:F5}, {actualDelta.y:F5}, {actualDelta.z:F5}), "
+            + $"diff=({(intendedDelta - actualDelta).magnitude:F5})"
+        );
+    }
+
+    /// <summary>
+    /// Set robot joints to specific frame (joint-angle mode only)
     /// </summary>
     private void SetRobotToFrame(int frameIndex)
     {
-        if (frameIndex >= 0 && frameIndex < jointAnglesTrajectory.Count)
-        {
-            float[] jointAngles = jointAnglesTrajectory[frameIndex];
-            bool suctionOn = suctionStates[frameIndex];
-            bool attracted = attractedStates[frameIndex];
-
-            if (robotController != null)
-            {
-                robotController.SetJointAngles(jointAngles);
-                robotController.SetSuctionState(suctionOn);
-                robotController.SetBlockAttractedState(attracted); // uncomment for longer suction reach
-            }
-            else
-            {
-                Debug.LogError("EpisodePlayback: robotController is null!");
-            }
-        }
-        else
+        if (frameIndex < 0 || frameIndex >= jointAnglesTrajectory.Count)
         {
             Debug.LogWarning(
                 $"EpisodePlayback: Invalid frame index {frameIndex}, trajectory has {jointAnglesTrajectory.Count} frames"
             );
+            return;
+        }
+
+        if (robotController != null)
+        {
+            robotController.SetJointAngles(jointAnglesTrajectory[frameIndex]);
+            robotController.SetSuctionState(suctionStates[frameIndex]);
+            // robotController.SetBlockAttractedState(attractedStates[frameIndex]); // uncomment for longer suction reach
+        }
+        else
+        {
+            Debug.LogError("EpisodePlayback: no controller available!");
         }
     }
 

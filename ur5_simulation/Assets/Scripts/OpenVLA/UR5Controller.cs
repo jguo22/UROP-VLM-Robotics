@@ -55,10 +55,9 @@ public class UR5Controller : MonoBehaviour
         ikSolver = GetComponent<UR5IKSolver>();
         if (ikSolver == null)
         {
-            Debug.LogWarning(
-                "UR5Controller: UR5IKSolver component not found. Adding dummy solver."
-            );
-            ikSolver = gameObject.AddComponent<UR5IKSolver>();
+            Debug.LogError("UR5Controller: UR5IKSolver component not found!");
+            enabled = false;
+            return;
         }
 
         // Configure joint drives

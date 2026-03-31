@@ -4622,6 +4622,8 @@ GameObject:
   - component: {fileID: 1380065255}
   - component: {fileID: 1380065258}
   - component: {fileID: 1380065259}
+  - component: {fileID: 1380065260}
+  - component: {fileID: 1380065261}
   m_Layer: 0
   m_Name: ur5_left
   m_TagString: robot
@@ -4806,12 +4808,44 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 027f2fbc52b334d8284479616cf4b6a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EpisodePlayback
-  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260325_132505
+  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260317_171714
   csvFilePath: 
   blocksFilePath: 
   playbackSpeed: 1
   loopTrajectory: 0
   autoStart: 1
+  useDeltaMovement: 1
+  minFrameInterval: 0
+--- !u!114 &1380065260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380065241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
+  stiffness: 10000
+  damping: 100
+--- !u!114 &1380065261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380065241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fa5e61d721a449b48e33cb62c2e159a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UR5IKSolver
+  serverHost: 127.0.0.1
+  serverPort: 5010
+  autoReconnect: 1
+  connectionTimeout: 5000
 --- !u!1001 &1394512415
 PrefabInstance:
   m_ObjectHideFlags: 0
