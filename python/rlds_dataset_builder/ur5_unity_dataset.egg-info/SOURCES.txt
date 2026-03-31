@@ -1,0 +1,10 @@
+LICENSE
+README.md
+setup.py
+ur5_unity_dataset/__init__.py
+ur5_unity_dataset/transform.py
+ur5_unity_dataset/ur5_unity_dataset_dataset_builder.py
+ur5_unity_dataset.egg-info/PKG-INFO
+ur5_unity_dataset.egg-info/SOURCES.txt
+ur5_unity_dataset.egg-info/dependency_links.txt
+ur5_unity_dataset.egg-info/top_level.txt

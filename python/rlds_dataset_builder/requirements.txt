@@ -1,0 +1,7 @@
+tensorflow
+tensorflow_datasets
+tensorflow_hub
+apache_beam
+matplotlib
+plotly 
+wandb

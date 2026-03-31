@@ -16,6 +16,7 @@ public class EpisodePlayback : MonoBehaviour
 {
     private UnifiedRobotController robotController;
     private UR5Controller ur5Controller;
+    private RobotArmSetup robotArmSetup;
 
     [Header("Trajectory Settings")]
     public string episodeFolderPath = ""; // Path to episode folder; used to fill in empty paths below
@@ -144,15 +145,20 @@ public class EpisodePlayback : MonoBehaviour
 
     void InitializeController()
     {
-        if (robotController == null)
-            robotController = GetComponent<UnifiedRobotController>();
-
-        if (robotController == null)
-            Debug.LogError("EpisodePlayback: No UnifiedRobotController found!");
-
+        robotController = GetComponent<UnifiedRobotController>();
         ur5Controller = GetComponent<UR5Controller>();
+        robotArmSetup = GetComponent<RobotArmSetup>();
+
+        // Disable both controllers; only enable the needed one during playback
+        if (robotController != null)
+            robotController.enabled = !useDeltaMovement;
+        if (ur5Controller != null)
+            ur5Controller.enabled = false; // enabled on StartPlayback in delta mode
+
         if (useDeltaMovement && ur5Controller == null)
             Debug.LogError("EpisodePlayback: useDeltaMovement is enabled but no UR5Controller found!");
+        if (!useDeltaMovement && robotController == null)
+            Debug.LogError("EpisodePlayback: No UnifiedRobotController found!");
     }
 
     #endregion
@@ -423,6 +429,14 @@ public class EpisodePlayback : MonoBehaviour
 
         LoadAndApplyBlockPositions();
 
+        // Set robot to first frame's joint angles so delta mode starts from the correct pose
+        if (useDeltaMovement && jointAnglesTrajectory.Count > 0)
+        {
+            SetJointAnglesDirect(jointAnglesTrajectory[0]);
+            if (ur5Controller != null)
+                ur5Controller.enabled = true;
+        }
+
         isPlaying = true;
         isPaused = false;
         currentFrame = 0;
@@ -450,6 +464,9 @@ public class EpisodePlayback : MonoBehaviour
     {
         isPlaying = false;
         isPaused = false;
+
+        if (ur5Controller != null)
+            ur5Controller.enabled = false;
 
         currentFrame = 0;
         playbackElapsed = 0f;
@@ -505,6 +522,29 @@ public class EpisodePlayback : MonoBehaviour
     }
 
     /// <summary>
+    /// Set joint angles directly on the articulation bodies, bypassing both controllers.
+    /// Used to set the initial pose before delta playback begins.
+    /// </summary>
+    private void SetJointAnglesDirect(float[] angles)
+    {
+        if (robotArmSetup == null || robotArmSetup.robotJoints == null)
+        {
+            Debug.LogError("EpisodePlayback: RobotArmSetup or robotJoints not available!");
+            return;
+        }
+
+        ArticulationBody[] joints = robotArmSetup.robotJoints;
+        for (int i = 0; i < Mathf.Min(JointCount, angles.Length); i++)
+        {
+            if (joints[i] == null)
+                continue;
+            ArticulationDrive drive = joints[i].xDrive;
+            drive.target = angles[i] * Mathf.Rad2Deg;
+            joints[i].xDrive = drive;
+        }
+    }
+
+    /// <summary>
     /// Apply a single delta frame via UR5Controller.MoveDelta, with logging.
     /// </summary>
     private void ApplyDeltaFrame(int frameIndex)
@@ -518,13 +558,14 @@ public class EpisodePlayback : MonoBehaviour
             return;
         }
 
-        Vector3 posBefore = robotController != null ? robotController.GetEndEffectorPosition() : Vector3.zero;
+        Transform ee = robotArmSetup != null ? robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform : null;
+        Vector3 posBefore = ee != null ? ee.position : Vector3.zero;
 
         Vector3 intendedDelta = deltaPositions[frameIndex];
         ur5Controller.MoveDelta(intendedDelta, deltaRotations[frameIndex]);
         ur5Controller.SetGripper(suctionStates[frameIndex]);
 
-        Vector3 posAfter = robotController != null ? robotController.GetEndEffectorPosition() : Vector3.zero;
+        Vector3 posAfter = ee != null ? ee.position : Vector3.zero;
         Vector3 actualDelta = posAfter - posBefore;
 
         Debug.Log(
