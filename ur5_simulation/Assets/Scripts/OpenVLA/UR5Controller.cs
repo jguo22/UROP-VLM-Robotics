@@ -142,9 +142,9 @@ public class UR5Controller : MonoBehaviour
         // Apply rotation in world coordinates: deltaRotation * currentRotation
         Quaternion targetRot = deltaRotation * endEffector.rotation;
 
-        Debug.Log(
-            $"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})"
-        );
+        // Debug.Log(
+        //     $"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})"
+        // );
 
         MoveToTarget(targetPos, targetRot);
     }
@@ -159,8 +159,8 @@ public class UR5Controller : MonoBehaviour
         float[] currentAngles = GetJointAngles();
         float[] ikResult = ikSolver.SolveIK(relativePosition, relativeRotation, currentAngles);
 
-        Debug.Log($"UR5Controller: Current angles: [{string.Join(", ", currentAngles)}]");
-        Debug.Log($"UR5Controller: Target angles: [{string.Join(", ", ikResult ?? new float[0])}]");
+        // Debug.Log($"UR5Controller: Current angles: [{string.Join(", ", currentAngles)}]");
+        // Debug.Log($"UR5Controller: Target angles: [{string.Join(", ", ikResult ?? new float[0])}]");
 
         if (ikResult != null)
             MoveToAngles(ikResult);
