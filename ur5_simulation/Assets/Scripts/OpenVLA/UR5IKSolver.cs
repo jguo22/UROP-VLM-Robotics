@@ -12,6 +12,7 @@ using UnityEngine;
 ///   Client sends: 104 bytes [target_pos(3d) + target_rot(4d) + current_angles(6d)]
 ///   Server responds: 1 byte success flag + 48 bytes joint angles (if success)
 /// </summary>
+[RequireComponent(typeof(UR5IKSolver))]
 public class UR5IKSolver : MonoBehaviour
 {
     [Header("Python IK Server Settings")]

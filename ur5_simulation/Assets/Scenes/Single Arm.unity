@@ -4620,10 +4620,9 @@ GameObject:
   - component: {fileID: 1380065250}
   - component: {fileID: 1380065251}
   - component: {fileID: 1380065255}
-  - component: {fileID: 1380065258}
   - component: {fileID: 1380065259}
-  - component: {fileID: 1380065260}
   - component: {fileID: 1380065261}
+  - component: {fileID: 1380065260}
   m_Layer: 0
   m_Name: ur5_left
   m_TagString: robot
@@ -4779,23 +4778,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlockSetup
   targetBlock: {fileID: 0}
---- !u!114 &1380065258
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61817bf0d785d6147bcc8f17f33798e7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UR5IKController
-  moveDuration: 0.3
-  endEffectorTargetPosition: {x: 0, y: 0, z: 0}
-  ikActive: 0
-  hasIKSolution: 0
-  ikSolution: []
 --- !u!114 &1380065259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4813,24 +4795,10 @@ MonoBehaviour:
   blocksFilePath: 
   playbackSpeed: 1
   loopTrajectory: 0
-  autoStart: 1
+  autoStart: 0
   useDeltaMovement: 1
   minFrameInterval: 0
 --- !u!114 &1380065260
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
-  stiffness: 10000
-  damping: 100
---- !u!114 &1380065261
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4846,6 +4814,20 @@ MonoBehaviour:
   serverPort: 5010
   autoReconnect: 1
   connectionTimeout: 5000
+--- !u!114 &1380065261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380065241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
+  stiffness: 10000
+  damping: 100
 --- !u!1001 &1394512415
 PrefabInstance:
   m_ObjectHideFlags: 0
