@@ -534,7 +534,7 @@ public class UnifiedRobotController : MonoBehaviour
         {
             if (attracted && !suctionController.isBlockAttached)
             {
-                suctionController.suctionDistance = 0.05f; // Set to a larger distance to simulate attachment
+                suctionController.suctionDistance = 0.01f; // Set to a larger distance to simulate attachment
             }
         }
     }

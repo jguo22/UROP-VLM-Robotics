@@ -6,12 +6,13 @@ from pathlib import Path
 from sys import argv
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from unityenv import PROJECT_DIR, SOCKET_FILE_NAME
+from agentic_setup import TEST_PROMPT, SIMULTAENOUS_PROMPT
+from agent import OpenAIAgent
+from ik_solver import UR5IKSolver
 from profiler import Profiler
 
-from ik_solver import UR5IKSolver
-from agent import OpenAIAgent
-from agentic_setup import TEST_PROMPT, SIMULTAENOUS_PROMPT
-from unityenv import PROJECT_DIR, SOCKET_FILE_NAME
 
 SOCKET_CONN_MAX_BYTES = 4096
 SOCKET_CONN_MAX_ATTEMPTS = 5
@@ -145,7 +146,9 @@ def wait_for_idle(s, timeout: float = IDLE_TIMEOUT) -> bool:
     time.sleep(0.5)  # let motion start before polling
     deadline = time.time() + timeout
     while time.time() < deadline:
-        resp = send_recv(s, {"type": "get_motion_status", "timestamp": time.time()})
+        resp = send_recv(s,
+                         {"type": "get_motion_status",
+                          "timestamp": time.time()})
         if resp.get("is_idle", False):
             return True
         time.sleep(IDLE_POLL_INTERVAL)
@@ -181,7 +184,8 @@ def execute_command(s, agent, command: dict) -> bool:
             return True
         ik_resp = send_recv(s, json.loads(ik_cmd))
         if not ik_resp.get("success", False):
-            agent.error(f"Simul IK execution failure: {ik_resp.get('message')}")
+            agent.error(
+                f"Simul IK execution failure: {ik_resp.get('message')}")
         agent.info(f"Unity simul IK response: {ik_resp.get('message')}")
     return True
 
@@ -222,6 +226,7 @@ def run_episode(s, agent, profiler) -> bool:
         if not execute_command(s, agent, command):
             return False
         wait_for_idle(s)
+        time.sleep(1)  # make it slower so that replay is more reliable
 
     profiler.record("command_loop")
     profiler.end_frame()
@@ -265,7 +270,7 @@ def main():
     # #endregion
 
     attempts = 0
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         # #region agent log
         debug_log(
             run_id,
@@ -273,10 +278,10 @@ def main():
             "agentic_socket.py:main:socket_create",
             "socket metadata after create",
             {
-                "family": int(s.family),
-                "type": int(s.type),
-                "proto": int(s.proto),
-                "fileno": s.fileno(),
+                "family": int(sock.family),
+                "type": int(sock.type),
+                "proto": int(sock.proto),
+                "fileno": sock.fileno(),
             },
         )
         # #endregion
@@ -326,7 +331,7 @@ def main():
                         },
                     )
                     # #endregion
-                s.connect((agent.host, agent.port))
+                sock.connect((agent.host, agent.port))
                 break
             except ConnectionRefusedError:
                 agent.info(
@@ -361,15 +366,18 @@ def main():
         while True:
             agent.info(f"--- Episode {episode} ---")
 
-            # Wait for any lingering motion from previous episode (idempotent on first)
-            wait_for_idle(s)
-            send_control(s, "stop_recording")
-            send_control(s, "reset_scene")
-            wait_for_idle(s)        # wait for arms to finish returning to home
-            time.sleep(2.0)         # let gear rigidbodies settle onto the table
-            success = run_episode(s, agent, profiler)
+            # Wait for any lingering motion from previous episode (idempotent
+            # on first)
+            wait_for_idle(sock)
+            send_control(sock, "stop_recording")
+            send_control(sock, "reset_scene")
+            # wait for arms to finish returning to home
+            wait_for_idle(sock)
+            # let gear rigidbodies settle onto the table
+            time.sleep(2.0)
+            success = run_episode(sock, agent, profiler)
 
-            send_control(s, "stop_recording")
+            send_control(sock, "stop_recording")
             profiler.save_profile()
 
             if not success:

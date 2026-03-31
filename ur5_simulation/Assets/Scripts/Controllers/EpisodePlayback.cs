@@ -40,8 +40,8 @@ public class EpisodePlayback : MonoBehaviour
     // 6 joints per frame
     private List<float[]> jointAnglesTrajectory = new List<float[]>();
 
-    // Playback coroutine
-    private Coroutine playbackCoroutine;
+    // Playback timing (FixedUpdate-based)
+    private float playbackElapsed = 0f;
 
     #region Unity Methods
 
@@ -49,7 +49,10 @@ public class EpisodePlayback : MonoBehaviour
     {
         InitializeController();
 
-        if (autoStart && (!string.IsNullOrEmpty(csvFilePath) || !string.IsNullOrEmpty(episodeFolderPath)))
+        if (
+            autoStart
+            && (!string.IsNullOrEmpty(csvFilePath) || !string.IsNullOrEmpty(episodeFolderPath))
+        )
         {
             LoadTrajectory();
             StartPlayback();
@@ -59,11 +62,43 @@ public class EpisodePlayback : MonoBehaviour
     void Update()
     {
         HandleInput();
+    }
 
-        // Update playback time for UI
-        if (isPlaying && !isPaused)
+    void FixedUpdate()
+    {
+        if (!isPlaying || isPaused)
+            return;
+
+        playbackElapsed += Time.fixedDeltaTime * playbackSpeed;
+        float targetTime = timestamps[0] + playbackElapsed;
+
+        // Advance currentFrame to match elapsed time
+        while (currentFrame < totalFrames - 1 && timestamps[currentFrame + 1] <= targetTime)
+            currentFrame++;
+
+        currentTime = timestamps[currentFrame];
+        currentPlaybackTime = currentTime;
+
+        // Apply one frame ahead so the robot reaches the pose before the
+        // physics step that corresponds to the next timestamp.
+        int applyFrame = Mathf.Min(currentFrame + 1, totalFrames - 1);
+        SetRobotToFrame(applyFrame);
+
+        // End of trajectory
+        if (currentFrame >= totalFrames - 1)
         {
-            currentPlaybackTime = currentTime;
+            if (loopTrajectory)
+            {
+                LoadAndApplyBlockPositions();
+                currentFrame = 0;
+                playbackElapsed = 0f;
+                currentTime = timestamps[0];
+            }
+            else
+            {
+                StopPlayback();
+                Debug.Log("Episode playback completed");
+            }
         }
     }
 
@@ -95,11 +130,11 @@ public class EpisodePlayback : MonoBehaviour
     /// </summary>
     private void LoadAndApplyBlockPositions()
     {
-        string resolvedBlocksPath = !string.IsNullOrEmpty(blocksFilePath)
-            ? blocksFilePath
+        string resolvedBlocksPath =
+            !string.IsNullOrEmpty(blocksFilePath) ? blocksFilePath
             : !string.IsNullOrEmpty(episodeFolderPath)
                 ? Path.Combine(episodeFolderPath, "blocks.csv")
-                : "";
+            : "";
 
         if (string.IsNullOrEmpty(resolvedBlocksPath))
             return;
@@ -148,6 +183,7 @@ public class EpisodePlayback : MonoBehaviour
             if (blockMap.TryGetValue(blockName, out GameObject block))
             {
                 block.transform.position = new Vector3(x, y, z);
+                block.GetComponent<Rigidbody>().WakeUp();
                 Debug.Log($"EpisodePlayback: moved {blockName} to ({x:F3}, {y:F3}, {z:F3})");
             }
             else
@@ -170,11 +206,11 @@ public class EpisodePlayback : MonoBehaviour
     {
         string csvContent = "";
 
-        string resolvedCsvPath = !string.IsNullOrEmpty(csvFilePath)
-            ? csvFilePath
+        string resolvedCsvPath =
+            !string.IsNullOrEmpty(csvFilePath) ? csvFilePath
             : !string.IsNullOrEmpty(episodeFolderPath)
                 ? Path.Combine(episodeFolderPath, "poses.csv")
-                : "";
+            : "";
 
         if (string.IsNullOrEmpty(resolvedCsvPath))
         {
@@ -324,17 +360,14 @@ public class EpisodePlayback : MonoBehaviour
             return;
         }
 
-        if (playbackCoroutine != null)
-            StopCoroutine(playbackCoroutine);
-
         LoadAndApplyBlockPositions();
 
         isPlaying = true;
         isPaused = false;
         currentFrame = 0;
+        playbackElapsed = 0f;
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
 
-        playbackCoroutine = StartCoroutine(PlaybackTrajectory());
         Debug.Log("Started episode playback");
     }
 
@@ -355,13 +388,8 @@ public class EpisodePlayback : MonoBehaviour
         isPlaying = false;
         isPaused = false;
 
-        if (playbackCoroutine != null)
-        {
-            StopCoroutine(playbackCoroutine);
-            playbackCoroutine = null;
-        }
-
         currentFrame = 0;
+        playbackElapsed = 0f;
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
         Debug.Log("Episode playback stopped");
     }
@@ -412,55 +440,6 @@ public class EpisodePlayback : MonoBehaviour
     }
 
     /// <summary>
-    /// Main playback coroutine
-    /// </summary>
-    private IEnumerator PlaybackTrajectory()
-    {
-        while (isPlaying && currentFrame < totalFrames)
-        {
-            if (!isPaused)
-            {
-                SetRobotToFrame(currentFrame);
-
-                if (currentFrame < totalFrames - 1)
-                {
-                    float timeToNextFrame =
-                        (timestamps[currentFrame + 1] - timestamps[currentFrame]) / playbackSpeed;
-                    yield return new WaitForSeconds(timeToNextFrame);
-                }
-                else
-                {
-                    yield return new WaitForSeconds(0.1f);
-                }
-
-                currentFrame++;
-                if (currentFrame < timestamps.Count)
-                    currentTime = timestamps[currentFrame];
-            }
-            else
-            {
-                yield return null;
-            }
-        }
-
-        if (isPlaying)
-        {
-            if (loopTrajectory)
-            {
-                LoadAndApplyBlockPositions();
-                currentFrame = 0;
-                currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
-                playbackCoroutine = StartCoroutine(PlaybackTrajectory());
-            }
-            else
-            {
-                StopPlayback();
-                Debug.Log("Episode playback completed");
-            }
-        }
-    }
-
-    /// <summary>
     /// Set robot joints to specific frame
     /// </summary>
     private void SetRobotToFrame(int frameIndex)
@@ -475,7 +454,7 @@ public class EpisodePlayback : MonoBehaviour
             {
                 robotController.SetJointAngles(jointAngles);
                 robotController.SetSuctionState(suctionOn);
-                // robotController.SetBlockAttractedState(attracted);
+                robotController.SetBlockAttractedState(attracted); // uncomment for longer suction reach
             }
             else
             {
