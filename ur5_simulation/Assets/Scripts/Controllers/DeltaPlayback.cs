@@ -140,9 +140,9 @@ public class DeltaPlayback : EpisodePlayback
 
             Debug.Log(
                 $"DeltaPlayback frame {f}: "
+                + $"diff=({(intendedDelta - actualDelta).magnitude:F5}), "
                 + $"intended=({intendedDelta.x:F5}, {intendedDelta.y:F5}, {intendedDelta.z:F5}), "
-                + $"actual=({actualDelta.x:F5}, {actualDelta.y:F5}, {actualDelta.z:F5}), "
-                + $"diff=({(intendedDelta - actualDelta).magnitude:F5})"
+                + $"actual=({actualDelta.x:F5}, {actualDelta.y:F5}, {actualDelta.z:F5})"
             );
         }
     }

@@ -121,7 +121,7 @@ public abstract class EpisodePlayback : MonoBehaviour
             else
             {
                 StopPlayback();
-                Debug.Log("Episode playback completed");
+                // Debug.Log("Episode playback completed");
             }
         }
     }
@@ -190,7 +190,7 @@ public abstract class EpisodePlayback : MonoBehaviour
             {
                 block.transform.position = new Vector3(x, y, z);
                 block.GetComponent<Rigidbody>().WakeUp();
-                Debug.Log($"EpisodePlayback: moved {blockName} to ({x:F3}, {y:F3}, {z:F3})");
+                // Debug.Log($"EpisodePlayback: moved {blockName} to ({x:F3}, {y:F3}, {z:F3})");
             }
             else
             {
@@ -295,9 +295,9 @@ public abstract class EpisodePlayback : MonoBehaviour
                 totalDuration = timestamps[timestamps.Count - 1] - timestamps[0];
             }
 
-            Debug.Log(
-                $"Successfully loaded trajectory: {totalFrames} frames, {totalDuration:F2} seconds"
-            );
+            // Debug.Log(
+            //     $"Successfully loaded trajectory: {totalFrames} frames, {totalDuration:F2} seconds"
+            // );
             return true;
         }
         catch (System.Exception e)
@@ -343,13 +343,13 @@ public abstract class EpisodePlayback : MonoBehaviour
         lastAppliedFrame = -1;
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
 
-        Debug.Log("Started episode playback");
+        // Debug.Log("Started episode playback");
     }
 
     public void PausePlayback()
     {
         isPaused = !isPaused;
-        Debug.Log(isPaused ? "Episode playback paused" : "Episode playback resumed");
+        // Debug.Log(isPaused ? "Episode playback paused" : "Episode playback resumed");
     }
 
     public void StopPlayback()
@@ -364,7 +364,7 @@ public abstract class EpisodePlayback : MonoBehaviour
         timeSinceLastFrameAdvance = 0f;
         lastAppliedFrame = -1;
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
-        Debug.Log("Episode playback stopped");
+        // Debug.Log("Episode playback stopped");
     }
 
     public virtual void JumpToFrame(int frameIndex)

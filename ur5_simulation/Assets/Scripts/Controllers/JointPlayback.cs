@@ -10,6 +10,17 @@ public class JointPlayback : EpisodePlayback
 {
     private UnifiedRobotController robotController;
 
+    /// <summary>
+    /// Disable UR5Controller in Awake (before its Start runs) so it never
+    /// reconfigures joint drives.
+    /// </summary>
+    private void Awake()
+    {
+        var ur5 = GetComponent<UR5Controller>();
+        if (ur5 != null)
+            ur5.enabled = false;
+    }
+
     // Parsed joint angle data
     private List<float[]> jointAnglesTrajectory = new List<float[]>();
     private int[] jointAngleCols = new int[JointCount];
@@ -19,11 +30,6 @@ public class JointPlayback : EpisodePlayback
         robotController = GetComponent<UnifiedRobotController>();
         if (robotController == null)
             Debug.LogError("JointPlayback: No UnifiedRobotController found!");
-
-        // Disable UR5Controller if present to prevent drive conflicts
-        var ur5 = GetComponent<UR5Controller>();
-        if (ur5 != null)
-            ur5.enabled = false;
     }
 
     protected override void ResolveColumns(string[] headers)

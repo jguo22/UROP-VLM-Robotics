@@ -4620,9 +4620,10 @@ GameObject:
   - component: {fileID: 1380065250}
   - component: {fileID: 1380065251}
   - component: {fileID: 1380065255}
-  - component: {fileID: 1380065259}
   - component: {fileID: 1380065261}
   - component: {fileID: 1380065260}
+  - component: {fileID: 1380065262}
+  - component: {fileID: 1380065263}
   m_Layer: 0
   m_Name: ur5_left
   m_TagString: robot
@@ -4778,26 +4779,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlockSetup
   targetBlock: {fileID: 0}
---- !u!114 &1380065259
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 027f2fbc52b334d8284479616cf4b6a6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EpisodePlayback
-  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260317_171714
-  csvFilePath: 
-  blocksFilePath: 
-  playbackSpeed: 1
-  loopTrajectory: 0
-  autoStart: 1
-  useDeltaMovement: 0
-  minFrameInterval: 0
 --- !u!114 &1380065260
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4828,6 +4809,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
   stiffness: 10000
   damping: 100
+--- !u!114 &1380065262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380065241}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b4e50cc6be9f4fc0880ee32f8155266, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JointPlayback
+  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260317_171714
+  csvFilePath: 
+  blocksFilePath: 
+  playbackSpeed: 1
+  loopTrajectory: 0
+  autoStart: 1
+  minFrameInterval: 0
+--- !u!114 &1380065263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380065241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e527a7dbac0e45238af2dae8bb26785, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeltaPlayback
+  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260317_171714
+  csvFilePath: 
+  blocksFilePath: 
+  playbackSpeed: 1
+  loopTrajectory: 0
+  autoStart: 0
+  minFrameInterval: 0
 --- !u!1001 &1394512415
 PrefabInstance:
   m_ObjectHideFlags: 0

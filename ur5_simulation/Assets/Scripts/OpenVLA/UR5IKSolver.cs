@@ -69,9 +69,9 @@ public class UR5IKSolver : MonoBehaviour
                 return true;
             }
 
-            Debug.Log(
-                $"UR5IKSolver: Connecting to Python IK server at {serverHost}:{serverPort}..."
-            );
+            // Debug.Log(
+            //     $"UR5IKSolver: Connecting to Python IK server at {serverHost}:{serverPort}..."
+            // );
 
             client = new TcpClient();
 
@@ -105,9 +105,9 @@ public class UR5IKSolver : MonoBehaviour
             reader = new BinaryReader(stream);
 
             isConnected = true;
-            Debug.Log(
-                $"UR5IKSolver: Connected to Python IK server at {serverHost}:{serverPort} successfully!"
-            );
+            // Debug.Log(
+            //     $"UR5IKSolver: Connected to Python IK server at {serverHost}:{serverPort} successfully!"
+            // );
             return true;
         }
         catch (Exception e)
@@ -135,7 +135,7 @@ public class UR5IKSolver : MonoBehaviour
                 client.Close();
 
             isConnected = false;
-            Debug.Log("UR5IKSolver: Disconnected from Python IK server");
+            // Debug.Log("UR5IKSolver: Disconnected from Python IK server");
         }
         catch (Exception e)
         {
@@ -209,12 +209,12 @@ public class UR5IKSolver : MonoBehaviour
 
         try
         {
-            if (debugMode)
-            {
-                Debug.Log(
-                    $"UR5IKSolver.SolveIK: Sending request - pos={targetPosition}, rot={targetRotation}"
-                );
-            }
+            // if (debugMode)
+            // {
+            //     Debug.Log(
+            //         $"UR5IKSolver.SolveIK: Sending request - pos={targetPosition}, rot={targetRotation}"
+            //     );
+            // }
 
             // Send target position (3 doubles)
             writer.Write((double)targetPosition.x);
@@ -266,12 +266,12 @@ public class UR5IKSolver : MonoBehaviour
                     solution[i] = (float)reader.ReadDouble();
                 }
 
-                if (debugMode)
-                {
-                    Debug.Log(
-                        $"UR5IKSolver.SolveIK: Solution found - joints={string.Join(", ", solution)}"
-                    );
-                }
+                // if (debugMode)
+                // {
+                //     Debug.Log(
+                //         $"UR5IKSolver.SolveIK: Solution found - joints={string.Join(", ", solution)}"
+                //     );
+                // }
 
                 return solution;
             }

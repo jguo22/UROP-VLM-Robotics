@@ -226,18 +226,18 @@ public class SuctionController : MonoBehaviour
         // State change detection
         if (shouldBeActive != wasSuctionActive)
         {
-            if (shouldBeActive)
-            {
-                Debug.Log(
-                    $"Suction activated - Distance: {currentDistance:F4}m (threshold: {suctionDistance}m)"
-                );
-            }
-            else
-            {
-                Debug.Log(
-                    $"Suction deactivated - Distance: {currentDistance:F4}m (threshold: {suctionDistance}m)"
-                );
-            }
+            // if (shouldBeActive)
+            // {
+            //     Debug.Log(
+            //         $"Suction activated - Distance: {currentDistance:F4}m (threshold: {suctionDistance}m)"
+            //     );
+            // }
+            // else
+            // {
+            //     Debug.Log(
+            //         $"Suction deactivated - Distance: {currentDistance:F4}m (threshold: {suctionDistance}m)"
+            //     );
+            // }
             wasSuctionActive = shouldBeActive;
         }
     }
@@ -278,7 +278,7 @@ public class SuctionController : MonoBehaviour
             blockRigidbody.isKinematic = true;
         }
 
-        Debug.Log("Can attach block");
+        // Debug.Log("Can attach block");
 
         targetBlock.transform.SetParent(endEffector);
         //targetBlock.transform.localPosition = Vector3.zero;
@@ -290,7 +290,7 @@ public class SuctionController : MonoBehaviour
             blockRenderer.material = suctionActiveMaterial;
         }
 
-        Debug.Log("Block attached to suction");
+        // Debug.Log("Block attached to suction");
         //suctionDistance = 0.1f;
     }
 
@@ -322,7 +322,7 @@ public class SuctionController : MonoBehaviour
             blockRenderer.material = originalBlockMaterial;
         }
 
-        Debug.Log("Block detached from suction");
+        // Debug.Log("Block detached from suction");
     }
 
     void ApplyAttractionForce()
@@ -399,7 +399,7 @@ public class SuctionController : MonoBehaviour
     public void ToggleSuction()
     {
         enableSuction = !enableSuction;
-        Debug.Log($"Suction toggled: {enableSuction}");
+        // Debug.Log($"Suction toggled: {enableSuction}");
     }
 
     public void SetSuctionState(bool active)

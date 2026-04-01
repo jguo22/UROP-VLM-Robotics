@@ -41,8 +41,8 @@ public class UR5Controller : MonoBehaviour
         articulationChain = robotArmSetup.articulationChain;
         robotJoints = robotArmSetup.robotJoints; // This is already set up by RobotArmSetup (6 joints + end effector)
 
-        Debug.Log($"UR5Controller: Found {articulationChain.Length} articulation bodies");
-        Debug.Log($"UR5Controller: Robot joints array has {robotJoints.Length} elements");
+        // Debug.Log($"UR5Controller: Found {articulationChain.Length} articulation bodies");
+        // Debug.Log($"UR5Controller: Robot joints array has {robotJoints.Length} elements");
 
         // End effector is the last element in robotJoints array
         endEffector = robotJoints[6].transform; // robotJoints[6] is the end effector
@@ -63,7 +63,7 @@ public class UR5Controller : MonoBehaviour
         // Configure joint drives
         ConfigureJointDrives();
 
-        Debug.Log("UR5Controller initialized successfully");
+        // Debug.Log("UR5Controller initialized successfully");
     }
 
     void FixedUpdate()

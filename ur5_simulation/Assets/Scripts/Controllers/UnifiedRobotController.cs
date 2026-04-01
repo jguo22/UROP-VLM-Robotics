@@ -415,13 +415,8 @@ public class UnifiedRobotController : MonoBehaviour
 
     public void SetJointAngles(float[] angles)
     {
-        Debug.Log(
-            $"UnifiedRobotController.SetJointAngles called with {angles?.Length ?? 0} angles"
-        );
-
         if (robotArmSetup != null && angles != null)
         {
-            Debug.Log($"RobotArmSetup found, joints array length: {robotJoints?.Length ?? 0}");
 
             for (int i = 0; i < Mathf.Min(angles.Length, StableStartingRotations.Length); i++)
             {
@@ -441,9 +436,9 @@ public class UnifiedRobotController : MonoBehaviour
 
                     robotJoints[i].xDrive = drive;
 
-                    Debug.Log(
-                        $"Joint {i} drive updated: target={drive.target:F2}, stiffness={drive.stiffness}"
-                    );
+                    // Debug.Log(
+                    //     $"Joint {i} drive updated: target={drive.target:F2}, stiffness={drive.stiffness}"
+                    // );
                 }
                 else
                 {
