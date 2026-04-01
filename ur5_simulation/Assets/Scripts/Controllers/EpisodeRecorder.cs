@@ -42,11 +42,11 @@ public class EpisodeRecorder : MonoBehaviour
     // Cached end effector transform
     private Transform endEffector;
 
-    // Previous frame pose for delta calculation
-    private Vector3 prevPos;
-    private Quaternion prevRot;
+    // Per-frame pose for delta calculation at flush time
+    private List<Vector3> framePositions = new List<Vector3>();
+    private List<Quaternion> frameRotations = new List<Quaternion>();
 
-    // Buffer rows — is_last/is_terminal/reward only known on StopRecording()
+    // Buffer rows (without deltas) — deltas and is_last/is_terminal/reward applied at flush
     private List<string> frameBuffer = new List<string>();
 
     private static string BuildPoseHeader()
@@ -179,9 +179,9 @@ public class EpisodeRecorder : MonoBehaviour
         SaveBlockPositions();
 
         frameBuffer.Clear();
+        framePositions.Clear();
+        frameRotations.Clear();
         frameIndex = 0;
-        prevPos = endEffector.position;
-        prevRot = endEffector.rotation;
     }
 
     /// <summary>Writes blocks.csv with the name and world position of each target block at episode start.</summary>
@@ -207,13 +207,11 @@ public class EpisodeRecorder : MonoBehaviour
 
     private void CaptureFrame()
     {
-        // --- Delta pose ---
+        // --- Store pose for delta computation at flush ---
         Vector3 pos = endEffector.position;
         Quaternion rot = endEffector.rotation;
-        Vector3 deltaPos = pos - prevPos;
-        Quaternion deltaRot = rot * Quaternion.Inverse(prevRot);
-        prevPos = pos;
-        prevRot = rot;
+        framePositions.Add(pos);
+        frameRotations.Add(rot);
 
         // --- Suction ---
         bool suction = suctionController != null && suctionController.enableSuction;
@@ -230,10 +228,9 @@ public class EpisodeRecorder : MonoBehaviour
         // --- Episode flags (is_last/is_terminal/reward appended at flush) ---
         int isFirst = frameIndex == 0 ? 1 : 0;
 
+        // Row without deltas — deltas computed at flush as (next frame - current frame)
         string row =
             $"{frameIndex},{Time.time:F4},"
-            + $"{deltaPos.x:F5},{deltaPos.y:F5},{deltaPos.z:F5},"
-            + $"{deltaRot.x:F5},{deltaRot.y:F5},{deltaRot.z:F5},{deltaRot.w:F5},"
             + $"{suction},"
             + jointAngleCols
             + $"{blockAttracted},"
@@ -274,14 +271,43 @@ public class EpisodeRecorder : MonoBehaviour
             writer.WriteLine(PoseHeader);
             for (int i = 0; i < frameBuffer.Count; i++)
             {
+                // Delta to next frame; last frame gets zero delta
+                Vector3 deltaPos;
+                Quaternion deltaRot;
+                if (i < frameBuffer.Count - 1)
+                {
+                    deltaPos = framePositions[i + 1] - framePositions[i];
+                    deltaRot = frameRotations[i + 1] * Quaternion.Inverse(frameRotations[i]);
+                }
+                else
+                {
+                    deltaPos = Vector3.zero;
+                    deltaRot = Quaternion.identity;
+                }
+
+                // Row format: "frame,Timestamp,<rest...>"
+                // Insert deltas after the timestamp
+                string row = frameBuffer[i];
+                int firstComma = row.IndexOf(',');
+                int secondComma = row.IndexOf(',', firstComma + 1);
+                string prefix = row.Substring(0, secondComma + 1);
+                string rest = row.Substring(secondComma + 1);
+
+                string deltaStr =
+                    $"{deltaPos.x:F5},{deltaPos.y:F5},{deltaPos.z:F5},"
+                    + $"{deltaRot.x:F5},{deltaRot.y:F5},{deltaRot.z:F5},{deltaRot.w:F5},";
+
                 bool isLast = i == frameBuffer.Count - 1;
                 string suffix = isLast
                     ? ",1,1,1.0,1.0" // final step: is_last, is_terminal, reward=1
                     : ",0,0,0.0,1.0";
-                writer.WriteLine(frameBuffer[i] + suffix);
+
+                writer.WriteLine(prefix + deltaStr + rest + suffix);
             }
         }
 
         frameBuffer.Clear();
+        framePositions.Clear();
+        frameRotations.Clear();
     }
 }
