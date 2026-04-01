@@ -841,22 +841,6 @@ def libero_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     return trajectory
 
 
-def ur5_unity_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    # Action is 8D: [3x delta pos, 3x delta rot vec, 1x suction (-1/1), 1x terminate]
-    # OpenVLA expects 7D: [6x EEF delta, 1x gripper]; suction maps to gripper (+1 = on, -1 = off)
-    trajectory["action"] = tf.concat(
-        [
-            trajectory["action"][:, :6],
-            trajectory["action"][:, 6:7],
-        ],
-        axis=1,
-    )
-    # State is 7D: [6x joint angles rad, 1x suction on/off]
-    trajectory["observation"]["EEF_state"] = trajectory["observation"]["state"][:, :6]
-    trajectory["observation"]["gripper_state"] = trajectory["observation"]["state"][:, 6:]
-    return trajectory
-
-
 # === Registry ===
 OXE_STANDARDIZATION_TRANSFORMS = {
     "bridge_oxe": bridge_oxe_dataset_transform,
@@ -935,6 +919,4 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "libero_object_no_noops": libero_dataset_transform,
     "libero_goal_no_noops": libero_dataset_transform,
     "libero_10_no_noops": libero_dataset_transform,
-    ### UR5 Unity simulation dataset
-    "ur5_unity": ur5_unity_transform,
 }

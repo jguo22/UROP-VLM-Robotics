@@ -138,7 +138,7 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
                 return None
 
             # Language instruction — empty for now, populate before training
-            language_instruction = ""
+            language_instruction = "put blue, red, and green gear into planetary gearbox"
             language_embedding = self._embed([language_instruction])[0].numpy()
 
             episode = []

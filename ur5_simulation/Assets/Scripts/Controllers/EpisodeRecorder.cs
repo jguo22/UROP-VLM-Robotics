@@ -160,8 +160,8 @@ public class EpisodeRecorder : MonoBehaviour
         if (renderResourcesReady)
             return;
 
-        int width = recordingCamera.pixelWidth > 0 ? recordingCamera.pixelWidth : 640;
-        int height = recordingCamera.pixelHeight > 0 ? recordingCamera.pixelHeight : 480;
+        int width = 224;
+        int height = 224;
         renderTexture = new RenderTexture(width, height, 24);
         screenshotBuffer = new Texture2D(width, height, TextureFormat.RGB24, false);
         renderResourcesReady = true;
