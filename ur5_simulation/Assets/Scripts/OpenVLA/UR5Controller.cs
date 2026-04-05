@@ -150,7 +150,7 @@ public class UR5Controller : MonoBehaviour
     }
 
     // Move to target position and rotation using IK
-    void MoveToTarget(Vector3 targetPosition, Quaternion targetRotation)
+    public void MoveToTarget(Vector3 targetPosition, Quaternion targetRotation)
     {
         (Vector3 relativePosition, Quaternion relativeRotation) = ConvertToRobotCoordinates(
             targetPosition,

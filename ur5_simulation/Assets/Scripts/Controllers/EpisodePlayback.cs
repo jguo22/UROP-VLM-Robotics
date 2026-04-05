@@ -28,12 +28,15 @@ public abstract class EpisodePlayback : MonoBehaviour
     protected int currentFrame = 0;
     protected int totalFrames = 0;
     protected float totalDuration = 0f;
-    protected float currentPlaybackTime = 0f;
 
     // Shared trajectory data
     protected List<float> timestamps = new List<float>();
     protected List<bool> suctionStates = new List<bool>();
     protected List<bool> attractedStates = new List<bool>();
+    protected List<float[]> jointAnglesTrajectory = new List<float[]>();
+
+    // Joint column indices
+    private int[] jointAngleCols = new int[JointCount];
 
     // Timing
     private float playbackElapsed = 0f;
@@ -55,6 +58,7 @@ public abstract class EpisodePlayback : MonoBehaviour
     protected abstract void ClearSubclassData();
 
     protected virtual void OnPlaybackStart() { }
+
     protected virtual void OnPlaybackStop() { }
 
     #endregion
@@ -100,11 +104,13 @@ public abstract class EpisodePlayback : MonoBehaviour
             timeSinceLastFrameAdvance = 0f;
 
         currentTime = timestamps[currentFrame];
-        currentPlaybackTime = currentTime;
 
         int applyFrame = Mathf.Min(currentFrame + 1, totalFrames - 1);
-        ApplyFrames(lastAppliedFrame, applyFrame);
-        lastAppliedFrame = applyFrame;
+        if (applyFrame != lastAppliedFrame)
+        {
+            ApplyFrames(lastAppliedFrame, applyFrame);
+            lastAppliedFrame = applyFrame;
+        }
 
         if (currentFrame >= totalFrames - 1)
         {
@@ -205,7 +211,7 @@ public abstract class EpisodePlayback : MonoBehaviour
 
     #region CSV Loading and Parsing
 
-    public bool LoadTrajectory()
+    private bool LoadTrajectory()
     {
         string resolvedCsvPath =
             !string.IsNullOrEmpty(csvFilePath) ? csvFilePath
@@ -257,6 +263,14 @@ public abstract class EpisodePlayback : MonoBehaviour
             int suctionColIndex = Array.IndexOf(headers, "suctionOn");
             int attractedColIndex = Array.IndexOf(headers, "blockAttracted");
 
+            string[] jointNames = { "base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3" };
+            for (int j = 0; j < JointCount; j++)
+            {
+                jointAngleCols[j] = Array.IndexOf(headers, $"joint_{j}");
+                if (jointAngleCols[j] < 0 && j < jointNames.Length)
+                    jointAngleCols[j] = Array.IndexOf(headers, $"{jointNames[j]}_jointAngle");
+            }
+
             ResolveColumns(headers);
 
             for (int i = 1; i < lines.Length; i++)
@@ -286,6 +300,14 @@ public abstract class EpisodePlayback : MonoBehaviour
                         && values[attractedColIndex].Trim() == "True"
                 );
 
+                float[] jointAngles = new float[JointCount];
+                for (int j = 0; j < JointCount; j++)
+                {
+                    if (jointAngleCols[j] >= 0 && jointAngleCols[j] < values.Length)
+                        float.TryParse(values[jointAngleCols[j]], out jointAngles[j]);
+                }
+                jointAnglesTrajectory.Add(jointAngles);
+
                 ParseRow(values);
             }
 
@@ -312,12 +334,29 @@ public abstract class EpisodePlayback : MonoBehaviour
         timestamps.Clear();
         suctionStates.Clear();
         attractedStates.Clear();
+        jointAnglesTrajectory.Clear();
         ClearSubclassData();
         totalFrames = 0;
         totalDuration = 0f;
         currentTime = 0f;
         currentFrame = 0;
-        currentPlaybackTime = 0f;
+    }
+
+    private void SetJointAnglesDirect(float[] angles)
+    {
+        RobotArmSetup robotArmSetup = GetComponent<RobotArmSetup>();
+        if (robotArmSetup == null || robotArmSetup.robotJoints == null)
+            return;
+
+        ArticulationBody[] joints = robotArmSetup.robotJoints;
+        for (int i = 0; i < Mathf.Min(JointCount, angles.Length); i++)
+        {
+            if (joints[i] == null)
+                continue;
+            ArticulationDrive drive = joints[i].xDrive;
+            drive.target = angles[i] * Mathf.Rad2Deg;
+            joints[i].xDrive = drive;
+        }
     }
 
     #endregion
@@ -333,6 +372,11 @@ public abstract class EpisodePlayback : MonoBehaviour
         }
 
         LoadAndApplyBlockPositions();
+
+        // Set initial joint pose from frame 0
+        if (jointAnglesTrajectory.Count > 0)
+            SetJointAnglesDirect(jointAnglesTrajectory[0]);
+
         OnPlaybackStart();
 
         isPlaying = true;
@@ -342,14 +386,11 @@ public abstract class EpisodePlayback : MonoBehaviour
         timeSinceLastFrameAdvance = 0f;
         lastAppliedFrame = -1;
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
-
-        // Debug.Log("Started episode playback");
     }
 
     public void PausePlayback()
     {
         isPaused = !isPaused;
-        // Debug.Log(isPaused ? "Episode playback paused" : "Episode playback resumed");
     }
 
     public void StopPlayback()
@@ -365,38 +406,6 @@ public abstract class EpisodePlayback : MonoBehaviour
         lastAppliedFrame = -1;
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
         // Debug.Log("Episode playback stopped");
-    }
-
-    public virtual void JumpToFrame(int frameIndex)
-    {
-        if (frameIndex >= 0 && frameIndex < totalFrames)
-        {
-            currentFrame = frameIndex;
-            currentTime = timestamps[frameIndex];
-            ApplyFrames(frameIndex - 1, frameIndex);
-            lastAppliedFrame = frameIndex;
-        }
-    }
-
-    public void JumpToTime(float time)
-    {
-        if (timestamps.Count == 0)
-            return;
-
-        int closestFrame = 0;
-        float minDiff = Mathf.Abs(timestamps[0] - time);
-
-        for (int i = 1; i < timestamps.Count; i++)
-        {
-            float diff = Mathf.Abs(timestamps[i] - time);
-            if (diff < minDiff)
-            {
-                minDiff = diff;
-                closestFrame = i;
-            }
-        }
-
-        JumpToFrame(closestFrame);
     }
 
     public void SetPlaybackSpeed(float speed)
@@ -433,11 +442,6 @@ public abstract class EpisodePlayback : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Minus) || Input.GetKeyDown(KeyCode.KeypadMinus))
             SetPlaybackSpeed(playbackSpeed / 1.2f);
 
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-            JumpToFrame(Mathf.Max(0, currentFrame - 1));
-
-        if (Input.GetKeyDown(KeyCode.RightArrow))
-            JumpToFrame(Mathf.Min(totalFrames - 1, currentFrame + 1));
     }
 
     #endregion
@@ -470,7 +474,7 @@ public abstract class EpisodePlayback : MonoBehaviour
         );
         GUI.Label(
             new Rect(startX, startY + lineHeight, labelW, labelH),
-            $"Current: Frame {currentFrame}, Time {currentPlaybackTime:F2}s",
+            $"Current: Frame {currentFrame}, Time {currentTime:F2}s",
             style
         );
         GUI.Label(
@@ -481,7 +485,7 @@ public abstract class EpisodePlayback : MonoBehaviour
 
         if (totalDuration > 0)
         {
-            float progress = currentPlaybackTime / totalDuration;
+            float progress = currentTime / totalDuration;
             float barW = 200 * scale;
             float barH = 18 * scale;
             GUI.Box(new Rect(startX, startY + 3 * lineHeight, barW, barH), "");
@@ -565,11 +569,6 @@ public abstract class EpisodePlayback : MonoBehaviour
             "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed",
             style
         );
-        GUI.Label(
-            new Rect(startX, infoY + lineHeight, labelW, labelH),
-            "Arrow Keys: Frame stepping",
-            style
-        );
     }
 
     #endregion
@@ -595,7 +594,7 @@ public abstract class EpisodePlayback : MonoBehaviour
 
     public float GetProgress()
     {
-        return totalDuration > 0 ? currentPlaybackTime / totalDuration : 0f;
+        return totalDuration > 0 ? currentTime / totalDuration : 0f;
     }
 
     public bool IsPlaying()
