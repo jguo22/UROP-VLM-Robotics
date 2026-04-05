@@ -33,10 +33,12 @@ public abstract class EpisodePlayback : MonoBehaviour
     protected List<float> timestamps = new List<float>();
     protected List<bool> suctionStates = new List<bool>();
     protected List<bool> attractedStates = new List<bool>();
-    protected List<float[]> jointAnglesTrajectory = new List<float[]>();
 
-    // Joint column indices
-    private int[] jointAngleCols = new int[JointCount];
+    // First frame joint angles for initial pose
+    private float[] initialJointAngles;
+
+    // Shared controller
+    protected UR5Controller ur5Controller;
 
     // Timing
     private float playbackElapsed = 0f;
@@ -45,14 +47,13 @@ public abstract class EpisodePlayback : MonoBehaviour
 
     #region Abstract / Virtual
 
-    protected abstract void InitializeController();
     protected abstract void ApplyFrames(int lastAppliedFrame, int targetFrame);
 
     /// <summary>Called once with the header array. Subclass should resolve its column indices.</summary>
-    protected abstract void ResolveColumns(string[] headers);
+    protected abstract bool ResolveColumns(string[] headers);
 
     /// <summary>Called per data row. Subclass should parse and store its specific data.</summary>
-    protected abstract void ParseRow(string[] values);
+    protected abstract bool ParseRow(string[] values);
 
     /// <summary>Called when trajectory data is cleared. Subclass should clear its own lists.</summary>
     protected abstract void ClearSubclassData();
@@ -65,17 +66,23 @@ public abstract class EpisodePlayback : MonoBehaviour
 
     #region Unity Methods
 
-    void Start()
+    protected virtual void Start()
     {
-        InitializeController();
+        ur5Controller = GetComponent<UR5Controller>();
 
         if (
             autoStart
             && (!string.IsNullOrEmpty(csvFilePath) || !string.IsNullOrEmpty(episodeFolderPath))
         )
         {
-            LoadTrajectory();
-            StartPlayback();
+            if (LoadTrajectory())
+            {
+                StartPlayback();
+            }
+            else
+            {
+                Debug.LogError("EpisodePlayback: Failed to load trajectory");
+            }
         }
     }
 
@@ -158,7 +165,7 @@ public abstract class EpisodePlayback : MonoBehaviour
             return;
         }
 
-        SceneSetup sceneSetup = FindObjectOfType<SceneSetup>();
+        SceneSetup sceneSetup = FindAnyObjectByType<SceneSetup>();
         if (sceneSetup == null || sceneSetup.targets == null)
         {
             Debug.LogWarning(
@@ -253,25 +260,29 @@ public abstract class EpisodePlayback : MonoBehaviour
 
             string[] headers = lines[0].Split(',').Select(h => h.Trim()).ToArray();
 
-            int timestampCol = Array.IndexOf(headers, "Timestamp");
-            if (timestampCol < 0)
+            int timestampColIndex = Array.IndexOf(headers, "Timestamp");
+            if (timestampColIndex < 0)
             {
-                Debug.LogError("Timestamp column not found in CSV");
+                Debug.LogError("Parse CSV Error: missing Timestamp column");
                 return false;
             }
 
             int suctionColIndex = Array.IndexOf(headers, "suctionOn");
-            int attractedColIndex = Array.IndexOf(headers, "blockAttracted");
-
-            string[] jointNames = { "base", "shoulder", "elbow", "wrist1", "wrist2", "wrist3" };
-            for (int j = 0; j < JointCount; j++)
+            if (suctionColIndex < 0)
             {
-                jointAngleCols[j] = Array.IndexOf(headers, $"joint_{j}");
-                if (jointAngleCols[j] < 0 && j < jointNames.Length)
-                    jointAngleCols[j] = Array.IndexOf(headers, $"{jointNames[j]}_jointAngle");
+                Debug.LogError("Parse CSV Error: missing suctionOn column");
+                return false;
             }
 
-            ResolveColumns(headers);
+            int attractedColIndex = Array.IndexOf(headers, "blockAttracted");
+            if (attractedColIndex < 0)
+            {
+                Debug.LogError("Parse CSV Error: missing blockAttracted column");
+                return false;
+            }
+
+            if (!ResolveColumns(headers))
+                return false;
 
             for (int i = 1; i < lines.Length; i++)
             {
@@ -283,39 +294,32 @@ public abstract class EpisodePlayback : MonoBehaviour
                 if (values.Length < headers.Length)
                     continue;
 
-                if (!float.TryParse(values[timestampCol], out float timestamp))
+                if (!float.TryParse(values[timestampColIndex], out float timestamp))
                     continue;
 
                 timestamps.Add(timestamp);
 
-                suctionStates.Add(
-                    suctionColIndex >= 0
-                        && suctionColIndex < values.Length
-                        && values[suctionColIndex].Trim() == "True"
-                );
+                suctionStates.Add(values[suctionColIndex].Trim() == "TRUE");
 
-                attractedStates.Add(
-                    attractedColIndex >= 0
-                        && attractedColIndex < values.Length
-                        && values[attractedColIndex].Trim() == "True"
-                );
+                attractedStates.Add(values[attractedColIndex].Trim() == "TRUE");
 
-                float[] jointAngles = new float[JointCount];
-                for (int j = 0; j < JointCount; j++)
+                // Parse first frame joint angles for initial pose
+                if (i == 1)
                 {
-                    if (jointAngleCols[j] >= 0 && jointAngleCols[j] < values.Length)
-                        float.TryParse(values[jointAngleCols[j]], out jointAngles[j]);
+                    initialJointAngles = new float[JointCount];
+                    for (int j = 0; j < JointCount; j++)
+                    {
+                        int jointColumn = Array.IndexOf(headers, $"joint_{j}");
+                        float.TryParse(values[jointColumn], out initialJointAngles[j]);
+                    }
                 }
-                jointAnglesTrajectory.Add(jointAngles);
 
-                ParseRow(values);
+                if (!ParseRow(values))
+                    return false;
             }
 
             totalFrames = timestamps.Count;
-            if (timestamps.Count > 1)
-            {
-                totalDuration = timestamps[timestamps.Count - 1] - timestamps[0];
-            }
+            totalDuration = timestamps[timestamps.Count - 1] - timestamps[0];
 
             // Debug.Log(
             //     $"Successfully loaded trajectory: {totalFrames} frames, {totalDuration:F2} seconds"
@@ -324,46 +328,29 @@ public abstract class EpisodePlayback : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error parsing CSV: {e.Message}");
+            Debug.LogError($"Error parsing CSV: {e.Message} \n {e.StackTrace}");
             return false;
         }
     }
 
     private void ClearTrajectoryData()
     {
+        ClearSubclassData();
         timestamps.Clear();
         suctionStates.Clear();
         attractedStates.Clear();
-        jointAnglesTrajectory.Clear();
-        ClearSubclassData();
+        initialJointAngles = null;
         totalFrames = 0;
         totalDuration = 0f;
         currentTime = 0f;
         currentFrame = 0;
     }
 
-    private void SetJointAnglesDirect(float[] angles)
-    {
-        RobotArmSetup robotArmSetup = GetComponent<RobotArmSetup>();
-        if (robotArmSetup == null || robotArmSetup.robotJoints == null)
-            return;
-
-        ArticulationBody[] joints = robotArmSetup.robotJoints;
-        for (int i = 0; i < Mathf.Min(JointCount, angles.Length); i++)
-        {
-            if (joints[i] == null)
-                continue;
-            ArticulationDrive drive = joints[i].xDrive;
-            drive.target = angles[i] * Mathf.Rad2Deg;
-            joints[i].xDrive = drive;
-        }
-    }
-
     #endregion
 
     #region Trajectory Playback
 
-    public void StartPlayback()
+    private void StartPlayback()
     {
         if (totalFrames == 0)
         {
@@ -374,8 +361,8 @@ public abstract class EpisodePlayback : MonoBehaviour
         LoadAndApplyBlockPositions();
 
         // Set initial joint pose from frame 0
-        if (jointAnglesTrajectory.Count > 0)
-            SetJointAnglesDirect(jointAnglesTrajectory[0]);
+        if (initialJointAngles != null && ur5Controller != null)
+            ur5Controller.SetJointAngles(initialJointAngles);
 
         OnPlaybackStart();
 
@@ -388,12 +375,12 @@ public abstract class EpisodePlayback : MonoBehaviour
         currentTime = timestamps.Count > 0 ? timestamps[0] : 0f;
     }
 
-    public void PausePlayback()
+    private void PausePlayback()
     {
         isPaused = !isPaused;
     }
 
-    public void StopPlayback()
+    private void StopPlayback()
     {
         isPlaying = false;
         isPaused = false;
@@ -408,7 +395,7 @@ public abstract class EpisodePlayback : MonoBehaviour
         // Debug.Log("Episode playback stopped");
     }
 
-    public void SetPlaybackSpeed(float speed)
+    private void SetPlaybackSpeed(float speed)
     {
         playbackSpeed = Mathf.Max(0.1f, speed);
     }
@@ -441,7 +428,6 @@ public abstract class EpisodePlayback : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Minus) || Input.GetKeyDown(KeyCode.KeypadMinus))
             SetPlaybackSpeed(playbackSpeed / 1.2f);
-
     }
 
     #endregion
@@ -569,37 +555,6 @@ public abstract class EpisodePlayback : MonoBehaviour
             "Controls: Space=Play/Pause, S=Stop, R=Reload, +/-=Speed",
             style
         );
-    }
-
-    #endregion
-
-    #region Public API Methods
-
-    public void LoadTrajectoryFromPath(string path)
-    {
-        if (path.EndsWith(".csv", System.StringComparison.OrdinalIgnoreCase))
-        {
-            csvFilePath = path;
-            episodeFolderPath = "";
-            blocksFilePath = "";
-        }
-        else
-        {
-            episodeFolderPath = path;
-            csvFilePath = "";
-            blocksFilePath = "";
-        }
-        LoadTrajectory();
-    }
-
-    public float GetProgress()
-    {
-        return totalDuration > 0 ? currentTime / totalDuration : 0f;
-    }
-
-    public bool IsPlaying()
-    {
-        return isPlaying && !isPaused;
     }
 
     #endregion

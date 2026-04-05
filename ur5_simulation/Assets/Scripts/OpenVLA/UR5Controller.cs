@@ -180,7 +180,7 @@ public class UR5Controller : MonoBehaviour
     }
 
     // Set joint angles directly (in radians)
-    void SetJointAngles(float[] angles)
+    public void SetJointAngles(float[] angles)
     {
         for (int i = 0; i < Mathf.Min(6, angles.Length); i++)
         {

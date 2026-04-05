@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using static ConstantsUR5;
 
 /// <summary>
 /// Replays recorded episodes using UR5Controller.MoveDelta to apply
@@ -9,8 +8,7 @@ using static ConstantsUR5;
 /// </summary>
 public class DeltaPlayback : EpisodePlayback
 {
-    private UR5Controller ur5Controller;
-    private RobotArmSetup robotArmSetup;
+    private Transform endEffector;
 
     // Parsed data
     private List<Vector3> deltaPositions = new List<Vector3>();
@@ -30,30 +28,15 @@ public class DeltaPlayback : EpisodePlayback
         drzCol,
         drwCol;
 
-    /// <summary>
-    /// Disable controllers in Awake (before Start runs) so UR5Controller.Start()
-    /// never executes and reconfigures joint drives.
-    /// </summary>
-    private void Awake()
+    protected override void Start()
     {
-        var ur5 = GetComponent<UR5Controller>();
-        if (ur5 != null)
-            ur5.enabled = false;
-        var unified = GetComponent<UnifiedRobotController>();
-        if (unified != null)
-            unified.enabled = false;
+        base.Start();
+        RobotArmSetup robotArmSetup = GetComponent<RobotArmSetup>();
+        if (robotArmSetup != null && robotArmSetup.robotJoints != null)
+            endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
     }
 
-    protected override void InitializeController()
-    {
-        ur5Controller = GetComponent<UR5Controller>();
-        robotArmSetup = GetComponent<RobotArmSetup>();
-
-        if (ur5Controller == null)
-            Debug.LogError("DeltaPlayback: No UR5Controller found!");
-    }
-
-    protected override void ResolveColumns(string[] headers)
+    protected override bool ResolveColumns(string[] headers)
     {
         dpxCol = Array.IndexOf(headers, "delta_pos_x");
         dpyCol = Array.IndexOf(headers, "delta_pos_y");
@@ -62,33 +45,27 @@ public class DeltaPlayback : EpisodePlayback
         dryCol = Array.IndexOf(headers, "delta_rot_y");
         drzCol = Array.IndexOf(headers, "delta_rot_z");
         drwCol = Array.IndexOf(headers, "delta_rot_w");
+        return dpxCol > 0
+            && dpyCol > 0
+            && dpzCol > 0
+            && drxCol > 0
+            && dryCol > 0
+            && drzCol > 0
+            && drwCol > 0;
     }
 
-    protected override void ParseRow(string[] values)
+    protected override bool ParseRow(string[] values)
     {
-        float dpx = 0f,
-            dpy = 0f,
-            dpz = 0f;
-        float drx = 0f,
-            dry = 0f,
-            drz = 0f,
-            drw = 1f;
-        if (dpxCol >= 0)
-            float.TryParse(values[dpxCol], out dpx);
-        if (dpyCol >= 0)
-            float.TryParse(values[dpyCol], out dpy);
-        if (dpzCol >= 0)
-            float.TryParse(values[dpzCol], out dpz);
-        if (drxCol >= 0)
-            float.TryParse(values[drxCol], out drx);
-        if (dryCol >= 0)
-            float.TryParse(values[dryCol], out dry);
-        if (drzCol >= 0)
-            float.TryParse(values[drzCol], out drz);
-        if (drwCol >= 0)
-            float.TryParse(values[drwCol], out drw);
+        float.TryParse(values[dpxCol], out float dpx);
+        float.TryParse(values[dpyCol], out float dpy);
+        float.TryParse(values[dpzCol], out float dpz);
+        float.TryParse(values[drxCol], out float drx);
+        float.TryParse(values[dryCol], out float dry);
+        float.TryParse(values[drzCol], out float drz);
+        float.TryParse(values[drwCol], out float drw);
         deltaPositions.Add(new Vector3(dpx, dpy, dpz));
         deltaRotations.Add(new Quaternion(drx, dry, drz, drw));
+        return true;
     }
 
     protected override void ClearSubclassData()
@@ -105,12 +82,6 @@ public class DeltaPlayback : EpisodePlayback
         hasPreviousBatch = false;
     }
 
-    protected override void OnPlaybackStop()
-    {
-        if (ur5Controller != null)
-            ur5Controller.enabled = false;
-    }
-
     protected override void ApplyFrames(int lastAppliedFrame, int targetFrame)
     {
         if (ur5Controller == null)
@@ -119,11 +90,7 @@ public class DeltaPlayback : EpisodePlayback
             return;
         }
 
-        Transform ee =
-            robotArmSetup != null
-                ? robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform
-                : null;
-        Vector3 currentPos = ee != null ? ee.position : Vector3.zero;
+        Vector3 currentPos = endEffector != null ? endEffector.position : Vector3.zero;
 
         // Log actual vs expected movement since last batch
         if (hasPreviousBatch)
@@ -156,5 +123,4 @@ public class DeltaPlayback : EpisodePlayback
         previousBatchExpectedDelta = batchExpectedDelta;
         hasPreviousBatch = true;
     }
-
 }
