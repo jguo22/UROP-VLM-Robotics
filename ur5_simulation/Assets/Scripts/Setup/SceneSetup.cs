@@ -174,12 +174,6 @@ public class SceneSetup : MonoBehaviour
             RobotSetup(robot, idx);
             idx += 1;
         }
-
-        if (!allRobotsActive)
-        {
-            ToggleRobotOff(robots[(selectedRobotIndex + 1) % robots.Length]);
-            ToggleRobotOn(robots[selectedRobotIndex]);
-        }
     }
 
     void RobotSetup(GameObject robot, int idx)
@@ -197,30 +191,9 @@ public class SceneSetup : MonoBehaviour
         if (suctionController != null)
             suctionController.targetBlocks = targets;
 
-        ManualController manualController = robot.GetComponent<ManualController>();
         UR5Controller ur5Controller = robot.GetComponent<UR5Controller>();
 
         UR5IKController ikController = robot.GetComponent<UR5IKController>();
-        // UR5IKServer ikServer = robot.GetComponent<UR5IKServer>();
-
-        // if (simulAgenticSocket)
-        // {
-        //     SimulAgentController simulAgentController = robot.GetComponent<SimulAgentController>();
-        //     if (simulAgentController != null)
-        //     {
-        //         simulAgentController.simulAgenticSocketSetup = this.gameObject.GetComponent<SimulAgenticSocketSetup>();
-        //     }
-
-        // }
-
-        if (allRobotsActive)
-        {
-            if (manualController != null)
-                manualController.enabled = false;
-            if (ikController != null)
-                ikController.enabled = false;
-            // if (ikServer != null) ikServer.enabled = false;
-        }
     }
 
     public void ResetSceneState()
@@ -248,13 +221,6 @@ public class SceneSetup : MonoBehaviour
         bool selectRobot = Input.GetKeyDown(KeyCode.P);
         bool closeSocket = Input.GetKeyDown(KeyCode.X);
 
-        if (selectRobot)
-        {
-            selectedRobotIndex = (selectedRobotIndex + 1) % robots.Length;
-            ToggleRobotOff(robots[(selectedRobotIndex + 1) % robots.Length]);
-            ToggleRobotOn(robots[selectedRobotIndex]);
-        }
-
         if (agenticSocket && closeSocket)
         {
             //agenticSocketSetup.closeSocket();
@@ -266,44 +232,6 @@ public class SceneSetup : MonoBehaviour
         {
             ikSocketSetup.enabled = false;
             ikSocket = false;
-        }
-    }
-
-    void ToggleRobotOff(GameObject robot)
-    {
-        if (robot != null)
-        {
-            //disable all controllers in robot
-            ManualController manualController = robot.GetComponent<ManualController>();
-            if (manualController != null)
-                manualController.enabled = false;
-
-            UR5Controller ur5Ctrl = robot.GetComponent<UR5Controller>();
-            if (ur5Ctrl != null)
-                ur5Ctrl.enabled = false;
-
-            SuctionController suctionController = robot.GetComponent<SuctionController>();
-            if (suctionController != null)
-                suctionController.enabled = false;
-
-            UR5IKController ikController = robot.GetComponent<UR5IKController>();
-            if (ikController != null)
-                ikController.enabled = false;
-        }
-    }
-
-    void ToggleRobotOn(GameObject robot)
-    {
-        if (robot != null)
-        {
-            //enable all controllers in robot
-            UR5Controller ur5Ctrl = robot.GetComponent<UR5Controller>();
-            if (ur5Ctrl != null)
-                ur5Ctrl.enabled = true;
-
-            SuctionController suctionController = robot.GetComponent<SuctionController>();
-            if (suctionController != null)
-                suctionController.enabled = true;
         }
     }
 
