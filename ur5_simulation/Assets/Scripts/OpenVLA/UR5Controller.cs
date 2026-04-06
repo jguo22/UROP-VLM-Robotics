@@ -20,11 +20,6 @@ public class UR5Controller : MonoBehaviour
     private Transform endEffector;
     private Transform originTransform; // used to calculate the relative position of the end effector to the base of the robot
 
-    private float maxJointAngularSpeed = 3.14f; // rad/s
-    private float[] startAngles = new float[6];
-    private float[] lastAngles = new float[6];
-    private float[] targetAngles = new float[6];
-    private bool isMoving = false;
 
     void Start()
     {
@@ -64,59 +59,6 @@ public class UR5Controller : MonoBehaviour
         ConfigureJointDrives();
 
         // Debug.Log("UR5Controller initialized successfully");
-    }
-
-    void FixedUpdate()
-    {
-        if (!isMoving)
-            return;
-
-        // Find the direction of movement, wrapped to [-pi, pi]
-        float[] currentAngles = GetJointAngles();
-        float[] diffAngles = new float[6];
-        for (int i = 0; i < 6; i++)
-        {
-            diffAngles[i] = targetAngles[i] - currentAngles[i];
-            diffAngles[i] = Mathf.Repeat(diffAngles[i] + Mathf.PI, 2f * Mathf.PI) - Mathf.PI;
-        }
-
-        // // Find maximum angle difference for scaling down
-        // float maxDiff = 0f;
-        // for (int i = 0; i < 6; i++)
-        //     maxDiff = Mathf.Max(maxDiff, Mathf.Abs(diffAngles[i]));
-        //
-        // // check if we have to scale down
-        // if (maxDiff > maxJointAngularSpeed * Time.fixedDeltaTime)
-        // {
-        //     // Scale down each joint step
-        //     float stepScale = maxJointAngularSpeed * Time.fixedDeltaTime / maxDiff;
-        //
-        //     for (int i = 0; i < 6; i++)
-        //         diffAngles[i] *= stepScale;
-        // }
-        // else
-        // {
-        //     // we will move straight to target so won't be moving after this frame
-        //     isMoving = false;
-        // }
-
-        // if none of the diffAngles are too large, we will finish moving this frame
-        isMoving = false;
-        for (int i = 0; i < 6; i++)
-        {
-            float maxJointStep = maxJointAngularSpeed * Time.fixedDeltaTime;
-            if (Mathf.Abs(diffAngles[i]) > maxJointStep)
-            {
-                diffAngles[i] = Mathf.Sign(diffAngles[i]) * maxJointStep;
-                isMoving = true;
-            }
-        }
-
-        float[] newAngles = new float[6];
-        for (int i = 0; i < 6; i++)
-            newAngles[i] = currentAngles[i] + diffAngles[i];
-
-        SetJointAngles(newAngles);
     }
 
     void ConfigureJointDrives()
@@ -163,20 +105,9 @@ public class UR5Controller : MonoBehaviour
         // Debug.Log($"UR5Controller: Target angles: [{string.Join(", ", ikResult ?? new float[0])}]");
 
         if (ikResult != null)
-            MoveToAngles(ikResult);
+            SetJointAngles(ikResult);
         else
             Debug.LogWarning("UR5Controller: No IK solution found for target position");
-    }
-
-    void MoveToAngles(float[] newTargetAngles)
-    {
-        // prevent having a delta calculated from an undesirable mid-movement pose
-        // if (isMoving)
-        //     return;
-        startAngles = GetJointAngles();
-        lastAngles = startAngles;
-        targetAngles = newTargetAngles;
-        isMoving = true;
     }
 
     // Set joint angles directly (in radians)

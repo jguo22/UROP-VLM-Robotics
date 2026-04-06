@@ -10,6 +10,15 @@ public class DeltaPlayback : EpisodePlayback
 {
     private Transform endEffector;
 
+    // Column indices
+    private int dpxCol,
+        dpyCol,
+        dpzCol,
+        drxCol,
+        dryCol,
+        drzCol,
+        drwCol;
+
     // Parsed data
     private List<Vector3> deltaPositions = new List<Vector3>();
     private List<Quaternion> deltaRotations = new List<Quaternion>();
@@ -18,15 +27,6 @@ public class DeltaPlayback : EpisodePlayback
     private Vector3 previousBatchEEPosition;
     private Vector3 previousBatchExpectedDelta;
     private bool hasPreviousBatch;
-
-    // Column indices
-    private int dpxCol,
-        dpyCol,
-        dpzCol;
-    private int drxCol,
-        dryCol,
-        drzCol,
-        drwCol;
 
     protected override void Start()
     {

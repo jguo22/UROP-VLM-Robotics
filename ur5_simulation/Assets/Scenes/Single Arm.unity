@@ -4617,8 +4617,6 @@ GameObject:
   - component: {fileID: 1380065242}
   - component: {fileID: 1380065256}
   - component: {fileID: 1380065248}
-  - component: {fileID: 1380065250}
-  - component: {fileID: 1380065251}
   - component: {fileID: 1380065255}
   - component: {fileID: 1380065261}
   - component: {fileID: 1380065260}
@@ -4705,46 +4703,6 @@ MonoBehaviour:
   exportFilePath: RobotJointCoordinates
   appendTimestamp: 1
   samplingRate: 0.1
---- !u!114 &1380065250
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa28e04cbd1a2ab4fa55ae01dacc5481, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Unity.Robotics.UrdfImporter.Control.ManualController
-  selectedJoint: 
-  selectedIndex: 0
-  control: 0
-  speed: 15
-  torque: 100
-  acceleration: 30
-  highLightColor: {r: 1, g: 0, b: 0, a: 1}
---- !u!114 &1380065251
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19fb1fc65198dd94bac5d1c4839abb1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::UnifiedRobotController
-  robotArmSetup: {fileID: 0}
-  ur5IkController: {fileID: 0}
-  pickAndPlaceController: {fileID: 0}
-  manualController: {fileID: 0}
-  csvTrajectoryController: {fileID: 0}
-  suctionController: {fileID: 0}
-  currentMode: 0
-  jointSpeed: 15
-  moveSpeed: 0.5
 --- !u!114 &1380065255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4816,7 +4774,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8b4e50cc6be9f4fc0880ee32f8155266, type: 3}
   m_Name: 
@@ -4835,7 +4793,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3e527a7dbac0e45238af2dae8bb26785, type: 3}
   m_Name: 
