@@ -25,15 +25,15 @@ public class DeltaPlayback : EpisodePlayback
 
     // Tracking for batch-over-batch logging
     private Vector3 previousBatchEEPosition;
-    private Vector3 previousBatchExpectedDelta;
+    private Vector3 previousBatchIntendedDelta;
     private bool hasPreviousBatch;
 
     protected override void Start()
     {
         base.Start();
         RobotArmSetup robotArmSetup = GetComponent<RobotArmSetup>();
-        if (robotArmSetup != null && robotArmSetup.robotJoints != null)
-            endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
+        Debug.Assert(robotArmSetup != null);
+        endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
     }
 
     protected override bool ResolveColumns(string[] headers)
@@ -76,51 +76,51 @@ public class DeltaPlayback : EpisodePlayback
 
     protected override void OnPlaybackStart()
     {
-        if (ur5Controller != null)
-            ur5Controller.enabled = true;
-
         hasPreviousBatch = false;
     }
 
     protected override void ApplyFrames(int lastAppliedFrame, int targetFrame)
     {
-        if (ur5Controller == null)
-        {
-            Debug.LogError("DeltaPlayback: UR5Controller is null!");
-            return;
-        }
+        Vector3 currentPos = endEffector.position;
 
-        Vector3 currentPos = endEffector != null ? endEffector.position : Vector3.zero;
-
-        // Log actual vs expected movement since last batch
+        // Log actual vs intended movement since last batch
         if (hasPreviousBatch)
         {
             Vector3 actualMovement = currentPos - previousBatchEEPosition;
-            Debug.Log(
-                $"DeltaPlayback batch ending at frame {targetFrame}: "
-                    + $"sinceLastBatch: actual=({actualMovement.x:F5}, {actualMovement.y:F5}, {actualMovement.z:F5}), "
-                    + $"expected=({previousBatchExpectedDelta.x:F5}, {previousBatchExpectedDelta.y:F5}, {previousBatchExpectedDelta.z:F5}), "
-                    + $"error={(actualMovement - previousBatchExpectedDelta).magnitude:F5}"
-            );
+            float error = (actualMovement - previousBatchIntendedDelta).magnitude;
+            string message =
+                $"DeltaPlayback frame {targetFrame}: "
+                + $"error={error:F5}, "
+                + $"sinceLastBatch: actual=({actualMovement.x:F5}, {actualMovement.y:F5}, {actualMovement.z:F5}), "
+                + $"expected=({previousBatchIntendedDelta.x:F5}, {previousBatchIntendedDelta.y:F5}, {previousBatchIntendedDelta.z:F5})";
+            if (error > 0.01)
+            {
+                Debug.LogWarning(message);
+            }
+            else
+            {
+                Debug.Log(message);
+            }
         }
 
-        // Save EE position at start of this batch and accumulate expected deltas
-        previousBatchEEPosition = currentPos;
-        Vector3 batchExpectedDelta = Vector3.zero;
-
+        // accumulate expected deltas over a batch if multiple frames happened
+        Vector3 deltaPosition = Vector3.zero;
+        Quaternion deltaRotation = Quaternion.identity;
+        bool suctionOn = false;
         // Apply each delta exactly once, catching up if frames were skipped
         for (int f = lastAppliedFrame + 1; f <= targetFrame; f++)
         {
-            if (f < 0 || f >= deltaPositions.Count)
-                continue;
-
-            Vector3 intendedDelta = deltaPositions[f];
-            batchExpectedDelta += intendedDelta;
-            ur5Controller.MoveDelta(intendedDelta, deltaRotations[f]);
-            ur5Controller.SetSuction(suctionStates[f]);
+            deltaPosition += deltaPositions[f];
+            deltaRotation *= deltaRotations[f];
         }
 
-        previousBatchExpectedDelta = batchExpectedDelta;
+        // save for next frame logging
+        previousBatchEEPosition = currentPos;
+        previousBatchIntendedDelta = deltaPosition;
         hasPreviousBatch = true;
+
+        // apply action
+        ur5Controller.MoveDelta(deltaPosition, deltaRotation);
+        ur5Controller.SetSuction(suctionOn);
     }
 }
