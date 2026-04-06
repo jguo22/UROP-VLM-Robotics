@@ -117,7 +117,7 @@ public class DeltaPlayback : EpisodePlayback
             Vector3 intendedDelta = deltaPositions[f];
             batchExpectedDelta += intendedDelta;
             ur5Controller.MoveDelta(intendedDelta, deltaRotations[f]);
-            ur5Controller.SetGripper(suctionStates[f]);
+            ur5Controller.SetSuction(suctionStates[f]);
         }
 
         previousBatchExpectedDelta = batchExpectedDelta;

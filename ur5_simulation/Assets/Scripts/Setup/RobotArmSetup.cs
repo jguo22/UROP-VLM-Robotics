@@ -6,6 +6,7 @@ using UnityEngine;
 using static Config;
 using static ConstantsUR5;
 
+[DefaultExecutionOrder(-1)]
 public class RobotArmSetup : MonoBehaviour
 {
     // Coordinate export variables

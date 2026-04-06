@@ -1,4 +1,5 @@
 using UnityEngine;
+using static ConstantsUR5;
 
 // helper script, doesn't have any update code
 [DefaultExecutionOrder(100)]
@@ -15,7 +16,7 @@ public class UR5Controller : MonoBehaviour
     private UR5IKSolver ikSolver;
 
     // Robot references
-    private ArticulationBody[] robotJoints; // 6 joints + end effector (7 total)
+    private ArticulationBody[] robotJoints; // JointCount joints + end effector
     private Transform endEffector;
     private Transform originTransform; // used to calculate the relative position of the end effector to the base of the robot
 
@@ -34,7 +35,7 @@ public class UR5Controller : MonoBehaviour
         robotJoints = robotArmSetup.robotJoints;
 
         // End effector is the last element in robotJoints array
-        endEffector = robotJoints[6].transform; // robotJoints[6] is the end effector
+        endEffector = robotJoints[JointCount].transform; // last element is the end effector
         originTransform = this.transform;
 
         // Get suction controller (optional)
@@ -56,7 +57,7 @@ public class UR5Controller : MonoBehaviour
     void ConfigureJointDrives()
     {
         // Configure drives for the 6 robot arm joints (indices 0-5 in robotJoints)
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < JointCount; i++)
         {
             if (robotJoints[i] == null)
                 continue;
@@ -64,7 +65,6 @@ public class UR5Controller : MonoBehaviour
             ArticulationDrive drive = robotJoints[i].xDrive;
             drive.stiffness = stiffness;
             drive.damping = damping;
-            drive.forceLimit = 1000;
             robotJoints[i].xDrive = drive;
         }
     }
@@ -98,24 +98,22 @@ public class UR5Controller : MonoBehaviour
     // Set joint angles directly (in radians)
     public void SetJointAngles(float[] angles)
     {
-        for (int i = 0; i < Mathf.Min(6, angles.Length); i++)
+        Debug.Assert(angles.Length == JointCount, "incorrect angles length");
+        for (int i = 0; i < JointCount; i++)
         {
-            if (robotJoints[i] != null)
-            {
-                ArticulationDrive drive = robotJoints[i].xDrive;
-                drive.target = angles[i] * Mathf.Rad2Deg;
-                robotJoints[i].xDrive = drive;
-            }
+            ArticulationDrive drive = robotJoints[i].xDrive;
+            drive.target = angles[i] * Mathf.Rad2Deg;
+            robotJoints[i].xDrive = drive;
         }
     }
 
     // Get current joint angles in radians
     public float[] GetJointAngles()
     {
-        float[] angles = new float[6]; // Assuming 6-DOF UR5 robot
+        float[] angles = new float[JointCount];
 
         // Get the current joint angles from the joint controllers
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < JointCount; i++)
         {
             angles[i] = robotJoints[i].jointPosition[0];
         }
@@ -124,7 +122,7 @@ public class UR5Controller : MonoBehaviour
     }
 
     // Control gripper/suction
-    public void SetGripper(bool close)
+    public void SetSuction(bool close)
     {
         suctionController.enableSuction = close;
     }

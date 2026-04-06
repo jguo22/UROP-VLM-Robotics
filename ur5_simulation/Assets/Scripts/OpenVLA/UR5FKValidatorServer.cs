@@ -143,7 +143,6 @@ public class UR5FKValidatorServer : MonoBehaviour
                     await Task.Delay(1);
                 }
             }
-
             Debug.Log("FK Validator Client disconnected");
         }
         catch (Exception e)

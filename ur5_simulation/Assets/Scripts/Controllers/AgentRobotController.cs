@@ -1,7 +1,4 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using Unity.Robotics.UrdfImporter.Control;
 using UnityEngine;
 using static ConstantsUR5;
 
@@ -154,24 +151,11 @@ public class AgentRobotController : MonoBehaviour
     #region Public Control Methods
     public float[] GetJointAngles(GameObject robot)
     {
-        RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
-        if (robotArmSetup == null)
-            return null;
+        UR5Controller ur5 = robot.GetComponent<UR5Controller>();
+        if (ur5 != null)
+            return ur5.GetJointAngles();
 
-        ArticulationBody[] robotJoints = robotArmSetup.robotJoints;
-        float[] angles = new float[JointCount]; // Assuming 6-DOF UR5 robot
-
-        // Get the current joint angles from the joint controllers
-        for (int i = 0; i < JointCount; i++)
-        {
-            if (i < robotJoints.Length)
-            {
-                // Get the angle from the joint controller
-                angles[i] = robotJoints[i].jointPosition[0]; // Convert to radians
-            }
-        }
-
-        return angles;
+        return null;
     }
 
     public void SetControlMode(ControlMode mode)
@@ -319,26 +303,11 @@ public class AgentRobotController : MonoBehaviour
 
     public bool SetJointAngles(GameObject robot, float[] angles)
     {
-        RobotArmSetup robotArmSetup = robot.GetComponent<RobotArmSetup>();
-        if (robotArmSetup == null || angles == null)
+        UR5Controller ur5 = robot.GetComponent<UR5Controller>();
+        if (ur5 == null || angles == null)
             return false;
 
-        ArticulationBody[] robotJoints = robotArmSetup.robotJoints;
-        for (int i = 0; i < Mathf.Min(6, angles.Length); i++)
-        {
-            if (robotJoints[i] != null)
-            {
-                ArticulationDrive drive = robotJoints[i].xDrive;
-                drive.target = angles[i] * Mathf.Rad2Deg;
-
-                drive.stiffness = JointStiffness;
-                drive.damping = JointDamping;
-                drive.forceLimit = ForceLimit;
-
-                robotJoints[i].xDrive = drive;
-                // Debug.Log($"Joint {i}: Setting target to {drive.target} degrees ({angles[i]} radians)");
-            }
-        }
+        ur5.SetJointAngles(angles);
         return true;
     }
 
@@ -391,11 +360,9 @@ public class AgentRobotController : MonoBehaviour
     /// </summary>
     public void SetSuctionState(GameObject robot, bool active)
     {
-        SuctionController suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController != null)
-        {
-            suctionController.SetSuctionState(active);
-        }
+        UR5Controller ur5 = robot.GetComponent<UR5Controller>();
+        if (ur5 != null)
+            ur5.SetSuction(active);
     }
 
     public void SetBlockAttractedState(GameObject robot, bool attracted)

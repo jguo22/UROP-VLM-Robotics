@@ -54,18 +54,13 @@ public class SceneSetup : MonoBehaviour
     public int selectedRobotIndex;
 
     [HideInInspector]
-    public UnifiedRobotController unifiedRobotController;
+    public UR5Controller ur5Controller;
 
     //[HideInInspector]
     //public IKController ikController;
     [HideInInspector]
     public SuctionController suctionController;
 
-    [HideInInspector]
-    public CSVTrajectoryController csvTrajectoryController;
-
-    [HideInInspector]
-    public CSVTrajectoryExample csvTrajectoryExample;
     private SceneResetController sceneResetController;
 
     // [HideInInspector]
@@ -203,9 +198,7 @@ public class SceneSetup : MonoBehaviour
             suctionController.targetBlocks = targets;
 
         ManualController manualController = robot.GetComponent<ManualController>();
-        UnifiedRobotController unifiedController = robot.GetComponent<UnifiedRobotController>();
-        CSVTrajectoryController csvController = robot.GetComponent<CSVTrajectoryController>();
-        CSVTrajectoryExample csvExample = robot.GetComponent<CSVTrajectoryExample>();
+        UR5Controller ur5Controller = robot.GetComponent<UR5Controller>();
 
         UR5IKController ikController = robot.GetComponent<UR5IKController>();
         // UR5IKServer ikServer = robot.GetComponent<UR5IKServer>();
@@ -224,29 +217,9 @@ public class SceneSetup : MonoBehaviour
         {
             if (manualController != null)
                 manualController.enabled = false;
-            if (unifiedController != null)
-                unifiedController.enabled = false;
-            if (csvController != null)
-                csvController.enabled = false;
-            if (csvExample != null)
-                csvExample.enabled = false;
             if (ikController != null)
                 ikController.enabled = false;
             // if (ikServer != null) ikServer.enabled = false;
-        }
-        else
-        {
-            if (csvController != null)
-                csvController.enabled = true;
-            if (csvExample != null)
-                csvExample.enabled = true;
-
-            // if (ikController != null) ikController.enabled = true;
-            // if (ikServer != null)
-            // {
-            //     // ikServer.port = robotArms[idx].ikPort;
-            //     // ikServer.enabled = true;
-            // }
         }
     }
 
@@ -305,31 +278,17 @@ public class SceneSetup : MonoBehaviour
             if (manualController != null)
                 manualController.enabled = false;
 
-            UnifiedRobotController unifiedController = robot.GetComponent<UnifiedRobotController>();
-            if (unifiedController != null)
-            {
-                unifiedController.currentMode = UnifiedRobotController.ControlMode.Start;
-                unifiedController.enabled = false;
-            }
+            UR5Controller ur5Ctrl = robot.GetComponent<UR5Controller>();
+            if (ur5Ctrl != null)
+                ur5Ctrl.enabled = false;
 
             SuctionController suctionController = robot.GetComponent<SuctionController>();
             if (suctionController != null)
                 suctionController.enabled = false;
 
-            CSVTrajectoryController csvController = robot.GetComponent<CSVTrajectoryController>();
-            if (csvController != null)
-                csvController.enabled = false;
-
-            CSVTrajectoryExample csvExample = robot.GetComponent<CSVTrajectoryExample>();
-            if (csvExample != null)
-                csvExample.enabled = false;
-
             UR5IKController ikController = robot.GetComponent<UR5IKController>();
             if (ikController != null)
                 ikController.enabled = false;
-
-            // UR5IKServer ikServer = robot.GetComponent<UR5IKServer>();
-            // if (ikServer != null) ikServer.enabled = false;
         }
     }
 
@@ -338,27 +297,13 @@ public class SceneSetup : MonoBehaviour
         if (robot != null)
         {
             //enable all controllers in robot
-            UnifiedRobotController unifiedController = robot.GetComponent<UnifiedRobotController>();
-            if (unifiedController != null)
-                unifiedController.enabled = true;
+            UR5Controller ur5Ctrl = robot.GetComponent<UR5Controller>();
+            if (ur5Ctrl != null)
+                ur5Ctrl.enabled = true;
 
             SuctionController suctionController = robot.GetComponent<SuctionController>();
             if (suctionController != null)
                 suctionController.enabled = true;
-
-            CSVTrajectoryController csvController = robot.GetComponent<CSVTrajectoryController>();
-            if (csvController != null)
-                csvController.enabled = true;
-
-            CSVTrajectoryExample csvExample = robot.GetComponent<CSVTrajectoryExample>();
-            if (csvExample != null)
-                csvExample.enabled = true;
-
-            // UR5IKController ikController = robot.GetComponent<UR5IKController>();
-            // if (ikController != null) ikController.enabled = true;
-
-            // UR5IKServer ikServer = robot.GetComponent<UR5IKServer>();
-            // if (ikServer != null) ikServer.enabled = true;
         }
     }
 

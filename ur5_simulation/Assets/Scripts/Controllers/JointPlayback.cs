@@ -45,6 +45,6 @@ public class JointPlayback : EpisodePlayback
     protected override void ApplyFrames(int lastAppliedFrame, int targetFrame)
     {
         ur5Controller.SetJointAngles(jointAnglesTrajectory[targetFrame]);
-        ur5Controller.SetGripper(suctionStates[targetFrame]);
+        ur5Controller.SetSuction(suctionStates[targetFrame]);
     }
 }
