@@ -58,7 +58,6 @@ public class RobotArmSetup : MonoBehaviour
         //     return;
         // }
 
-        this.gameObject.AddComponent<FKRobot>();
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
         Debug.Log($"Found {articulationChain.Length} articulation bodies in the robot arm.");
         if (articulationChain.Length == 0)

@@ -64,7 +64,6 @@ public class AgentRobotController : MonoBehaviour
         //     for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
         //     {
         //         ArticulationBody joint = articulationChain[i];
-        //         joint.gameObject.AddComponent<JointControl>();
         //         joint.jointFriction = JointFriction;
         //         joint.angularDamping = AngularDamping;
         //         ArticulationDrive currentDrive = joint.xDrive;

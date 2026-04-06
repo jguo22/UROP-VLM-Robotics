@@ -74,7 +74,6 @@ public class RobotController : MonoBehaviour
         StartDirectionSucc = new Vector3[JointCount + 1];
         StartRotationBone = new Quaternion[JointCount + 1];
 
-        this.gameObject.AddComponent<FKRobot>();
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
 
         if (articulationChain == null || articulationChain.Length == 0)
@@ -86,7 +85,6 @@ public class RobotController : MonoBehaviour
         for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
         {
             ArticulationBody joint = articulationChain[i];
-            joint.gameObject.AddComponent<JointControl>();
             joint.jointFriction = JointFriction;
             joint.angularDamping = AngularDamping;
             ArticulationDrive currentDrive = joint.xDrive;

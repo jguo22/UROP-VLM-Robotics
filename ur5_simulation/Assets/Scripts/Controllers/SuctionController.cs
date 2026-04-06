@@ -69,7 +69,6 @@ public class SuctionController : MonoBehaviour
         // }
 
         // Get articulation chain and setup joints
-        this.gameObject.AddComponent<FKRobot>();
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
 
         if (articulationChain == null || articulationChain.Length == 0)
@@ -81,7 +80,6 @@ public class SuctionController : MonoBehaviour
         for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
         {
             ArticulationBody joint = articulationChain[i];
-            joint.gameObject.AddComponent<JointControl>();
             joint.jointFriction = JointFriction;
             joint.angularDamping = AngularDamping;
             ArticulationDrive currentDrive = joint.xDrive;

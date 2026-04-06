@@ -64,13 +64,11 @@ namespace Unity.Robotics.UrdfImporter.Control
         void Start()
         {
             previousIndex = selectedIndex = 0;
-            this.gameObject.AddComponent<FKRobot>();
             articulationChain = this.GetComponentsInChildren<ArticulationBody>();
 
             for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
             {
                 ArticulationBody joint = articulationChain[i];
-                joint.gameObject.AddComponent<ManualJointControl>();
                 joint.jointFriction = JointFriction;
                 joint.angularDamping = AngularDamping;
                 ArticulationDrive currentDrive = joint.xDrive;
@@ -427,35 +425,24 @@ namespace Unity.Robotics.UrdfImporter.Control
                 return;
             }
             float moveDirection = Input.GetAxis("Vertical"); //up > 0, down < 0
-            ManualJointControl current = robotJoints[jointIndex].GetComponent<ManualJointControl>();
-            if (current == null)
+            ArticulationBody joint = robotJoints[jointIndex];
+
+            if (moveDirection != 0)
             {
-                current = robotJoints[jointIndex].gameObject.AddComponent<ManualJointControl>();
-                //Debug.Log("Current not found");
-            }
-            if (previousIndex != jointIndex)
-            {
-                ManualJointControl previous = robotJoints[previousIndex]
-                    .GetComponent<ManualJointControl>();
-                if (previous == null)
-                {
-                    previous = robotJoints[previousIndex]
-                        .gameObject.AddComponent<ManualJointControl>();
-                    Debug.Log("Previous not found");
-                }
-                previous.direction = RotationDirection.None;
-                previousIndex = jointIndex;
+                float delta = moveDirection * Time.deltaTime * speed;
+                ArticulationDrive drive = joint.xDrive;
+                drive.stiffness = JointStiffness;
+                drive.damping = JointDamping;
+
+                if (joint.twistLock == ArticulationDofLock.LimitedMotion)
+                    drive.target = Mathf.Clamp(drive.target + delta, drive.lowerLimit, drive.upperLimit);
+                else
+                    drive.target += delta;
+
+                joint.xDrive = drive;
             }
 
-            if (current.controltype != control)
-                UpdateControlType(current);
-
-            if (moveDirection > 0)
-                current.direction = RotationDirection.Positive;
-            else if (moveDirection < 0)
-                current.direction = RotationDirection.Negative;
-            else
-                current.direction = RotationDirection.None;
+            previousIndex = jointIndex;
         }
 
         /// <summary>
@@ -492,17 +479,8 @@ namespace Unity.Robotics.UrdfImporter.Control
             }
         }
 
-        public void UpdateControlType(ManualJointControl joint)
-        {
-            joint.controltype = control;
-            if (control == ControlType.PositionControl)
-            {
-                ArticulationDrive drive = joint.joint.xDrive;
-                drive.stiffness = JointStiffness;
-                drive.damping = JointDamping;
-                joint.joint.xDrive = drive;
-            }
-        }
+
+
 
         public void OnGUI()
         {
