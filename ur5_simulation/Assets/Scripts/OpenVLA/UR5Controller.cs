@@ -15,11 +15,9 @@ public class UR5Controller : MonoBehaviour
     private UR5IKSolver ikSolver;
 
     // Robot references
-    private ArticulationBody[] articulationChain;
     private ArticulationBody[] robotJoints; // 6 joints + end effector (7 total)
     private Transform endEffector;
     private Transform originTransform; // used to calculate the relative position of the end effector to the base of the robot
-
 
     void Start()
     {
@@ -32,12 +30,8 @@ public class UR5Controller : MonoBehaviour
             return;
         }
 
-        // Get articulation chain from RobotArmSetup
-        articulationChain = robotArmSetup.articulationChain;
-        robotJoints = robotArmSetup.robotJoints; // This is already set up by RobotArmSetup (6 joints + end effector)
-
-        // Debug.Log($"UR5Controller: Found {articulationChain.Length} articulation bodies");
-        // Debug.Log($"UR5Controller: Robot joints array has {robotJoints.Length} elements");
+        // This is already set up by RobotArmSetup (6 joints + end effector)
+        robotJoints = robotArmSetup.robotJoints;
 
         // End effector is the last element in robotJoints array
         endEffector = robotJoints[6].transform; // robotJoints[6] is the end effector
@@ -57,8 +51,6 @@ public class UR5Controller : MonoBehaviour
 
         // Configure joint drives
         ConfigureJointDrives();
-
-        // Debug.Log("UR5Controller initialized successfully");
     }
 
     void ConfigureJointDrives()
@@ -72,7 +64,7 @@ public class UR5Controller : MonoBehaviour
             ArticulationDrive drive = robotJoints[i].xDrive;
             drive.stiffness = stiffness;
             drive.damping = damping;
-            drive.forceLimit = float.MaxValue;
+            drive.forceLimit = 1000;
             robotJoints[i].xDrive = drive;
         }
     }
@@ -83,10 +75,6 @@ public class UR5Controller : MonoBehaviour
         Vector3 targetPos = endEffector.position + deltaPosition;
         // Apply rotation in world coordinates: deltaRotation * currentRotation
         Quaternion targetRot = deltaRotation * endEffector.rotation;
-
-        // Debug.Log(
-        //     $"MoveDelta - Current Pos: ({endEffector.position.x:F6}, {endEffector.position.y:F6}, {endEffector.position.z:F6}), Current Rot: ({endEffector.rotation.x:F6}, {endEffector.rotation.y:F6}, {endEffector.rotation.z:F6}, {endEffector.rotation.w:F6}) | Target Pos: ({targetPos.x:F6}, {targetPos.y:F6}, {targetPos.z:F6}), Target Rot: ({targetRot.x:F6}, {targetRot.y:F6}, {targetRot.z:F6}, {targetRot.w:F6})"
-        // );
 
         MoveToTarget(targetPos, targetRot);
     }
@@ -100,9 +88,6 @@ public class UR5Controller : MonoBehaviour
         );
         float[] currentAngles = GetJointAngles();
         float[] ikResult = ikSolver.SolveIK(relativePosition, relativeRotation, currentAngles);
-
-        // Debug.Log($"UR5Controller: Current angles: [{string.Join(", ", currentAngles)}]");
-        // Debug.Log($"UR5Controller: Target angles: [{string.Join(", ", ikResult ?? new float[0])}]");
 
         if (ikResult != null)
             SetJointAngles(ikResult);
@@ -132,8 +117,6 @@ public class UR5Controller : MonoBehaviour
         // Get the current joint angles from the joint controllers
         for (int i = 0; i < 6; i++)
         {
-            Debug.Assert(robotJoints.Length >= 6);
-            // Get the angle from the joint controller
             angles[i] = robotJoints[i].jointPosition[0];
         }
 
@@ -143,14 +126,7 @@ public class UR5Controller : MonoBehaviour
     // Control gripper/suction
     public void SetGripper(bool close)
     {
-        if (suctionController != null)
-        {
-            suctionController.enableSuction = close;
-        }
-        else
-        {
-            Debug.LogWarning("UR5Controller: No SuctionController found");
-        }
+        suctionController.enableSuction = close;
     }
 
     (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(
