@@ -10,14 +10,6 @@ public class IKRobotStateData
     public float[] end_effector_position;
 }
 
-[System.Serializable]
-public class IKCommand
-{
-    public string type;
-    public string robot_name;
-    public float[] joint_angles;
-    public float timestamp;
-}
 
 [System.Serializable]
 public class SimulIKCommand

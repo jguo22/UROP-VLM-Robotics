@@ -24,9 +24,6 @@ public class SceneSetup : MonoBehaviour
     public GameObject[] targets;
     private List<GameObject[]> robotTargetsList = new List<GameObject[]>();
 
-    [Header("IK Socket")]
-    public bool ikSocket = false;
-
     [Header("Agentic AI")]
     public bool allRobotsActive = false;
     public bool agenticSocket = false;
@@ -48,25 +45,15 @@ public class SceneSetup : MonoBehaviour
     public SimulAgenticSocketSetup simulAgenticSocketSetup;
 
     [HideInInspector]
-    public IKSocketSetup ikSocketSetup;
-
-    [HideInInspector]
     public int selectedRobotIndex;
 
     [HideInInspector]
     public UR5Controller ur5Controller;
 
-    //[HideInInspector]
-    //public IKController ikController;
     [HideInInspector]
     public SuctionController suctionController;
 
     private SceneResetController sceneResetController;
-
-    // [HideInInspector]
-    // public UR5IKController ikController;
-    // [HideInInspector]
-    // public UR5IKServer ikServer;
 
 
     void Start()
@@ -146,12 +133,6 @@ public class SceneSetup : MonoBehaviour
             }
             simulAgenticSocket = false;
         }
-        else if (ikSocket && !allRobotsActive)
-        {
-            agenticSocket = false;
-            simulAgenticSocket = false;
-            ikSocketSetup = this.gameObject.AddComponent<IKSocketSetup>();
-        }
         else if (simulAgenticSocket)
         {
             if (allRobotsActive)
@@ -165,7 +146,6 @@ public class SceneSetup : MonoBehaviour
         {
             agenticSocket = false;
             simulAgenticSocket = false;
-            ikSocket = false;
         }
 
         int idx = 0;
@@ -192,8 +172,6 @@ public class SceneSetup : MonoBehaviour
             suctionController.targetBlocks = targets;
 
         UR5Controller ur5Controller = robot.GetComponent<UR5Controller>();
-
-        UR5IKController ikController = robot.GetComponent<UR5IKController>();
     }
 
     public void ResetSceneState()
@@ -226,12 +204,6 @@ public class SceneSetup : MonoBehaviour
             //agenticSocketSetup.closeSocket();
             agenticSocketSetup.enabled = false;
             agenticSocket = false;
-        }
-
-        if (ikSocket && closeSocket)
-        {
-            ikSocketSetup.enabled = false;
-            ikSocket = false;
         }
     }
 

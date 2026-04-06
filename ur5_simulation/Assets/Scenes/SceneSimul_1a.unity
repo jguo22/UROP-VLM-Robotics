@@ -279,7 +279,6 @@ MonoBehaviour:
   - {fileID: 1380065241}
   - {fileID: 1796821008}
   targets: []
-  ikSocket: 0
   allRobotsActive: 1
   agenticSocket: 0
   simulAgenticSocket: 1
@@ -288,7 +287,6 @@ MonoBehaviour:
   agentTrajectory: {fileID: 0}
   agenticSocketSetup: {fileID: 0}
   simulAgenticSocketSetup: {fileID: 0}
-  ikSocketSetup: {fileID: 0}
   selectedRobotIndex: 0
   ur5Controller: {fileID: 0}
   suctionController: {fileID: 0}
