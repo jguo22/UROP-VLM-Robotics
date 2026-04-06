@@ -290,10 +290,8 @@ MonoBehaviour:
   simulAgenticSocketSetup: {fileID: 0}
   ikSocketSetup: {fileID: 0}
   selectedRobotIndex: 0
-  unifiedRobotController: {fileID: 0}
+  ur5Controller: {fileID: 0}
   suctionController: {fileID: 0}
-  csvTrajectoryController: {fileID: 0}
-  csvTrajectoryExample: {fileID: 0}
 --- !u!1 &5498141
 GameObject:
   m_ObjectHideFlags: 8
@@ -7559,15 +7557,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19fb1fc65198dd94bac5d1c4839abb1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::UnifiedRobotController
-  robotArmSetup: {fileID: 0}
-  ur5IkController: {fileID: 0}
-  pickAndPlaceController: {fileID: 0}
-  manualController: {fileID: 0}
-  csvTrajectoryController: {fileID: 0}
-  suctionController: {fileID: 0}
-  currentMode: 0
-  jointSpeed: 15
-  moveSpeed: 0.5
 --- !u!114 &1380065252
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7580,12 +7569,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 583b285cbe1a044479082b9c141c10ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryExample
-  robotController: {fileID: 0}
-  csvController: {fileID: 0}
-  csvFileNames: []
-  selectedFileIndex: 0
-  showDemoGUI: 1
-  customFilePath: 
 --- !u!114 &1380065253
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7598,19 +7581,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e1aca63a3d66a744a311faf5c18224f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryController
-  robotController: {fileID: 0}
-  csvFile: {fileID: 0}
-  csvFilePath: 
-  playbackSpeed: 1
-  loopTrajectory: 0
-  autoStart: 0
-  isPlaying: 0
-  isPaused: 0
-  currentTime: 0
-  currentFrame: 0
-  totalFrames: 0
-  totalDuration: 0
-  currentPlaybackTime: 0
 --- !u!114 &1380065255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10505,12 +10475,9 @@ GameObject:
   - component: {fileID: 1796821017}
   - component: {fileID: 1796821020}
   - component: {fileID: 1796821016}
-  - component: {fileID: 1796821014}
-  - component: {fileID: 1796821012}
-  - component: {fileID: 1796821011}
-  - component: {fileID: 1796821010}
   - component: {fileID: 1796821009}
   - component: {fileID: 1796821022}
+  - component: {fileID: 1796821023}
   m_Layer: 0
   m_Name: ur5_right
   m_TagString: robot
@@ -10539,89 +10506,6 @@ MonoBehaviour:
   suctionInactiveMaterial: {fileID: 0}
   targetBlocks: []
   isBlockAttached: 0
---- !u!114 &1796821010
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796821008}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19fb1fc65198dd94bac5d1c4839abb1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::UnifiedRobotController
-  robotArmSetup: {fileID: 0}
-  ur5IkController: {fileID: 0}
-  pickAndPlaceController: {fileID: 0}
-  manualController: {fileID: 0}
-  csvTrajectoryController: {fileID: 0}
-  suctionController: {fileID: 0}
-  currentMode: 0
-  jointSpeed: 15
-  moveSpeed: 0.5
---- !u!114 &1796821011
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796821008}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 583b285cbe1a044479082b9c141c10ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryExample
-  robotController: {fileID: 0}
-  csvController: {fileID: 0}
-  csvFileNames: []
-  selectedFileIndex: 0
-  showDemoGUI: 1
-  customFilePath: 
---- !u!114 &1796821012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796821008}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e1aca63a3d66a744a311faf5c18224f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryController
-  robotController: {fileID: 0}
-  csvFile: {fileID: 0}
-  csvFilePath: 
-  playbackSpeed: 1
-  loopTrajectory: 0
-  autoStart: 0
-  isPlaying: 0
-  isPaused: 0
-  currentTime: 0
-  currentFrame: 0
-  totalFrames: 0
-  totalDuration: 0
-  currentPlaybackTime: 0
---- !u!114 &1796821014
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796821008}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa28e04cbd1a2ab4fa55ae01dacc5481, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::Unity.Robotics.UrdfImporter.Control.ManualController
-  selectedJoint: 
-  selectedIndex: 0
-  control: 0
-  speed: 15
-  torque: 100
-  acceleration: 30
-  highLightColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!114 &1796821016
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10726,6 +10610,20 @@ MonoBehaviour:
   ikActive: 0
   hasIKSolution: 0
   ikSolution: []
+--- !u!114 &1796821023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796821008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
+  stiffness: 10000
+  damping: 100
 --- !u!1 &1817546872
 GameObject:
   m_ObjectHideFlags: 0
