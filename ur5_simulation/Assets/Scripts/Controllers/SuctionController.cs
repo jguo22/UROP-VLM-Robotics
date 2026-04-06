@@ -58,16 +58,6 @@ public class SuctionController : MonoBehaviour
 
     void InitializeComponents()
     {
-        //blockSetup = GetComponent<BlockSetup>();
-        //targetBlock = blockSetup.targetBlock;
-
-        // if (targetBlock == null)
-        // {
-        //     Debug.LogError("Missing required components in SuctionController!");
-        //     enabled = false;
-        //     return;
-        // }
-
         // Get articulation chain and setup joints
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
 
@@ -93,50 +83,7 @@ public class SuctionController : MonoBehaviour
 
         // Get end effector transform
         endEffector = robotJoints[JointCount].transform;
-
-        // Get block components
-        // blockRigidbody = targetBlock.GetComponent<Rigidbody>();
-        // blockRenderer = targetBlock.GetComponent<Renderer>();
-        // if (blockRenderer != null)
-        // {
-        //     originalBlockMaterial = blockRenderer.material;
-        // }
     }
-
-    // void SetupVisualFeedback()
-    // {
-    //     // Create suction line renderer
-    //     suctionLine = gameObject.AddComponent<LineRenderer>();
-    //     suctionLine.material = new Material(Shader.Find("Sprites/Default"));
-    //     suctionLine.color = Color.red;
-    //     suctionLine.startWidth = 0.002f;
-    //     suctionLine.endWidth = 0.002f;
-    //     suctionLine.positionCount = 2;
-    //     suctionLine.enabled = false;
-
-    //     // Create suction indicator sphere
-    //     suctionIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-    //     suctionIndicator.name = "SuctionIndicator";
-    //     suctionIndicator.transform.localScale = Vector3.one * 0.02f; // 2cm sphere
-    //     suctionIndicator.transform.SetParent(endEffector);
-    //     suctionIndicator.transform.localPosition = Vector3.zero;
-
-    //     // Remove collider from indicator
-    //     Collider indicatorCollider = suctionIndicator.GetComponent<Collider>();
-    //     if (indicatorCollider != null)
-    //     {
-    //         Destroy(indicatorCollider);
-    //     }
-
-    //     // Set indicator material
-    //     Renderer indicatorRenderer = suctionIndicator.GetComponent<Renderer>();
-    //     if (indicatorRenderer != null)
-    //     {
-    //         indicatorRenderer.material = suctionInactiveMaterial != null ? suctionInactiveMaterial : originalBlockMaterial;
-    //     }
-
-    //     suctionIndicator.SetActive(false);
-    // }
 
     void Update()
     {

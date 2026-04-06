@@ -272,7 +272,6 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   targets: []
-  ikSocket: 0
   allRobotsActive: 0
   agenticSocket: 0
   simulAgenticSocket: 0
@@ -281,12 +280,9 @@ MonoBehaviour:
   agentTrajectory: {fileID: 0}
   agenticSocketSetup: {fileID: 0}
   simulAgenticSocketSetup: {fileID: 0}
-  ikSocketSetup: {fileID: 0}
   selectedRobotIndex: 0
-  unifiedRobotController: {fileID: 0}
+  ur5Controller: {fileID: 0}
   suctionController: {fileID: 0}
-  csvTrajectoryController: {fileID: 0}
-  csvTrajectoryExample: {fileID: 0}
 --- !u!1 &19099056
 GameObject:
   m_ObjectHideFlags: 8
@@ -3178,8 +3174,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 563f25c410f1a4402ba115ac8d0aca8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UR5KeyboardIKController
-  ikMoveSpeed: 30
-  ikRotateSpeed: 3000
+  ikMoveSpeed: 1
+  ikRotateSpeed: 10
 --- !u!114 &818199195
 MonoBehaviour:
   m_ObjectHideFlags: 0
