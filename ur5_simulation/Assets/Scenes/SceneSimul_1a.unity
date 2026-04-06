@@ -7437,14 +7437,10 @@ GameObject:
   - component: {fileID: 1380065244}
   - component: {fileID: 1380065243}
   - component: {fileID: 1380065242}
-  - component: {fileID: 1380065256}
   - component: {fileID: 1380065248}
-  - component: {fileID: 1380065250}
-  - component: {fileID: 1380065253}
-  - component: {fileID: 1380065252}
-  - component: {fileID: 1380065251}
   - component: {fileID: 1380065255}
-  - component: {fileID: 1380065258}
+  - component: {fileID: 1380065257}
+  - component: {fileID: 1380065256}
   m_Layer: 0
   m_Name: ur5_left
   m_TagString: robot
@@ -7526,61 +7522,6 @@ MonoBehaviour:
   exportFilePath: RobotJointCoordinates
   appendTimestamp: 1
   samplingRate: 0.1
---- !u!114 &1380065250
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa28e04cbd1a2ab4fa55ae01dacc5481, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Unity.Robotics.UrdfImporter.Control.ManualController
-  selectedJoint: 
-  selectedIndex: 0
-  control: 0
-  speed: 15
-  torque: 100
-  acceleration: 30
-  highLightColor: {r: 1, g: 0, b: 0, a: 1}
---- !u!114 &1380065251
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19fb1fc65198dd94bac5d1c4839abb1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::UnifiedRobotController
---- !u!114 &1380065252
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 583b285cbe1a044479082b9c141c10ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryExample
---- !u!114 &1380065253
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e1aca63a3d66a744a311faf5c18224f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Robotics.PickAndPlace::CSVTrajectoryController
 --- !u!114 &1380065255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7609,29 +7550,29 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e88b41a9da42e3c41acb896a457631d8, type: 3}
+  m_Script: {fileID: 11500000, guid: 1fa5e61d721a449b48e33cb62c2e159a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BlockSetup
-  targetBlock: {fileID: 0}
---- !u!114 &1380065258
+  m_EditorClassIdentifier: Assembly-CSharp::UR5IKSolver
+  serverHost: 127.0.0.1
+  serverPort: 5010
+  autoReconnect: 1
+  connectionTimeout: 5000
+--- !u!114 &1380065257
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61817bf0d785d6147bcc8f17f33798e7, type: 3}
+  m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UR5IKController
-  moveDuration: 0.3
-  endEffectorTargetPosition: {x: 0, y: 0, z: 0}
-  ikActive: 0
-  hasIKSolution: 0
-  ikSolution: []
+  m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
+  stiffness: 10000
+  damping: 100
 --- !u!1 &1384981066
 GameObject:
   m_ObjectHideFlags: 0
@@ -10473,11 +10414,10 @@ GameObject:
   - component: {fileID: 1796821019}
   - component: {fileID: 1796821018}
   - component: {fileID: 1796821017}
-  - component: {fileID: 1796821020}
   - component: {fileID: 1796821016}
   - component: {fileID: 1796821009}
-  - component: {fileID: 1796821022}
   - component: {fileID: 1796821023}
+  - component: {fileID: 1796821024}
   m_Layer: 0
   m_Name: ur5_right
   m_TagString: robot
@@ -10580,36 +10520,6 @@ Transform:
   - {fileID: 861322739}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
---- !u!114 &1796821020
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796821008}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e88b41a9da42e3c41acb896a457631d8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BlockSetup
-  targetBlock: {fileID: 0}
---- !u!114 &1796821022
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1796821008}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61817bf0d785d6147bcc8f17f33798e7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UR5IKController
-  moveDuration: 0.3
-  endEffectorTargetPosition: {x: 0, y: 0, z: 0}
-  ikActive: 0
-  hasIKSolution: 0
-  ikSolution: []
 --- !u!114 &1796821023
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10624,6 +10534,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
   stiffness: 10000
   damping: 100
+--- !u!114 &1796821024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796821008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fa5e61d721a449b48e33cb62c2e159a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UR5IKSolver
+  serverHost: 127.0.0.1
+  serverPort: 5010
+  autoReconnect: 1
+  connectionTimeout: 5000
 --- !u!1 &1817546872
 GameObject:
   m_ObjectHideFlags: 0
