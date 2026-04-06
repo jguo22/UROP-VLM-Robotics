@@ -31,6 +31,7 @@ public class JointPlayback : EpisodePlayback
         for (int j = 0; j < JointCount; j++)
         {
             float.TryParse(values[jointAngleCols[j]], out jointAngles[j]);
+            jointAngles[j] *= Mathf.Deg2Rad;
         }
         jointAnglesTrajectory.Add(jointAngles);
         return true;
