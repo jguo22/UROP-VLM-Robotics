@@ -102,6 +102,7 @@ public class UR5Controller : MonoBehaviour
         for (int i = 0; i < JointCount; i++)
         {
             ArticulationDrive drive = robotJoints[i].xDrive;
+            // print(drive.stiffness);
             drive.target = angles[i] * Mathf.Rad2Deg;
             robotJoints[i].xDrive = drive;
         }

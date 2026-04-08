@@ -4747,7 +4747,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
-  stiffness: 10000
+  stiffness: 100000
   damping: 100
 --- !u!114 &1380065262
 MonoBehaviour:
