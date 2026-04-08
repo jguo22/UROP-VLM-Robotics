@@ -12,9 +12,9 @@ class UR5IKSolver:
         Initialize solver.
 
         Args:
-                                        coordinate_mode (str): Coordinate transformation mode:
-                                                                        - 'none': No transformation
-                                                                        - 'unity_to_ros': Unity (Y-up) to ROS (Z-up)
+            coordinate_mode (str): Coordinate transformation mode:
+                - 'none': No transformation
+                - 'unity_to_ros': Unity (Y-up) to ROS (Z-up)
         """
 
         self.coordinate_mode = coordinate_mode
@@ -24,7 +24,7 @@ class UR5IKSolver:
         if not urdf_path.exists():
             raise FileNotFoundError(f"URDF file not found at: {urdf_path}")
 
-        self.ur5 = rtb.Robot.URDF(urdf_path)
+        self.ur5 = rtb.Robot.URDF(str(urdf_path))
         # print(f"Loaded UR5 robot from URDF: {urdf_path}")
         # print(self.ur5)
 
@@ -38,11 +38,11 @@ class UR5IKSolver:
         Standard robotics (ROS/RTB): X-forward, Y-left, Z-up (right-handed)
 
         Args:
-                                        unity_pos: Position in Unity coordinates [x, y, z]
-                                        mode: Transformation mode string
+            unity_pos: Position in Unity coordinates [x, y, z]
+            mode: Transformation mode string
 
         Returns:
-                                        Transformed position
+            Transformed position
         """
         if self.coordinate_mode == 'none':
             return unity_pos
@@ -61,11 +61,11 @@ class UR5IKSolver:
         Standard robotics (ROS/RTB): X-forward, Y-left, Z-up (right-handed)
 
         Args:
-                                        unity_quat: Quaternion in Unity coordinates [x, y, z, w]
-                                        mode: Transformation mode string
+            unity_quat: Quaternion in Unity coordinates [x, y, z, w]
+            mode: Transformation mode string
 
         Returns:
-                                        Transformed quaternion [x, y, z, w]
+            Transformed quaternion [x, y, z, w]
         """
         if self.coordinate_mode == 'none':
             return unity_quat
@@ -104,12 +104,12 @@ class UR5IKSolver:
         Calculate inverse kinematics for target pose.
 
         Args:
-                        target_position (np.ndarray): Target position [x, y, z]
-                        target_rotation (np.ndarray or UnitQuaternion, optional): Target rotation
-                        q0 (np.ndarray, optional): Initial guess for joint angles
+            target_position (np.ndarray): Target position [x, y, z]
+            target_rotation (np.ndarray or UnitQuaternion, optional): Target rotation
+            q0 (np.ndarray, optional): Initial guess for joint angles
 
         Returns:
-                        tuple: (success: bool, solution: np.ndarray or None, iterations: int)
+            tuple: (success: bool, solution: np.ndarray or None, iterations: int)
         """
         try:
             # Create SE3 transform
