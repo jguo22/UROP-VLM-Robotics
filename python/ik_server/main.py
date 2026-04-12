@@ -26,6 +26,7 @@ from constants import (
     IK_REQUEST_BYTES,
     JOINT_ANGLES_COUNT,
 )
+from ik_server.analytic_solver import AnalyticSolver
 from ik_server.numeric_solver import NumericSolver
 
 
@@ -44,7 +45,7 @@ class UR5IKServer:
         self.port = port
         self.socket = None
 
-        self.ik_solver = NumericSolver()
+        self.ik_solver = AnalyticSolver()
 
     def handle_client(self, client_socket, address):
         """

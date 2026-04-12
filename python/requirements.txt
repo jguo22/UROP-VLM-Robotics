@@ -12,3 +12,4 @@ openai>=1.0.0
 numpy>=1.24.0,<2
 roboticstoolbox-python==1.1.1
 python-dotenv>=1.0.0
+ur_analytic_ik
