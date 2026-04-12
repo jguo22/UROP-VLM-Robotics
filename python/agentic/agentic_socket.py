@@ -1,17 +1,12 @@
-import sys
+from profiler import Profiler
+from ik_solver import UR5IKSolver
+from agent import OpenAIAgent
+from agentic_setup import TEST_PROMPT, SIMULTAENOUS_PROMPT
+from unityenv import PROJECT_DIR, SOCKET_FILE_NAME
 import socket
 import json
 import time
-from pathlib import Path
 from sys import argv
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from unityenv import PROJECT_DIR, SOCKET_FILE_NAME
-from agentic_setup import TEST_PROMPT, SIMULTAENOUS_PROMPT
-from agent import OpenAIAgent
-from ik_solver import UR5IKSolver
-from profiler import Profiler
 
 
 SOCKET_CONN_MAX_BYTES = 4096
@@ -21,8 +16,8 @@ SIMULATION_MEASUREMENT_PRECISION = 5  # Decimal places for rounding positions
 DEBUG_LOG_PATH = PROJECT_DIR / ".cursor" / "debug-9a7441.log"
 DEBUG_SESSION_ID = "9a7441"
 
-IDLE_POLL_INTERVAL = 0.5   # seconds between motion status polls
-IDLE_TIMEOUT = 30.0        # max seconds to wait for robots to stop
+IDLE_POLL_INTERVAL = 1   # seconds between motion status polls
+IDLE_TIMEOUT = 6.0        # max seconds to wait for robots to stop
 
 ik_solver = UR5IKSolver()
 
@@ -190,7 +185,7 @@ def execute_command(s, agent, command: dict) -> bool:
     return True
 
 
-def run_episode(s, agent, profiler) -> bool:
+def run_episode(sock, agent, profiler) -> bool:
     """
     Execute one full episode: get scene state → AI planning → command loop.
     Returns True on success, False on fatal error.
@@ -198,7 +193,7 @@ def run_episode(s, agent, profiler) -> bool:
     profiler.start_frame()
 
     agent.info("Requesting scene state from Unity...")
-    scene_state = fetch_scene_state(s)
+    scene_state = fetch_scene_state(sock)
     agent.info(f"Scene state: {scene_state}")
     profiler.record("get_scene_state")
 
@@ -220,12 +215,12 @@ def run_episode(s, agent, profiler) -> bool:
         commands = [commands]
     profiler.record("parse_response")
 
-    send_control(s, "start_recording")
+    send_control(sock, "start_recording")
     for command in commands:
         agent.info(f"Executing: {command}")
-        if not execute_command(s, agent, command):
+        if not execute_command(sock, agent, command):
             return False
-        wait_for_idle(s)
+        wait_for_idle(sock)
         time.sleep(1)  # make it slower so that replay is more reliable
 
     profiler.record("command_loop")
