@@ -26,7 +26,6 @@ from constants import (
     IK_REQUEST_BYTES,
     JOINT_ANGLES_COUNT,
 )
-from ik_server.analytic_solver import AnalyticSolver
 from ik_server.numeric_solver import NumericSolver
 
 

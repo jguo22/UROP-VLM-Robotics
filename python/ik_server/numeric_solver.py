@@ -1,3 +1,4 @@
+import math
 import os
 import roboticstoolbox as rtb
 from spatialmath import SE3
@@ -45,7 +46,7 @@ class NumericSolver():
 
             # use current angles as seed
             # but with high value for 2nd joint to encourage elbow up
-            current_angles[2] = max(current_angles[2], 2)
+            current_angles[2] = max(current_angles[2], math.pi / 2)
             result = self.ur5.ik_LM(
                 T_target,
                 q0=current_angles,
@@ -54,6 +55,7 @@ class NumericSolver():
             # result is a tuple: (q, success, iterations, searches, residual)
             if bool(result[1]):
                 solution = result[0]
+                print(solution[2])
 
                 return solution
             else:

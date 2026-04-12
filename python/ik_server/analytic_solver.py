@@ -6,11 +6,17 @@ from spatialmath import SE3
 from constants import UR5_URDF_FILENAME
 from coordinate_transforms import unity_to_ros_position, unity_to_ros_quaternion, arrayToQuaternion
 
+import inspect
+import roboticstoolbox as rtb
+ur5 = rtb.models.DH.UR5()
+print(inspect.signature(ur5.ikine_6s))
+print([m for m in dir(type(ur5)) if not m.startswith('__')])
+
 
 class AnalyticSolver():
     def __init__(self):
-        # Use DH model for ikine_a (analytical, elbow-up config)
-        self.ur5 = rtb.models.UR5()
+        # Use DH model for ikine_6s (analytical, elbow-up config)
+        self.ur5 = rtb.models.DH.UR5()
 
         # Load URDF robot to compute base offset against DH model
         urdf_path = os.path.join(os.path.dirname(__file__), UR5_URDF_FILENAME)
@@ -20,13 +26,22 @@ class AnalyticSolver():
         ur5_urdf = rtb.Robot.URDF(urdf_path)
 
         print(ur5_urdf)
-        print(self.ur5)
+        print(self.ur5.base)
         # Compute base offset so DH model FK matches URDF FK
         q_ref = [0, -np.pi / 2, np.pi / 2, -np.pi / 2, -np.pi / 2, 0]
         T_dh = self.ur5.fkine(q_ref)
         T_urdf = ur5_urdf.fkine(q_ref)
-        self.ur5.base_link = T_urdf * T_dh.inv()
-        print(self.ur5)
+        self.ur5.base = T_urdf * T_dh.inv()
+
+        q_test = [
+            [0, -np.pi / 2, np.pi / 2, -np.pi / 2, -np.pi / 2, 0],
+            [0, 0, 0, 0, 0, 0],
+            [np.pi / 4, -np.pi / 3, np.pi / 3, -np.pi / 4, np.pi / 2, 0],
+        ]
+        for q in q_test:
+            t1 = ur5_urdf.fkine(q)
+            t2 = self.ur5.fkine(q)
+            assert (t1 == t2)
 
     def solve_ik(self, target_position, target_rotation, current_angles):
         """
@@ -52,7 +67,7 @@ class AnalyticSolver():
 
             # Solve IK analytically with elbow-up constraint (left, up,
             # no-flip)
-            sol = self.ur5.ikine_a(T_target, config='lun')
+            sol = self.ur5.ikine_6s(T_target, config='lun')
 
             if sol.success:
                 return sol.q
