@@ -73,9 +73,6 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
                     leftSuccess = true;
                     message = "Left Robot homed successfully";
                     break;
-                case "solve_ik":
-                    toMoveLeftArm = true;
-                    break;
                 case "move_robot":
                     toMoveLeftArm = true;
                     break;
@@ -111,9 +108,6 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
                     rightSuccess = true;
                     message += "Right Robot homed successfully";
                     break;
-                case "solve_ik":
-                    toMoveRightArm = true;
-                    break;
                 case "move_robot":
                     toMoveRightArm = true;
                     break;
@@ -145,32 +139,32 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
             if (toMoveArms)
             {
                 Debug.Log("Time to move arms");
-                GameObject[] ikRobots;
+                GameObject[] robots;
                 ActionParameters[] parameterArray;
                 if (toMoveLeftArm && toMoveRightArm)
                 {
-                    ikRobots = new GameObject[robots.Length];
-                    ikRobots[0] = ur5_left_robot;
-                    ikRobots[1] = ur5_right_robot;
-                    parameterArray = new ActionParameters[robots.Length];
+                    robots = new GameObject[base.robots.Length];
+                    robots[0] = ur5_left_robot;
+                    robots[1] = ur5_right_robot;
+                    parameterArray = new ActionParameters[base.robots.Length];
                     parameterArray[0] = command.ur5_left.parameters;
                     parameterArray[1] = command.ur5_right.parameters;
                 }
                 else if (toMoveLeftArm)
                 {
-                    ikRobots = new GameObject[1];
-                    ikRobots[0] = ur5_left_robot;
+                    robots = new GameObject[1];
+                    robots[0] = ur5_left_robot;
                     parameterArray = new ActionParameters[1];
                     parameterArray[0] = command.ur5_left.parameters;
                 }
                 else
                 {
-                    ikRobots = new GameObject[1];
-                    ikRobots[0] = ur5_right_robot;
+                    robots = new GameObject[1];
+                    robots[0] = ur5_right_robot;
                     parameterArray = new ActionParameters[1];
                     parameterArray[0] = command.ur5_right.parameters;
                 }
-                return ExecuteMoveRobot(ikRobots, parameterArray);
+                return ExecuteMoveRobot(robots, parameterArray);
             }
 
             toMoveArms = false;
@@ -188,46 +182,27 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
         }
     }
 
-    private bool ExecuteSolveIK(GameObject[] ikRobots, ActionParameters[] parameters)
-    {
-        try
-        {
-            for (int i = 0; i < ikRobots.Length; i++)
-            {
-                int idx = System.Array.IndexOf(robots, ikRobots[i]);
-                ur5Controllers[idx].SetJointAngles(parameters[i].joint_angles);
-            }
-            moveArmsNow = true;
-            return true;
-        }
-        catch (Exception e)
-        {
-            Debug.LogError("Error in ExecuteSolveIK: " + e.Message);
-            return false;
-        }
-    }
-
-    private string ExecuteMoveRobot(GameObject[] ikRobots, ActionParameters[] parameters)
+    private string ExecuteMoveRobot(GameObject[] robots, ActionParameters[] parameters)
     {
         bool allSuccess = true;
         try
         {
-            for (int i = 0; i < ikRobots.Length; i++)
+            for (int i = 0; i < robots.Length; i++)
             {
                 if (parameters[i] == null || parameters[i].target_position == null)
                 {
                     Debug.LogError(
-                        $"ExecuteMoveRobot: null parameters or target_position for robot {ikRobots[i]?.name}"
+                        $"ExecuteMoveRobot: null parameters or target_position for robot {robots[i]?.name}"
                     );
                     return JsonUtility.ToJson(
                         new AIResponse { success = false, message = "null target_position" }
                     );
                 }
-                int idx = System.Array.IndexOf(robots, ikRobots[i]);
+                int idx = System.Array.IndexOf(base.robots, robots[i]);
                 if (idx < 0 || ur5Controllers[idx] == null)
                 {
                     Debug.LogError(
-                        $"ExecuteMoveRobot: UR5Controller not found for robot {ikRobots[i]?.name} (idx={idx})"
+                        $"ExecuteMoveRobot: UR5Controller not found for robot {robots[i]?.name} (idx={idx})"
                     );
                     return JsonUtility.ToJson(
                         new AIResponse { success = false, message = "UR5Controller not found" }
@@ -238,7 +213,7 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
                     parameters[i].target_position[1],
                     parameters[i].target_position[2]
                 );
-                if (!ur5Controllers[idx].MoveToTarget(targetPos, Quaternion.identity))
+                if (!ur5Controllers[idx].MoveToWorldPosition(targetPos))
                     allSuccess = false;
             }
         }
@@ -251,7 +226,7 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
             new AIResponse
             {
                 success = allSuccess,
-                message = allSuccess ? "move_executed" : "ik_failed",
+                message = allSuccess ? "move_executed" : "move_failed",
             }
         );
     }

@@ -74,8 +74,6 @@ class AnalyticSolver():
             # Filter for elbow-up (q[2] > 0)
             elbow_up = [q for q in solutions if q[2] > 0]
             candidates = elbow_up if elbow_up else solutions
-            print("CANDIDATES")
-            print(candidates)
 
             # Among candidates, pick closest to current angles
             best = min(

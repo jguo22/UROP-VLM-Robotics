@@ -15,8 +15,8 @@ SIMULATION_MEASUREMENT_PRECISION = 5  # Decimal places for rounding positions
 DEBUG_LOG_PATH = PROJECT_DIR / ".cursor" / "debug-9a7441.log"
 DEBUG_SESSION_ID = "9a7441"
 
-IDLE_POLL_INTERVAL = 1   # seconds between motion status polls
-IDLE_TIMEOUT = 6.0        # max seconds to wait for robots to stop
+IDLE_POLL_INTERVAL = 1  # seconds between motion status polls
+IDLE_TIMEOUT = 6.0  # max seconds to wait for robots to stop
 
 
 def debug_log(run_id, hypothesis_id, location, message, data):
