@@ -97,12 +97,12 @@ def run_episode(sock, agent, profiler) -> bool:
     """
     profiler.start_frame()
 
-    agent.info("Requesting scene state from Unity...")
+    agent.log_info("Requesting scene state from Unity...")
     scene_state = fetch_scene_state(sock)
-    agent.info(f"Scene state: {scene_state}")
+    agent.log_info(f"Scene state: {scene_state}")
     profiler.record("get_scene_state")
 
-    agent.info("AI is thinking...")
+    agent.log_info("AI is thinking...")
     ai_response = agent.get_ai_decision(scene_state)
     profiler.record("openai_api")
 
@@ -110,11 +110,11 @@ def run_episode(sock, agent, profiler) -> bool:
         agent.error("No AI response received.")
         return False
 
-    agent.info(f"AI Response: {ai_response}")
+    agent.log_info(f"AI Response: {ai_response}")
 
     json_block = ai_response.split("```")[1].lstrip("json\n")
     clean = "\n".join(line.split("//")[0] for line in json_block.splitlines())
-    agent.info(f"Extracted and cleaned JSON commands: {clean}")
+    agent.log_info(f"Extracted and cleaned JSON commands: {clean}")
     commands = json.loads(clean)
     if isinstance(commands, dict):
         commands = [commands]
@@ -122,7 +122,7 @@ def run_episode(sock, agent, profiler) -> bool:
 
     send_control(sock, "start_recording")
     for command in commands:
-        agent.info(f"Executing: {command}")
+        agent.log_info(f"Executing: {command}")
         if not execute_command(sock, agent, command):
             return False
         wait_for_idle(sock)
@@ -151,7 +151,7 @@ def main():
         return
 
     agent = OpenAIAgent(prompt)
-    agent.info("Initialized OpenAI Agent")
+    agent.log_info("Initialized OpenAI Agent")
     print(f"Host: {repr(agent.host)}")
     print(f"Port: {repr(agent.port)}")
 
@@ -234,11 +234,11 @@ def main():
                 sock.connect((agent.host, agent.port))
                 break
             except ConnectionRefusedError:
-                agent.info(
+                agent.log_info(
                     "Waiting for unity sim to start! Retrying in 2 seconds...")
                 attempts += 1
                 if attempts >= SOCKET_CONN_MAX_ATTEMPTS:
-                    agent.error("Could not connect to Unity. Exiting...")
+                    agent.log_error("Could not connect to Unity. Exiting...")
                     return
                 time.sleep(2)
             except Exception as conn_error:
@@ -259,12 +259,12 @@ def main():
                 # #endregion
                 raise
 
-        agent.info("Connected to Unity")
+        agent.log_info("Connected to Unity")
         time.sleep(2)  # Wait for Unity to be ready
 
         episode = 0
         while True:
-            agent.info(f"--- Episode {episode} ---")
+            agent.log_info(f"--- Episode {episode} ---")
 
             # Wait for any lingering motion from previous episode (idempotent
             # on first)
@@ -281,7 +281,7 @@ def main():
             profiler.save_profile()
 
             if not success:
-                agent.error(f"Episode {episode} failed, stopping.")
+                agent.log_error(f"Episode {episode} failed, stopping.")
                 break
 
             episode += 1
