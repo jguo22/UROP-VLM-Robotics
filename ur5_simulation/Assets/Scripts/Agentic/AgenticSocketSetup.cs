@@ -149,7 +149,7 @@ public class AgenticSocketSetup : AgenticSocketBase
                 parameters.target_position[2]
             );
             int i = System.Array.IndexOf(robots, robot);
-            bool success = ur5Controllers[i].MoveToWorldPosition(targetPos);
+            bool success = ur5Controllers[i].MoveToTarget(targetPos, new Quaternion(0, 0, 1f, 0));
             return JsonUtility.ToJson(
                 new AIResponse
                 {

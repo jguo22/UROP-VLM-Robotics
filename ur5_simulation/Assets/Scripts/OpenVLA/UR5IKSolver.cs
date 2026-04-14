@@ -12,7 +12,6 @@ using UnityEngine;
 ///   Client sends: 104 bytes [target_pos(3d) + target_rot(4d) + current_angles(6d)]
 ///   Server responds: 1 byte success flag + 48 bytes joint angles (if success)
 /// </summary>
-[RequireComponent(typeof(UR5IKSolver))]
 public class UR5IKSolver : MonoBehaviour
 {
     [Header("Python IK Server Settings")]
@@ -69,10 +68,6 @@ public class UR5IKSolver : MonoBehaviour
                 return true;
             }
 
-            // Debug.Log(
-            //     $"UR5IKSolver: Connecting to Python IK server at {serverHost}:{serverPort}..."
-            // );
-
             client = new TcpClient();
 
             // Enable TCP keepalive to prevent idle disconnects
@@ -105,9 +100,9 @@ public class UR5IKSolver : MonoBehaviour
             reader = new BinaryReader(stream);
 
             isConnected = true;
-            // Debug.Log(
-            //     $"UR5IKSolver: Connected to Python IK server at {serverHost}:{serverPort} successfully!"
-            // );
+            Debug.Log(
+                $"UR5IKSolver: Connected to Python IK server at {serverHost}:{serverPort} successfully!"
+            );
             return true;
         }
         catch (Exception e)
@@ -199,12 +194,8 @@ public class UR5IKSolver : MonoBehaviour
 
         if (!EnsureConnection())
         {
-            // Not connected yet - return current angles and connection will retry
-            if (debugMode && !isConnecting)
-            {
-                Debug.LogWarning("UR5IKSolver.SolveIK: Not connected to Python server");
-            }
-            return currentAngles;
+            Debug.LogWarning("UR5IKSolver.SolveIK: Not connected to Python server");
+            return null;
         }
 
         try
@@ -228,8 +219,7 @@ public class UR5IKSolver : MonoBehaviour
 
             writer.Flush();
 
-            // Wait for data to be available with 10-minute timeout
-            int timeout = 1000; // 10 minutes in milliseconds
+            int timeout = 1000;
             int elapsed = 0;
             int sleepInterval = 10; // ms
 
@@ -239,6 +229,7 @@ public class UR5IKSolver : MonoBehaviour
                 elapsed += sleepInterval;
             }
 
+            print("ik solve time: " + elapsed);
             if (!stream.DataAvailable)
             {
                 Debug.LogError("UR5IKSolver.SolveIK: Timeout waiting for server response");

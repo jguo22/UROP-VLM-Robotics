@@ -18,6 +18,7 @@ Protocol:
 
 import socket
 import struct
+import threading
 import numpy as np
 
 from constants import (
@@ -31,91 +32,75 @@ from ik_server.numeric_solver import NumericSolver
 
 
 class UR5IKServer:
-    """TCP server for UR5 inverse kinematics solving"""
+    """TCP server for UR5 inverse kinematics solving.
+
+    Spawns a thread per client so multiple UR5IKSolver instances
+    (e.g. dual-arm scenes) can be served concurrently.
+    """
 
     def __init__(self, host: str = DEFAULT_HOST, port: int = IK_SERVER_PORT):
-        """
-        Initialize the IK server.
-
-        Args:
-            host (str): Server host address
-            port (int): Server port
-        """
         self.host = host
         self.port = port
         self.socket = None
 
         self.ik_solver = AnalyticSolver()
+        self._solve_lock = threading.Lock()
 
     def handle_client(self, client_socket, address):
-        """
-        Handle client connection and IK requests.
-
-        Args:
-            client_socket: Connected client socket
-            address: Client address
-        """
         print(f"Client connected from {address}")
 
-        # Enable TCP keepalive to prevent idle disconnects
         client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-
-        # Set socket to blocking mode with 10-minute timeout
         client_socket.setblocking(True)
-        client_socket.settimeout(600.0)  # 10 minute timeout
+        client_socket.settimeout(600.0)
 
         try:
             while True:
-                # Read data: 3d + 4d + 6d = 13 doubles
                 data = b''
                 remaining = IK_REQUEST_BYTES
                 try:
                     while remaining > 0:
                         chunk = client_socket.recv(remaining)
                         if not chunk:
-                            print("Client disconnected (no data)")
+                            print(f"[{address}] Client disconnected (no data)")
                             return
                         data += chunk
                         remaining -= len(chunk)
                 except socket.timeout:
-                    print("Socket timeout, client may have disconnected")
+                    print(
+                        f"[{address}] Socket timeout, client may have disconnected")
                     break
 
                 if len(data) != IK_REQUEST_BYTES:
                     print(
-                        f"Invalid data length for SolveIK: {len(data)}, expected {IK_REQUEST_BYTES}")
+                        f"[{address}] Invalid data length: {len(data)}, expected {IK_REQUEST_BYTES}")
                     break
 
-                # Unpack: target_pos(3) + target_rot(4) + current_angles(6)
                 values = struct.unpack('<13d', data)
                 target_pos = np.array(values[0:3])
                 target_rot = np.array(values[3:7])
                 current_angles = np.array(values[7:13])
 
                 print(
-                    f"SolveIK request: pos={target_pos}, rot={target_rot}")
+                    f"[{address}] SolveIK request: pos={target_pos}, rot={target_rot}")
 
-                # Solve IK
-                solution = self.ik_solver.solve_ik(
-                    target_pos, target_rot, current_angles)
+                with self._solve_lock:
+                    solution = self.ik_solver.solve_ik(
+                        target_pos, target_rot, current_angles)
 
-                # Send response
                 if solution is not None:
-                    # Success: send 1 byte header + joint angles
                     response = struct.pack(
                         'B', 1) + struct.pack(f'<{JOINT_ANGLES_COUNT}d', *solution)
                     client_socket.sendall(response)
-                    print(f"Solution sent: {solution}")
+                    print(f"[{address}] Solution sent: {solution}")
                 else:
-                    # Failure: send 0
                     response = struct.pack('B', 0)
                     client_socket.sendall(response)
-                    print("No solution found, sent failure response")
+                    print(f"[{address}] No solution found, sent failure response")
 
         except socket.timeout as e:
-            print(f"Socket timeout: {e}")
+            print(f"[{address}] Socket timeout: {e}")
         except Exception as e:
-            print(f"Error handling client: {e}")
+            print(f"[{address}] Error handling client: {e}")
             import traceback
             traceback.print_exc()
         finally:
@@ -123,7 +108,7 @@ class UR5IKServer:
                 client_socket.close()
             except BaseException:
                 pass
-            print(f"Client {address} disconnected")
+            print(f"[{address}] Client disconnected")
 
     def start(self):
         """Start the TCP server and listen for connections"""
@@ -138,9 +123,12 @@ class UR5IKServer:
 
             while True:
                 client_socket, address = self.socket.accept()
-                # Handle each client in the same thread (simple for now)
-                # For production, consider threading or async
-                self.handle_client(client_socket, address)
+                thread = threading.Thread(
+                    target=self.handle_client,
+                    args=(client_socket, address),
+                    daemon=True,
+                )
+                thread.start()
 
         except KeyboardInterrupt:
             print("\nServer stopped by user")

@@ -86,6 +86,7 @@ public class UR5Controller : MonoBehaviour
             targetPosition,
             targetRotation
         );
+        print(relativePosition);
         float[] currentAngles = GetJointAngles();
         float[] ikResult = ikSolver.SolveIK(relativePosition, relativeRotation, currentAngles);
 
@@ -94,8 +95,11 @@ public class UR5Controller : MonoBehaviour
             SetJointAngles(ikResult);
             return true;
         }
-        Debug.LogWarning("UR5Controller: No IK solution found for target position");
-        return false;
+        else
+        {
+            Debug.LogWarning("UR5Controller: No IK solution found for target position");
+            return false;
+        }
     }
 
     // Set joint angles directly (in radians)
