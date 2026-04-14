@@ -26,7 +26,6 @@ public class SimulAgenticSocketSetup : MonoBehaviour
 
     // AI Agent Integration
     private UR5Controller[] ur5Controllers;
-    private SimulIKResponse ik_response;
     private SceneSetup sceneSetup;
     private GameObject[] robots;
     private GameObject[] targets;
@@ -45,9 +44,6 @@ public class SimulAgenticSocketSetup : MonoBehaviour
 
     private bool isSocketActive = false;
 
-    private bool toSendIKCommand = false;
-    private bool toSendIKLeft = false;
-    private bool toSendIKRight = false;
     private bool toMoveArms = false;
     private bool toMoveLeftArm = false;
     private bool toMoveRightArm = false;
@@ -364,10 +360,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         {
             bool leftSuccess = true;
             bool rightSuccess = true;
-            toSendIKCommand = false;
-            toSendIKLeft = false;
-            toSendIKRight = false;
             toMoveArms = false;
+            toMoveLeftArm = false;
+            toMoveRightArm = false;
             moveArmsNow = false;
             string message = "";
 
@@ -396,7 +391,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     toMoveLeftArm = true;
                     break;
                 case "move_robot": // delay movement cos need to move both arms tgt
-                    toSendIKLeft = true;
+                    toMoveLeftArm = true;
                     break;
                 case "stationary":
                     break;
@@ -434,7 +429,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     toMoveRightArm = true;
                     break;
                 case "move_robot": // delay movement cos need to move both arms tgt
-                    toSendIKRight = true;
+                    toMoveRightArm = true;
                     break;
                 case "stationary":
                     break;
@@ -460,39 +455,6 @@ public class SimulAgenticSocketSetup : MonoBehaviour
 
             // coordinate and execute movements tgt
             bool success = leftSuccess && rightSuccess;
-            toSendIKCommand = toSendIKLeft || toSendIKRight;
-
-            if (toSendIKCommand)
-            {
-                GameObject[] ikRobots;
-                ActionParameters[] parameterArray;
-                if (toSendIKLeft && toSendIKRight)
-                {
-                    ikRobots = new GameObject[robots.Length];
-                    ikRobots[0] = ur5_left_robot;
-                    ikRobots[1] = ur5_right_robot;
-                    parameterArray = new ActionParameters[robots.Length];
-                    parameterArray[0] = command.ur5_left.parameters;
-                    parameterArray[1] = command.ur5_right.parameters;
-                }
-                else if (toSendIKLeft)
-                {
-                    ikRobots = new GameObject[1];
-                    ikRobots[0] = ur5_left_robot;
-                    parameterArray = new ActionParameters[1];
-                    parameterArray[0] = command.ur5_left.parameters;
-                }
-                else
-                {
-                    ikRobots = new GameObject[1];
-                    ikRobots[0] = ur5_right_robot;
-                    parameterArray = new ActionParameters[1];
-                    parameterArray[0] = command.ur5_right.parameters;
-                }
-                ExecuteMoveRobot(ikRobots, parameterArray);
-                return JsonUtility.ToJson(ik_response);
-            }
-
             toMoveArms = toMoveLeftArm || toMoveRightArm;
 
             if (toMoveArms)
@@ -523,16 +485,12 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     parameterArray = new ActionParameters[1];
                     parameterArray[0] = command.ur5_right.parameters;
                 }
-                bool solveIKSuccess = ExecuteSolveIK(ikRobots, parameterArray);
-                message = solveIKSuccess ? "IK command executed" : "IK command failed";
+                return ExecuteMoveRobot(ikRobots, parameterArray);
             }
 
             toMoveArms = false;
             toMoveLeftArm = false;
             toMoveRightArm = false;
-            toSendIKLeft = false;
-            toSendIKRight = false;
-            toSendIKCommand = false;
             moveArmsNow = false;
             return JsonUtility.ToJson(new AIResponse { success = success, message = message });
         }
@@ -564,51 +522,41 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         }
     }
 
-    private void ExecuteMoveRobot(GameObject[] robots, ActionParameters[] parameters)
+    private string ExecuteMoveRobot(GameObject[] ikRobots, ActionParameters[] parameters)
     {
-        IKRobotStateData[] robot_states = new IKRobotStateData[robots.Length];
+        bool allSuccess = true;
         try
         {
-            for (int i = 0; i < robots.Length; i++)
+            for (int i = 0; i < ikRobots.Length; i++)
             {
-                GameObject robot = robots[i];
-                Vector3 targetInputPosition = new Vector3(
-                    parameters[i].target_position[0],
-                    parameters[i].target_position[1],
-                    parameters[i].target_position[2]
-                );
-
-                targetInputPosition.y += SuctionIKOffsetY; // slight offset to account for suction cup height
-                Vector3 endEffectorTargetPosition = robot.transform.InverseTransformPoint(
-                    targetInputPosition
-                );
-
-                int robotIdx = System.Array.IndexOf(this.robots, robot);
-                robot_states[i] = new IKRobotStateData
+                if (parameters[i] == null || parameters[i].target_position == null)
                 {
-                    robot_name = robot.name,
-                    current_joint_angles = ur5Controllers[robotIdx].GetJointAngles(),
-                    end_effector_position = new float[]
-                    {
-                        endEffectorTargetPosition.x,
-                        endEffectorTargetPosition.y,
-                        endEffectorTargetPosition.z,
-                    },
-                };
+                    Debug.LogError($"ExecuteMoveRobot: null parameters or target_position for robot {ikRobots[i]?.name}");
+                    return JsonUtility.ToJson(new AIResponse { success = false, message = "null target_position" });
+                }
+                int idx = System.Array.IndexOf(robots, ikRobots[i]);
+                if (idx < 0 || ur5Controllers[idx] == null)
+                {
+                    Debug.LogError($"ExecuteMoveRobot: UR5Controller not found for robot {ikRobots[i]?.name} (idx={idx})");
+                    return JsonUtility.ToJson(new AIResponse { success = false, message = "UR5Controller not found" });
+                }
+                Vector3 targetPos = new Vector3(
+                    parameters[i].target_position[0],
+                    parameters[i].target_position[1] + SuctionIKOffsetY,
+                    parameters[i].target_position[2]);
+                if (!ur5Controllers[idx].MoveToWorldPosition(targetPos))
+                    allSuccess = false;
             }
-
-            ik_response = new SimulIKResponse { success = true, robot_states = robot_states };
         }
         catch (Exception e)
         {
-            Debug.LogError("Error in ExecuteMoveRobot: " + e.Message);
-            ik_response = new SimulIKResponse
-            {
-                success = false,
-                message = "Error in ExecuteMoveRobot: " + e.Message,
-                robot_states = null,
-            };
+            Debug.LogError("ExecuteMoveRobot error: " + e.Message);
+            return JsonUtility.ToJson(new AIResponse { success = false, message = e.Message });
         }
+        return JsonUtility.ToJson(new AIResponse {
+            success = allSuccess,
+            message = allSuccess ? "move_executed" : "ik_failed"
+        });
     }
 
     private bool ExecuteActivateSuction(GameObject robot)

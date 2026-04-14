@@ -80,7 +80,7 @@ public class UR5Controller : MonoBehaviour
     }
 
     // Move to target position and rotation using IK
-    public void MoveToTarget(Vector3 targetPosition, Quaternion targetRotation)
+    public bool MoveToTarget(Vector3 targetPosition, Quaternion targetRotation)
     {
         (Vector3 relativePosition, Quaternion relativeRotation) = ConvertToRobotCoordinates(
             targetPosition,
@@ -90,9 +90,18 @@ public class UR5Controller : MonoBehaviour
         float[] ikResult = ikSolver.SolveIK(relativePosition, relativeRotation, currentAngles);
 
         if (ikResult != null)
+        {
             SetJointAngles(ikResult);
-        else
-            Debug.LogWarning("UR5Controller: No IK solution found for target position");
+            return true;
+        }
+        Debug.LogWarning("UR5Controller: No IK solution found for target position");
+        return false;
+    }
+
+    // Move to a world position, preserving current end-effector orientation
+    public bool MoveToWorldPosition(Vector3 worldPosition)
+    {
+        return MoveToTarget(worldPosition, endEffector.rotation);
     }
 
     // Set joint angles directly (in radians)

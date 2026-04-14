@@ -1,5 +1,4 @@
 from profiler import Profiler
-from ik_solver import UR5IKSolver
 from agent import OpenAIAgent
 from agentic_setup import TEST_PROMPT, SIMULTAENOUS_PROMPT
 from unityenv import PROJECT_DIR, SOCKET_FILE_NAME
@@ -19,8 +18,6 @@ DEBUG_SESSION_ID = "9a7441"
 IDLE_POLL_INTERVAL = 1   # seconds between motion status polls
 IDLE_TIMEOUT = 6.0        # max seconds to wait for robots to stop
 
-ik_solver = UR5IKSolver()
-
 
 def debug_log(run_id, hypothesis_id, location, message, data):
     payload = {
@@ -34,72 +31,6 @@ def debug_log(run_id, hypothesis_id, location, message, data):
     }
     with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
         f.write(json.dumps(payload, ensure_ascii=True) + "\n")
-
-
-def solve_ik(ik_response):
-    robot_state = ik_response["robot_state"]
-    current_joint_angles = robot_state["current_joint_angles"]
-    target_end_effector_position = robot_state["end_effector_position"]
-
-    ik_success, ik_joint_angles, _ = ik_solver.calculate_inverse_kinematics(
-        ik_solver.transform_coordinates(target_end_effector_position),
-        # calc_unit_quat,
-        q0=current_joint_angles  # Use current joint angles as initial guess
-    )
-
-    if not ik_success or ik_joint_angles is None:
-        return None
-
-    ik_dict = {
-        "type": "execute_action",
-        "action_type": "solve_ik",
-        "robot_name": robot_state.get("robot_name"),
-        "parameters": {
-            "joint_angles": ik_joint_angles.tolist()
-        },
-        "timestamp": time.time()
-    }
-
-    return json.dumps(ik_dict)
-
-
-def solve_simul_ik(ik_response):
-    robot_states = ik_response["robot_states"]
-
-    ik_dict = {
-        "type": "execute_action",
-        "ur5_left": {
-            "action_type": "stationary"
-        },
-        "ur5_right": {
-            "action_type": "stationary"
-        }
-    }
-
-    for robot_state in robot_states:
-        robot_name = robot_state["robot_name"]
-        current_joint_angles = robot_state["current_joint_angles"]
-        target_end_effector_position = robot_state["end_effector_position"]
-
-        ik_success, ik_joint_angles, _ = ik_solver.calculate_inverse_kinematics(
-            ik_solver.transform_coordinates(target_end_effector_position),
-            # calc_unit_quat,
-            q0=current_joint_angles  # Use current joint angles as initial guess
-        )
-
-        if not ik_success or ik_joint_angles is None:
-            return None
-
-        ik_dict[robot_name] = {
-            "action_type": "solve_ik",
-            "parameters": {
-                "joint_angles": ik_joint_angles.tolist()
-            }
-        }
-
-    ik_dict["timestamp"] = time.time()
-
-    return json.dumps(ik_dict)
 
 
 def round_floats(obj, precision=SIMULATION_MEASUREMENT_PRECISION):
@@ -151,37 +82,11 @@ def wait_for_idle(s, timeout: float = IDLE_TIMEOUT) -> bool:
 
 
 def execute_command(s, agent, command: dict) -> bool:
-    """
-    Send one AI command to Unity and handle the IK round-trip if needed.
-    Returns False on fatal failure.
-    """
+    """Send one AI command to Unity. Returns False on fatal failure."""
     resp = send_recv(s, command)
     if not resp.get("success", False):
         agent.error(f"Unity execution failure: {resp.get('message')}")
         return False
-
-    msg = resp.get("message")
-    if msg == "run_ik":
-        agent.info("Running IK solver...")
-        ik_cmd = solve_ik(resp)
-        if ik_cmd is None:
-            agent.debug("IK solver failed — target likely out of range.")
-            return True  # non-fatal
-        ik_resp = send_recv(s, json.loads(ik_cmd))
-        if not ik_resp.get("success", False):
-            agent.error(f"IK execution failure: {ik_resp.get('message')}")
-        agent.info(f"Unity IK response: {ik_resp.get('message')}")
-    elif msg == "run_simul_ik":
-        agent.info("Running simul IK solver...")
-        ik_cmd = solve_simul_ik(resp)
-        if ik_cmd is None:
-            agent.debug("Simul IK solver failed — target likely out of range.")
-            return True
-        ik_resp = send_recv(s, json.loads(ik_cmd))
-        if not ik_resp.get("success", False):
-            agent.error(
-                f"Simul IK execution failure: {ik_resp.get('message')}")
-        agent.info(f"Unity simul IK response: {ik_resp.get('message')}")
     return True
 
 

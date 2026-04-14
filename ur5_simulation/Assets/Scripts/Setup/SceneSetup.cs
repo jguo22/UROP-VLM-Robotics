@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using Unity.Robotics.UrdfImporter.Control; //for ManualController
 using UnityEngine;
 
 [System.Serializable]
@@ -8,7 +6,6 @@ public class RobotArms
 {
     public GameObject robot;
     public GameObject[] targets;
-    // public int ikPort;
 }
 
 public class SceneSetup : MonoBehaviour
@@ -28,15 +25,6 @@ public class SceneSetup : MonoBehaviour
     public bool allRobotsActive = false;
     public bool agenticSocket = false;
     public bool simulAgenticSocket = false;
-
-    [HideInInspector]
-    public AgentRobotController agentRobotController;
-
-    [HideInInspector]
-    public AgentTrajectoryController agentTrajectoryController;
-
-    [HideInInspector]
-    public AgentTrajectory agentTrajectory;
 
     [HideInInspector]
     public AgenticSocketSetup agenticSocketSetup;
@@ -63,12 +51,6 @@ public class SceneSetup : MonoBehaviour
             Debug.LogError("Robots not assigned in the inspector.");
             return;
         }
-
-        // foreach (GameObject target in targets)
-        // {
-        //     Collider blockCollider = target.GetComponent<Collider>();
-        //     Debug.Log(target.name + " Original Position: " + blockCollider.bounds.center);
-        // }
 
         int robotCount = robotArms.Length;
         robots = new GameObject[robotCount];
@@ -106,20 +88,6 @@ public class SceneSetup : MonoBehaviour
         if (sceneResetController == null)
             sceneResetController = this.gameObject.AddComponent<SceneResetController>();
         sceneResetController.Initialize(this);
-
-        if (allRobotsActive)
-            agentRobotController = this.gameObject.AddComponent<AgentRobotController>();
-        if (allRobotsActive && !agenticSocket && !simulAgenticSocket)
-        {
-            agentRobotController.defaultJointAngleY = 60;
-        }
-
-        // int idx = 0;
-        // foreach (GameObject robot in robots)
-        // {
-        //     RobotSetup(robot, idx);
-        //     idx += 1;
-        // }
 
         selectedRobotIndex = 0; // Default to first robot
 
@@ -201,7 +169,6 @@ public class SceneSetup : MonoBehaviour
 
         if (agenticSocket && closeSocket)
         {
-            //agenticSocketSetup.closeSocket();
             agenticSocketSetup.enabled = false;
             agenticSocket = false;
         }

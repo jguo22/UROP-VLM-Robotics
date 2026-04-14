@@ -109,30 +109,17 @@ public class SceneResetController : MonoBehaviour
                 rb.isKinematic = false; // release physics so attraction force and gravity work
         }
 
-        if (sceneSetup.agentRobotController != null)
-        {
-            foreach (GameObject robot in sceneSetup.robots)
-            {
-                if (robot != null)
-                {
-                    sceneSetup.agentRobotController.ResetToHomePosition(robot);
-                }
-            }
-        }
-        else
-        {
-            foreach (GameObject robot in sceneSetup.robots)
-            {
-                if (robot == null)
-                    continue;
+		foreach (GameObject robot in sceneSetup.robots)
+		{
+			if (robot == null)
+				continue;
 
-                RobotArmSetup armSetup = robot.GetComponent<RobotArmSetup>();
-                if (armSetup != null)
-                {
-                    armSetup.ResetArmPosition();
-                }
-            }
-        }
+			RobotArmSetup armSetup = robot.GetComponent<RobotArmSetup>();
+			if (armSetup != null)
+			{
+				armSetup.ResetArmPosition();
+			}
+		}
 
         Debug.Log("Scene reset complete: gears restored and robot arms homed.");
     }

@@ -26,7 +26,6 @@ public class AgenticSocketSetup : MonoBehaviour
 
     // AI Agent Integration
     private UR5Controller[] ur5Controllers;
-    private IKResponse ik_response;
     private SceneSetup sceneSetup;
     private GameObject[] robots;
     private GameObject[] targets;
@@ -37,9 +36,6 @@ public class AgenticSocketSetup : MonoBehaviour
 
     private Queue<Action> mainThreadActions = new Queue<Action>();
     private object lockObject = new object();
-
-    //private string pendingResponse;
-    //private bool isProcessingCommand;
 
     private bool isSocketActive = false;
 
@@ -160,14 +156,6 @@ public class AgenticSocketSetup : MonoBehaviour
                         Debug.Log("Sent to Python: " + response);
                     });
                 }
-
-                // // Process AI command
-                // string response = ProcessAICommand(receivedData);
-
-                // // Send response back to Python
-                // byte[] responseData = Encoding.UTF8.GetBytes(response);
-                // stream.Write(responseData, 0, responseData.Length);
-                // Debug.Log("Sent to Python: " + response);
 
                 // Continue listening for more data
                 stream.BeginRead(receiveBuffer, 0, receiveBuffer.Length, ReceiveCallback, null);
@@ -297,7 +285,6 @@ public class AgenticSocketSetup : MonoBehaviour
             var sceneState = new SceneStateData
             {
                 robots = GetRobotStates(),
-                // objects = GetObjectStates(),
                 timestamp = Time.time,
             };
 
@@ -318,11 +305,7 @@ public class AgenticSocketSetup : MonoBehaviour
 
     private RobotStateData[] GetRobotStates()
     {
-        //if (robots == null) return new RobotStateData[0];
-
         RobotStateData[] robotStates = new RobotStateData[robotCount];
-
-        //List<RobotStateData> robotStates = new List<RobotStateData>();
 
         for (int i = 0; i < robotCount; i++)
         {
@@ -363,39 +346,8 @@ public class AgenticSocketSetup : MonoBehaviour
                 },
                 objects = robotTargets,
                 suction_active = suctionController != null && suctionController.enableSuction,
-                //is_moving = unifiedController != null && unifiedController.currentMode != UnifiedRobotController.ControlMode.Start
             };
-
-            //robotStates[i] = robotState;
         }
-
-        // foreach (var robot in robots)
-        // {
-        //     var robotArmSetup = robot.GetComponent<RobotArmSetup>();
-        //     var suctionController = robot.GetComponent<SuctionController>();
-        //     //var unifiedController = robot.GetComponent<UnifiedRobotController>();
-
-        //     if (robotArmSetup != null)
-        //     {
-        //         var endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
-
-        //         var robotState = new RobotStateData
-        //         {
-        //             name = robot.name,
-        //             joint_angles = GetJointAngles(robotArmSetup.robotJoints),
-        //             end_effector_position = new float[]
-        //             {
-        //                 endEffector.position.x,
-        //                 endEffector.position.y,
-        //                 endEffector.position.z
-        //             },
-        //             suction_active = suctionController != null && suctionController.enableSuction,
-        //             //is_moving = unifiedController != null && unifiedController.currentMode != UnifiedRobotController.ControlMode.Start
-        //         };
-
-        //         robotStates.Add(robotState);
-        //     }
-        // }
 
         return robotStates;
     }
@@ -436,19 +388,6 @@ public class AgenticSocketSetup : MonoBehaviour
         }
 
         return objects;
-
-        // foreach (var block in targets)
-        // {
-        //     objects.Add(new ObjectStateData
-        //     {
-        //         name = block.name,
-        //         position = new float[] { block.transform.position.x, block.transform.position.y, block.transform.position.z },
-        //         rotation = new float[] { block.transform.rotation.x, block.transform.rotation.y, block.transform.rotation.z, block.transform.rotation.w },
-        //         is_attached = block.transform.parent != null // && block.transform.parent.name.Contains("suction")
-        //     });
-        // }
-
-        // return objects.ToArray();
     }
 
     private string ExecuteActionJson(AICommand command)
@@ -490,8 +429,7 @@ public class AgenticSocketSetup : MonoBehaviour
                     message = success ? "IK command executed" : "IK command failed";
                     break;
                 case "move_robot":
-                    ExecuteMoveRobot(targetRobot, command.parameters);
-                    return JsonUtility.ToJson(ik_response);
+                    return ExecuteMoveRobot(targetRobot, command.parameters);
 
                 case "activate_suction":
                     success = ExecuteActivateSuction(targetRobot);
@@ -526,53 +464,28 @@ public class AgenticSocketSetup : MonoBehaviour
         return true;
     }
 
-    private void ExecuteMoveRobot(GameObject robot, ActionParameters parameters)
+    private string ExecuteMoveRobot(GameObject robot, ActionParameters parameters)
     {
         if (recorder != null)
             recorder.StartRecording();
 
         try
         {
-            Vector3 targetInputPosition = new Vector3(
+            Vector3 targetPos = new Vector3(
                 parameters.target_position[0],
-                parameters.target_position[1],
-                parameters.target_position[2]
-            );
-
-            targetInputPosition.y += SuctionIKOffsetY; // slight offset to account for suction cup height
-            Vector3 endEffectorTargetPosition = robot.transform.InverseTransformPoint(
-                targetInputPosition
-            );
-
-            int robotIdx = System.Array.IndexOf(robots, robot);
-            var robot_state_data = new IKRobotStateData
-            {
-                robot_name = robot.name,
-                current_joint_angles = ur5Controllers[robotIdx].GetJointAngles(),
-                end_effector_position = new float[]
-                {
-                    endEffectorTargetPosition.x,
-                    endEffectorTargetPosition.y,
-                    endEffectorTargetPosition.z,
-                },
-            };
-
-            ik_response = new IKResponse
-            {
-                success = true,
-                message = "run_ik",
-                robot_state = robot_state_data,
-            };
+                parameters.target_position[1] + SuctionIKOffsetY,
+                parameters.target_position[2]);
+            int i = System.Array.IndexOf(robots, robot);
+            bool success = ur5Controllers[i].MoveToWorldPosition(targetPos);
+            return JsonUtility.ToJson(new AIResponse {
+                success = success,
+                message = success ? "move_executed" : "ik_failed"
+            });
         }
         catch (Exception e)
         {
-            Debug.LogError("Error in ExecuteMoveRobot: " + e.Message);
-            ik_response = new IKResponse
-            {
-                success = false,
-                message = "Error in ExecuteMoveRobot: " + e.Message,
-                robot_state = null,
-            };
+            Debug.LogError("ExecuteMoveRobot error: " + e.Message);
+            return JsonUtility.ToJson(new AIResponse { success = false, message = e.Message });
         }
     }
 
