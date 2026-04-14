@@ -25,7 +25,7 @@ public class AgenticSocketSetup : MonoBehaviour
     private EpisodeRecorder recorder;
 
     // AI Agent Integration
-    private AgentRobotController agentController;
+    private UR5Controller[] ur5Controllers;
     private IKResponse ik_response;
     private SceneSetup sceneSetup;
     private GameObject[] robots;
@@ -48,16 +48,6 @@ public class AgenticSocketSetup : MonoBehaviour
         // Initialize AI components
         sceneSetup = GetComponent<SceneSetup>();
 
-        if (sceneSetup != null)
-            agentController = sceneSetup.agentRobotController;
-
-        if (agentController == null)
-        {
-            Debug.LogWarning(
-                "PythonSocketSetup: AgentRobotController not found. AI features may be limited."
-            );
-        }
-
         //GET ALL REQUIRED SCENE DATA
         robots = sceneSetup.robots;
         targets = sceneSetup.targets;
@@ -66,14 +56,13 @@ public class AgenticSocketSetup : MonoBehaviour
 
         robotArmSetups = new RobotArmSetup[robotCount];
         suctionControllers = new SuctionController[robotCount];
+        ur5Controllers = new UR5Controller[robotCount];
 
         for (int i = 0; i < robotCount; i++)
         {
-            RobotArmSetup robotArmSetup = robots[i].GetComponent<RobotArmSetup>();
-            robotArmSetups[i] = robotArmSetup;
-
-            SuctionController suctionController = robots[i].GetComponent<SuctionController>();
-            suctionControllers[i] = suctionController;
+            robotArmSetups[i] = robots[i].GetComponent<RobotArmSetup>();
+            suctionControllers[i] = robots[i].GetComponent<SuctionController>();
+            ur5Controllers[i] = robots[i].GetComponent<UR5Controller>();
         }
 
         recorder = GetComponent<EpisodeRecorder>();
@@ -491,8 +480,10 @@ public class AgenticSocketSetup : MonoBehaviour
             switch (command.action_type)
             {
                 case "home_robot":
-                    success = agentController.ResetToHomePosition(targetRobot);
-                    message = success ? "Robot homed successfully" : "Robot homing failed";
+                    int homeIdx = System.Array.IndexOf(robots, targetRobot);
+                    robotArmSetups[homeIdx].ResetArmPosition();
+                    success = true;
+                    message = "Robot homed successfully";
                     break;
                 case "solve_ik":
                     success = ExecuteSolveIK(targetRobot, command.parameters);
@@ -530,8 +521,9 @@ public class AgenticSocketSetup : MonoBehaviour
 
     private bool ExecuteSolveIK(GameObject robot, ActionParameters parameters)
     {
-        // set joint angles for specified robot
-        return agentController.SetJointAngles(robot, parameters.joint_angles);
+        int i = System.Array.IndexOf(robots, robot);
+        ur5Controllers[i].SetJointAngles(parameters.joint_angles);
+        return true;
     }
 
     private void ExecuteMoveRobot(GameObject robot, ActionParameters parameters)
@@ -552,10 +544,11 @@ public class AgenticSocketSetup : MonoBehaviour
                 targetInputPosition
             );
 
+            int robotIdx = System.Array.IndexOf(robots, robot);
             var robot_state_data = new IKRobotStateData
             {
                 robot_name = robot.name,
-                current_joint_angles = agentController.GetJointAngles(robot),
+                current_joint_angles = ur5Controllers[robotIdx].GetJointAngles(),
                 end_effector_position = new float[]
                 {
                     endEffectorTargetPosition.x,

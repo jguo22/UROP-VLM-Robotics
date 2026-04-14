@@ -25,7 +25,7 @@ public class SimulAgenticSocketSetup : MonoBehaviour
     private EpisodeRecorder recorder;
 
     // AI Agent Integration
-    private AgentRobotController agentController;
+    private UR5Controller[] ur5Controllers;
     private SimulIKResponse ik_response;
     private SceneSetup sceneSetup;
     private GameObject[] robots;
@@ -60,19 +60,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         // Initialize AI components
         sceneSetup = GetComponent<SceneSetup>();
 
-        if (sceneSetup != null)
-            agentController = sceneSetup.agentRobotController;
-
         recorder = GetComponent<EpisodeRecorder>();
         if (recorder == null)
             recorder = gameObject.AddComponent<EpisodeRecorder>();
-
-        if (agentController == null)
-        {
-            Debug.LogWarning(
-                "PythonSocketSetup: AgentRobotController not found. AI features may be limited."
-            );
-        }
 
         //GET ALL REQUIRED SCENE DATA
         robots = sceneSetup.robots;
@@ -82,18 +72,13 @@ public class SimulAgenticSocketSetup : MonoBehaviour
 
         robotArmSetups = new RobotArmSetup[robotCount];
         suctionControllers = new SuctionController[robotCount];
-        // simulAgentControllers = new SimulAgentController[robotCount];
+        ur5Controllers = new UR5Controller[robotCount];
 
         for (int i = 0; i < robotCount; i++)
         {
-            RobotArmSetup robotArmSetup = robots[i].GetComponent<RobotArmSetup>();
-            robotArmSetups[i] = robotArmSetup;
-
-            SuctionController suctionController = robots[i].GetComponent<SuctionController>();
-            suctionControllers[i] = suctionController;
-
-            // SimulAgentController simulAgentController = robots[i].GetComponent<SimulAgentController>();
-            // simulAgentControllers[i] = simulAgentController;
+            robotArmSetups[i] = robots[i].GetComponent<RobotArmSetup>();
+            suctionControllers[i] = robots[i].GetComponent<SuctionController>();
+            ur5Controllers[i] = robots[i].GetComponent<UR5Controller>();
         }
 
         // Read environment variables for socket configuration
@@ -403,11 +388,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             switch (command.ur5_left.action_type)
             {
                 case "home_robot":
-                    // toMoveLeftArm = true;
-                    leftSuccess = agentController.ResetToHomePosition(ur5_left_robot);
-                    message = leftSuccess
-                        ? "Left Robot homed successfully"
-                        : "Left Robot homing failed";
+                    robotArmSetups[System.Array.IndexOf(robots, ur5_left_robot)].ResetArmPosition();
+                    leftSuccess = true;
+                    message = "Left Robot homed successfully";
                     break;
                 case "solve_ik": // delay movement cos need to move both arms tgt
                     toMoveLeftArm = true;
@@ -443,11 +426,9 @@ public class SimulAgenticSocketSetup : MonoBehaviour
             switch (command.ur5_right.action_type)
             {
                 case "home_robot":
-                    // toMoveRightArm = true;
-                    rightSuccess = agentController.ResetToHomePosition(ur5_right_robot);
-                    message += rightSuccess
-                        ? "Right Robot homed successfully"
-                        : "Right Robot homing failed";
+                    robotArmSetups[System.Array.IndexOf(robots, ur5_right_robot)].ResetArmPosition();
+                    rightSuccess = true;
+                    message += "Right Robot homed successfully";
                     break;
                 case "solve_ik": // delay movement cos need to move both arms tgt
                     toMoveRightArm = true;
@@ -570,10 +551,8 @@ public class SimulAgenticSocketSetup : MonoBehaviour
         {
             for (int i = 0; i < robots.Length; i++)
             {
-                GameObject robot = robots[i];
-                // SimulAgentController simulAgentController = simulAgentControllers.FirstOrDefault(r => r.robot_name == robot.name);
-                // simulAgentController.ikSolution = parameters[i].joint_angles;
-                agentController.SetJointAngles(robot, parameters[i].joint_angles);
+                int idx = System.Array.IndexOf(this.robots, robots[i]);
+                ur5Controllers[idx].SetJointAngles(parameters[i].joint_angles);
             }
             moveArmsNow = true;
             return true;
@@ -604,10 +583,11 @@ public class SimulAgenticSocketSetup : MonoBehaviour
                     targetInputPosition
                 );
 
+                int robotIdx = System.Array.IndexOf(this.robots, robot);
                 robot_states[i] = new IKRobotStateData
                 {
                     robot_name = robot.name,
-                    current_joint_angles = agentController.GetJointAngles(robot),
+                    current_joint_angles = ur5Controllers[robotIdx].GetJointAngles(),
                     end_effector_position = new float[]
                     {
                         endEffectorTargetPosition.x,
