@@ -209,13 +209,6 @@ public class UR5IKSolver : MonoBehaviour
 
         try
         {
-            // if (debugMode)
-            // {
-            //     Debug.Log(
-            //         $"UR5IKSolver.SolveIK: Sending request - pos={targetPosition}, rot={targetRotation}"
-            //     );
-            // }
-
             // Send target position (3 doubles)
             writer.Write((double)targetPosition.x);
             writer.Write((double)targetPosition.y);
@@ -236,7 +229,7 @@ public class UR5IKSolver : MonoBehaviour
             writer.Flush();
 
             // Wait for data to be available with 10-minute timeout
-            int timeout = 600000; // 10 minutes in milliseconds
+            int timeout = 1000; // 10 minutes in milliseconds
             int elapsed = 0;
             int sleepInterval = 10; // ms
 
@@ -265,13 +258,6 @@ public class UR5IKSolver : MonoBehaviour
                 {
                     solution[i] = (float)reader.ReadDouble();
                 }
-
-                // if (debugMode)
-                // {
-                //     Debug.Log(
-                //         $"UR5IKSolver.SolveIK: Solution found - joints={string.Join(", ", solution)}"
-                //     );
-                // }
 
                 return solution;
             }

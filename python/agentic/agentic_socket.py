@@ -85,7 +85,7 @@ def execute_command(s, agent, command: dict) -> bool:
     """Send one AI command to Unity. Returns False on fatal failure."""
     resp = send_recv(s, command)
     if not resp.get("success", False):
-        agent.error(f"Unity execution failure: {resp.get('message')}")
+        agent.log_error(f"Unity execution failure: {resp.get('message')}")
         return False
     return True
 
@@ -107,7 +107,7 @@ def run_episode(sock, agent, profiler) -> bool:
     profiler.record("openai_api")
 
     if not ai_response:
-        agent.error("No AI response received.")
+        agent.log_error("No AI response received.")
         return False
 
     agent.log_info(f"AI Response: {ai_response}")

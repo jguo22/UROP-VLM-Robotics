@@ -1,224 +1,31 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using UnityEngine;
 using static ConstantsUR5;
 
-[DefaultExecutionOrder(100)]
-public class AgenticSocketSetup : MonoBehaviour
+public class AgenticSocketSetup : AgenticSocketBase
 {
-    private TcpListener listener;
-    private TcpClient client;
-    private NetworkStream stream;
-    private byte[] receiveBuffer = new byte[4096]; // Increased buffer size
-
-    //for socket connection
-    private static string unityAssetsFilePath = "ur5_simulation/Assets";
-    private string envFilePath = Application.dataPath.Replace(unityAssetsFilePath, "");
-    private string hostAddress;
-    private int portNumber;
-
-    private EpisodeRecorder recorder;
-
-    // AI Agent Integration
-    private UR5Controller[] ur5Controllers;
-    private SceneSetup sceneSetup;
-    private GameObject[] robots;
-    private GameObject[] targets;
-    private RobotArmSetup[] robotArmSetups;
-    private SuctionController[] suctionControllers;
-    private int robotCount;
-    private int targetCount;
-
-    private Queue<Action> mainThreadActions = new Queue<Action>();
-    private object lockObject = new object();
-
-    private bool isSocketActive = false;
-
-    void Start()
+    protected override void InitializeRecorder()
     {
-        // Initialize AI components
-        sceneSetup = GetComponent<SceneSetup>();
-
-        //GET ALL REQUIRED SCENE DATA
-        robots = sceneSetup.robots;
-        targets = sceneSetup.targets;
-        robotCount = robots.Length;
-        targetCount = targets.Length;
-
-        robotArmSetups = new RobotArmSetup[robotCount];
-        suctionControllers = new SuctionController[robotCount];
-        ur5Controllers = new UR5Controller[robotCount];
-
-        for (int i = 0; i < robotCount; i++)
-        {
-            robotArmSetups[i] = robots[i].GetComponent<RobotArmSetup>();
-            suctionControllers[i] = robots[i].GetComponent<SuctionController>();
-            ur5Controllers[i] = robots[i].GetComponent<UR5Controller>();
-        }
-
-        recorder = GetComponent<EpisodeRecorder>();
-        if (recorder == null)
-            recorder = gameObject.AddComponent<EpisodeRecorder>();
         recorder.robotArmSetup = robotArmSetups[0];
         recorder.suctionController = suctionControllers[0];
         recorder.recordingCamera = Camera.main;
-
-        // Read environment variables for socket configuration
-        ReadEnv();
-
-        try
-        {
-            // Start listening for connections
-            listener = new TcpListener(IPAddress.Parse(hostAddress), portNumber);
-            listener.Start();
-            Debug.Log("Unity server started, waiting for Python connection...");
-
-            // Accept connection from Python
-            client = listener.AcceptTcpClient();
-            stream = client.GetStream();
-            Debug.Log("Python connected!");
-
-            isSocketActive = true;
-
-            // Start receiving data
-            stream.BeginRead(receiveBuffer, 0, receiveBuffer.Length, ReceiveCallback, null);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError("Socket error: " + e.Message);
-        }
     }
 
-    void Update()
-    {
-        lock (lockObject)
-        {
-            while (mainThreadActions.Count > 0)
-            {
-                var action = mainThreadActions.Dequeue();
-                action.Invoke();
-            }
-        }
-    }
-
-    private void ReadEnv()
-    {
-        Debug.Log(Application.dataPath);
-        string envFile = Directory.GetFiles(envFilePath, "socket.env")[0];
-        foreach (var line in File.ReadAllLines(envFile))
-        {
-            // Skip empty lines and comments
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
-            {
-                continue;
-            }
-
-            var parts = line.Split('=', 2); // Split only on the first '='
-            if (parts.Length == 2)
-            {
-                var key = parts[0].Trim();
-                var value = parts[1].Trim().Trim('"'); // Remove potential quotes
-
-                // Set as environment variable
-                Environment.SetEnvironmentVariable(key, value);
-            }
-        }
-
-        hostAddress = Environment.GetEnvironmentVariable("HOST");
-        portNumber = int.Parse(Environment.GetEnvironmentVariable("PORT"));
-
-        Debug.Log($"{hostAddress} | {portNumber}");
-    }
-
-    private void ReceiveCallback(IAsyncResult AR)
+    protected override string ProcessAICommand(string commandJson)
     {
         try
         {
-            int bytesRead = stream.EndRead(AR);
-            if (bytesRead > 0)
-            {
-                string receivedData = Encoding.UTF8.GetString(receiveBuffer, 0, bytesRead);
-                Debug.Log("Received from Python: " + receivedData);
-
-                // Queue the processing to main thread
-                lock (lockObject)
-                {
-                    mainThreadActions.Enqueue(() =>
-                    {
-                        string response = ProcessAICommand(receivedData);
-                        byte[] responseData = Encoding.UTF8.GetBytes(response);
-                        stream.Write(responseData, 0, responseData.Length);
-                        Debug.Log("Sent to Python: " + response);
-                    });
-                }
-
-                // Continue listening for more data
-                stream.BeginRead(receiveBuffer, 0, receiveBuffer.Length, ReceiveCallback, null);
-            }
-        }
-        catch (Exception e)
-        {
-            if (isSocketActive)
-                Debug.LogError("Receive callback error: " + e.Message);
-        }
-    }
-
-    private string ProcessAICommand(string commandJson)
-    {
-        try
-        {
-            // Parse JSON command
             var command = JsonUtility.FromJson<AICommand>(commandJson);
+
+            string commonResult = TryProcessCommonCommand(command.type);
+            if (commonResult != null)
+                return commonResult;
 
             switch (command.type)
             {
-                case "get_scene_state":
-                    return GetSceneStateJson();
-
                 case "execute_action":
                     return ExecuteActionJson(command);
-
-                case "reset_scene":
-                    if (recorder != null)
-                        recorder.StopRecording();
-                    sceneSetup.ResetSceneState();
-                    return JsonUtility.ToJson(
-                        new ControlResponse
-                        {
-                            success = true,
-                            message = "scene_reset",
-                            timestamp = Time.time,
-                        }
-                    );
-
-                case "start_recording":
-                    if (recorder != null)
-                        recorder.StartRecording();
-                    return JsonUtility.ToJson(
-                        new ControlResponse
-                        {
-                            success = true,
-                            message = "recording_started",
-                            timestamp = Time.time,
-                        }
-                    );
-
-                case "stop_recording":
-                    if (recorder != null)
-                        recorder.StopRecording();
-                    return JsonUtility.ToJson(
-                        new ControlResponse
-                        {
-                            success = true,
-                            message = "recording_stopped",
-                            timestamp = Time.time,
-                        }
-                    );
 
                 case "pause_recording":
                     if (recorder != null)
@@ -240,17 +47,6 @@ public class AgenticSocketSetup : MonoBehaviour
                         {
                             success = true,
                             message = "recording_resumed",
-                            timestamp = Time.time,
-                        }
-                    );
-
-                case "get_motion_status":
-                    bool idle = IsAllRobotsIdle();
-                    return JsonUtility.ToJson(
-                        new MotionStatusResponse
-                        {
-                            success = true,
-                            is_idle = idle,
                             timestamp = Time.time,
                         }
                     );
@@ -278,118 +74,6 @@ public class AgenticSocketSetup : MonoBehaviour
         }
     }
 
-    private string GetSceneStateJson()
-    {
-        try
-        {
-            var sceneState = new SceneStateData
-            {
-                robots = GetRobotStates(),
-                timestamp = Time.time,
-            };
-
-            return JsonUtility.ToJson(sceneState);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError("Error getting scene state: " + e.Message);
-            return JsonUtility.ToJson(
-                new AIResponse
-                {
-                    success = false,
-                    message = "Error getting scene state: " + e.Message,
-                }
-            );
-        }
-    }
-
-    private RobotStateData[] GetRobotStates()
-    {
-        RobotStateData[] robotStates = new RobotStateData[robotCount];
-
-        for (int i = 0; i < robotCount; i++)
-        {
-            var robot = robots[i];
-            var robotArmSetup = robotArmSetups[i];
-            var suctionController = suctionControllers[i];
-
-            GameObject[] targetObjects = suctionController.targetBlocks;
-            var robotTargets = new ObjectStateData[targetObjects.Length];
-            for (int j = 0; j < targetObjects.Length; j++)
-            {
-                var target = targetObjects[j];
-                Vector3 targetPosition = target.GetComponent<Collider>().bounds.center;
-
-                robotTargets[j] = new ObjectStateData
-                {
-                    name = target.name,
-                    position = new float[] { targetPosition.x, targetPosition.y, targetPosition.z },
-                    is_attached =
-                        target.transform.parent
-                        != null // && block.transform.parent.name.Contains("suction")
-                    ,
-                };
-            }
-
-            var endEffector = robotArmSetup
-                .robotJoints[robotArmSetup.robotJoints.Length - 1]
-                .transform;
-            robotStates[i] = new RobotStateData
-            {
-                name = robot.name,
-                // joint_angles = GetJointAngles(robotArmSetup.robotJoints),
-                end_effector_position = new float[]
-                {
-                    endEffector.position.x,
-                    endEffector.position.y,
-                    endEffector.position.z,
-                },
-                objects = robotTargets,
-                suction_active = suctionController != null && suctionController.enableSuction,
-            };
-        }
-
-        return robotStates;
-    }
-
-    private float[] GetJointAngles(ArticulationBody[] robotJoints)
-    {
-        float[] angles = new float[JointCount]; //UR5 has 6 joints
-
-        for (int i = 0; i < angles.Length && i < robotJoints.Length; i++)
-        {
-            angles[i] = robotJoints[i].jointPosition[0]; // radians
-        }
-        return angles;
-    }
-
-    private ObjectStateData[] GetObjectStates()
-    {
-        //List<ObjectStateData> objects = new List<ObjectStateData>();
-        ObjectStateData[] objects = new ObjectStateData[targetCount];
-
-        // Find all objects with specific tags or names
-        //GameObject[] blocks = GameObject.FindGameObjectsWithTag("Block");
-
-        for (int i = 0; i < targetCount; i++)
-        {
-            var target = targets[i];
-            Vector3 targetPosition = target.GetComponent<Collider>().bounds.center;
-
-            objects[i] = new ObjectStateData
-            {
-                name = target.name,
-                position = new float[] { targetPosition.x, targetPosition.y, targetPosition.z },
-                is_attached =
-                    target.transform.parent
-                    != null // && block.transform.parent.name.Contains("suction")
-                ,
-            };
-        }
-
-        return objects;
-    }
-
     private string ExecuteActionJson(AICommand command)
     {
         try
@@ -397,7 +81,6 @@ public class AgenticSocketSetup : MonoBehaviour
             bool success = false;
             string message = "";
 
-            // Find the target robot
             GameObject targetRobot = null;
             if (sceneSetup != null && sceneSetup.robots != null)
             {
@@ -415,7 +98,6 @@ public class AgenticSocketSetup : MonoBehaviour
                 );
             }
 
-            // Execute the action based on type
             switch (command.action_type)
             {
                 case "home_robot":
@@ -474,84 +156,22 @@ public class AgenticSocketSetup : MonoBehaviour
             Vector3 targetPos = new Vector3(
                 parameters.target_position[0],
                 parameters.target_position[1] + SuctionIKOffsetY,
-                parameters.target_position[2]);
+                parameters.target_position[2]
+            );
             int i = System.Array.IndexOf(robots, robot);
-            bool success = ur5Controllers[i].MoveToWorldPosition(targetPos);
-            return JsonUtility.ToJson(new AIResponse {
-                success = success,
-                message = success ? "move_executed" : "ik_failed"
-            });
+            bool success = ur5Controllers[i].MoveToTarget(targetPos, Quaternion.identity);
+            return JsonUtility.ToJson(
+                new AIResponse
+                {
+                    success = success,
+                    message = success ? "move_executed" : "ik_failed",
+                }
+            );
         }
         catch (Exception e)
         {
             Debug.LogError("ExecuteMoveRobot error: " + e.Message);
             return JsonUtility.ToJson(new AIResponse { success = false, message = e.Message });
         }
-    }
-
-    private bool ExecuteActivateSuction(GameObject robot)
-    {
-        var suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController == null)
-            return false;
-
-        suctionController.ToggleSuction();
-        return true;
-    }
-
-    private bool ExecuteDeactivateSuction(GameObject robot)
-    {
-        var suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController == null)
-            return false;
-
-        if (suctionController.enableSuction)
-        {
-            suctionController.ToggleSuction();
-        }
-        return true;
-    }
-
-    private const float IdleVelocityThreshold = 0.05f;
-
-    private bool IsAllRobotsIdle()
-    {
-        bool isIdle = true;
-        foreach (GameObject robot in robots)
-        {
-            RobotArmSetup setup = robot.GetComponent<RobotArmSetup>();
-            if (setup == null)
-                continue;
-            foreach (ArticulationBody joint in setup.robotJoints)
-            {
-                if (joint == null || joint.dofCount == 0)
-                    continue;
-
-                int jointIndex = System.Array.IndexOf(setup.robotJoints, joint);
-                print($"{robot.name} joint[{jointIndex}] vel={joint.jointVelocity[0]:F4}");
-
-                if (Mathf.Abs(joint.jointVelocity[0]) > IdleVelocityThreshold)
-                {
-                    isIdle = false;
-                }
-            }
-        }
-        return isIdle;
-    }
-
-    public void closeSocket()
-    {
-        isSocketActive = false;
-        if (stream != null)
-            stream.Close();
-        if (client != null)
-            client.Close();
-        if (listener != null)
-            listener.Stop();
-    }
-
-    void OnApplicationQuit()
-    {
-        closeSocket();
     }
 }

@@ -98,12 +98,6 @@ public class UR5Controller : MonoBehaviour
         return false;
     }
 
-    // Move to a world position, preserving current end-effector orientation
-    public bool MoveToWorldPosition(Vector3 worldPosition)
-    {
-        return MoveToTarget(worldPosition, endEffector.rotation);
-    }
-
     // Set joint angles directly (in radians)
     public void SetJointAngles(float[] angles)
     {
