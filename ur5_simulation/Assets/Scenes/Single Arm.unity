@@ -226,6 +226,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3861005}
   - component: {fileID: 3861006}
+  - component: {fileID: 3861007}
   m_Layer: 0
   m_Name: SceneSetup
   m_TagString: Untagged
@@ -255,7 +256,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3861003}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b493b7aa04f6e904b99ce1bff08dc704, type: 3}
   m_Name: 
@@ -273,13 +274,32 @@ MonoBehaviour:
   - {fileID: 0}
   targets: []
   allRobotsActive: 1
-  agenticSocket: 1
+  agenticSocket: 0
   simulAgenticSocket: 0
   agenticSocketSetup: {fileID: 0}
   simulAgenticSocketSetup: {fileID: 0}
   selectedRobotIndex: 0
   ur5Controller: {fileID: 0}
   suctionController: {fileID: 0}
+--- !u!114 &3861007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3861003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 168d6719921d246b5a7930b872036f33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EpisodeRecorder
+  recordOnStart: 0
+  recordingFPS: 10
+  recordingCamera: {fileID: 963194227}
+  suctionController: {fileID: 1380065255}
+  robotArmSetup: {fileID: 1380065248}
+  sessionName: recording
+  appendTimestamp: 1
 --- !u!1 &71188741
 GameObject:
   m_ObjectHideFlags: 8
@@ -4607,7 +4627,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1380065244}
   - component: {fileID: 1380065243}
-  - component: {fileID: 1380065242}
   - component: {fileID: 1380065248}
   - component: {fileID: 1380065255}
   - component: {fileID: 1380065261}
@@ -4621,28 +4640,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1380065242
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d607ea46a579d44c4b19a6322ce4b9b2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  selectedJoint: 
-  selectedIndex: 0
-  control: 0
-  stiffness: 10000
-  damping: 100
-  forceLimit: 1000
-  speed: 30
-  torque: 100
-  acceleration: 10
-  highLightColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!114 &1380065243
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4744,7 +4741,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
-  stiffness: 100000
+  stiffness: 50000
   damping: 100
 --- !u!114 &1380065262
 MonoBehaviour:
@@ -4772,7 +4769,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3e527a7dbac0e45238af2dae8bb26785, type: 3}
   m_Name: 

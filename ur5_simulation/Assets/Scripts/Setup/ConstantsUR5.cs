@@ -37,7 +37,7 @@ public static class ConstantsUR5
 
     // Suction params
 
-    public const float SuctionDistance = 0.005f; //distance from suction cup to object to activate suction
+    public const float SuctionDistance = 0.015f; //distance from suction cup to object to activate suction
     public const float SuctionOffsetY = -0.01f; //offset from end effector to suction cup along Y axis
     public const float SuctionIKOffsetY = 0.0f; //0.002f //offset from end effector to suction cup along Y axis for IK calculations
 }

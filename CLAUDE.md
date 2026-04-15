@@ -55,3 +55,26 @@ Before ANY WebFetch or WebSearch call, verify:
 - [ ] Checked nia-sources.md or nia.md files for previously indexed sources
 - [ ] Confirmed no indexed source covers this information
 - [ ] For GitHub/npm/PyPI URLs: These should ALWAYS be indexed, not fetched
+
+## Trynia Docs
+
+Before working on a Trynia feature, check the docs via `npx nia-docs https://docs.trynia.ai`.
+
+```bash
+# Search for a topic
+npx nia-docs https://docs.trynia.ai -c "grep -rl 'auth' ."
+
+# Read a specific page
+npx nia-docs https://docs.trynia.ai -c "cat getting-started.md"
+
+# Find all guides
+npx nia-docs https://docs.trynia.ai -c "find . -name '*.md'"
+
+# List top-level structure
+npx nia-docs https://docs.trynia.ai -c "tree -L 1"
+
+# Browse interactively
+npx nia-docs https://docs.trynia.ai
+```
+
+The shell starts in the docs root. Use `.` for relative paths — all standard Unix tools work (grep, find, cat, tree, ls, head, tail, wc).

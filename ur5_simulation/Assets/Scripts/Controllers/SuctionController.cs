@@ -402,18 +402,25 @@ public class SuctionController : MonoBehaviour
         if (!showDebugInfo)
             return;
 
+        float refWidth = 1920f;
+        float refHeight = 1080f;
+        float scaleX = Screen.width / refWidth;
+        float scaleY = Screen.height / refHeight;
+        float scale = Mathf.Min(scaleX, scaleY);
+
+        Matrix4x4 prevMatrix = GUI.matrix;
+        GUI.matrix = Matrix4x4.TRS(
+            Vector3.zero,
+            Quaternion.identity,
+            new Vector3(scale, scale, 1f)
+        );
+
         GUIStyle style = new GUIStyle(GUI.skin.label);
         style.fontSize = 14;
         style.normal.textColor = Color.white;
 
-        float yOffset = 140; // Below the existing GUI elements
+        float yOffset = 140f;
 
-        //GUI.Label(new Rect(10, yOffset, 400, 20), $"Suction Distance: {currentDistance:F4}m", style);
-        //GUI.Label(new Rect(10, yOffset + 20, 400, 20), $"Suction Threshold: {suctionDistance}m", style);
-        //GUI.Label(new Rect(10, yOffset + 40, 400, 20), $"Block Attached: {isBlockAttached}", style);
-        //GUI.Label(new Rect(10, yOffset + 60, 400, 20), $"In Range: {IsWithinSuctionRange()}", style);
-
-        // Distance indicator with color coding
         string distanceStatus;
         Color statusColor;
         if (currentDistance <= suctionDistance)
@@ -433,6 +440,25 @@ public class SuctionController : MonoBehaviour
         }
 
         style.normal.textColor = statusColor;
-        //GUI.Label(new Rect(10, yOffset + 80, 400, 20), $"Status: {distanceStatus}", style);
+
+        GUI.Label(
+            new Rect(10, yOffset, 400, 20),
+            $"Suction Distance: {currentDistance:F4}m",
+            style
+        );
+        GUI.Label(
+            new Rect(10, yOffset + 20, 400, 20),
+            $"Suction Threshold: {suctionDistance}m",
+            style
+        );
+        GUI.Label(new Rect(10, yOffset + 40, 400, 20), $"Block Attached: {isBlockAttached}", style);
+        GUI.Label(
+            new Rect(10, yOffset + 60, 400, 20),
+            $"In Range: {IsWithinSuctionRange()}",
+            style
+        );
+        GUI.Label(new Rect(10, yOffset + 80, 400, 20), $"Status: {distanceStatus}", style);
+
+        GUI.matrix = prevMatrix;
     }
 }

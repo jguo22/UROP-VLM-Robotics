@@ -7,6 +7,7 @@ public class AgenticSocketSetup : AgenticSocketBase
 {
     protected override void InitializeRecorder()
     {
+        if (recorder == null) return;
         recorder.robotArmSetup = robotArmSetups[0];
         recorder.suctionController = suctionControllers[0];
         recorder.recordingCamera = Camera.main;
@@ -149,7 +150,7 @@ public class AgenticSocketSetup : AgenticSocketBase
                 parameters.target_position[2]
             );
             int i = System.Array.IndexOf(robots, robot);
-            bool success = ur5Controllers[i].MoveToTarget(targetPos, new Quaternion(0, 0, 1f, 0));
+            bool success = ur5Controllers[i].MoveToTarget(targetPos, Quaternion.Euler(180, 0, 0));
             return JsonUtility.ToJson(
                 new AIResponse
                 {
