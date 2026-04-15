@@ -1,27 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using static ConstantsUR5;
 
 [DefaultExecutionOrder(-1)]
 public class SuctionController : MonoBehaviour
 {
-    [Header("Suction Settings")]
-    [Tooltip("Enable/disable suction functionality")]
     public bool enableSuction = false;
-
-    [Tooltip("Maximum distance for suction activation (1cm = 0.01 units)")]
-    public float suctionDistance = SuctionDistance;
-
-    [Tooltip("Strength of suction attraction force")]
-    public float suctionForce = 10f;
-
-    [Tooltip("Speed of attraction when suction is active")]
-    public float attractionSpeed = 5f;
-
-    [Tooltip("Show visual debug information")]
-    public bool showDebugInfo = true;
+    private float suctionDistance = SuctionDistance;
+    private float suctionForce = 10f;
+    private float attractionSpeed = 5f;
+    private bool showDebugInfo = true;
 
     [Header("Visual Feedback")]
     public Material suctionActiveMaterial;
