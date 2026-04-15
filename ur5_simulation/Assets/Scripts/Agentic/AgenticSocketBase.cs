@@ -80,7 +80,9 @@ public abstract class AgenticSocketBase : MonoBehaviour
 
         recorder = GetComponent<EpisodeRecorder>();
         if (recorder == null)
-            recorder = gameObject.AddComponent<EpisodeRecorder>();
+        {
+            Debug.LogWarning("No EpisodeRecorder");
+        }
     }
 
     protected abstract void InitializeRecorder();
@@ -359,17 +361,20 @@ public abstract class AgenticSocketBase : MonoBehaviour
             RobotArmSetup setup = robot.GetComponent<RobotArmSetup>();
             if (setup == null)
                 continue;
-            foreach (ArticulationBody joint in setup.robotJoints)
-            {
-                if (joint == null || joint.dofCount == 0)
-                    continue;
 
-                if (Mathf.Abs(joint.jointVelocity[0]) > IdleVelocityThreshold)
-                {
-                    int jointIndex = System.Array.IndexOf(setup.robotJoints, joint);
-                    print($"{robot.name} joint[{jointIndex}] vel={joint.jointVelocity[0]:F4}");
-                    isIdle = false;
-                }
+            float[] vels = new float[JointCount];
+            bool robotBusy = false;
+            for (int i = 0; i < JointCount; i++)
+            {
+                vels[i] = setup.robotJoints[i].jointVelocity[0];
+                if (Mathf.Abs(vels[i]) > IdleVelocityThreshold)
+                    robotBusy = true;
+            }
+            if (robotBusy)
+            {
+                string velStr = string.Join(", ", vels);
+                print($"{robot.name} vels=[{velStr}]");
+                isIdle = false;
             }
         }
         return isIdle;

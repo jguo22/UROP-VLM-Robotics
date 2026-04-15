@@ -275,9 +275,6 @@ MonoBehaviour:
   allRobotsActive: 1
   agenticSocket: 1
   simulAgenticSocket: 0
-  agentRobotController: {fileID: 0}
-  agentTrajectoryController: {fileID: 0}
-  agentTrajectory: {fileID: 0}
   agenticSocketSetup: {fileID: 0}
   simulAgenticSocketSetup: {fileID: 0}
   selectedRobotIndex: 0
@@ -2027,7 +2024,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.03866, y: 0.8639201, z: -0.244}
-  m_LocalScale: {x: 0.48402, y: -0.023498, z: 0.44468}
+  m_LocalScale: {x: 0.48402, y: 0.023498, z: 0.44468}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -4726,7 +4723,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1fa5e61d721a449b48e33cb62c2e159a, type: 3}
   m_Name: 

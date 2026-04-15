@@ -30,7 +30,7 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
         }
         catch (Exception e)
         {
-            Debug.LogError("Error processing AI command: " + e.Message);
+            Debug.LogError("Error processing AI command: " + e.Message + " " + e.StackTrace);
             return JsonUtility.ToJson(
                 new AIResponse
                 {
@@ -213,8 +213,7 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
                     parameters[i].target_position[1],
                     parameters[i].target_position[2]
                 );
-                print(targetPos);
-                if (!ur5Controllers[idx].MoveToTarget(targetPos, new Quaternion(1, 0, 0, 0)))
+                if (!ur5Controllers[idx].MoveToTarget(targetPos, Quaternion.Euler(180, 0, 0)))
                     allSuccess = false;
             }
         }

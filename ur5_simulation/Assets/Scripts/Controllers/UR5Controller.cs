@@ -86,7 +86,6 @@ public class UR5Controller : MonoBehaviour
             targetPosition,
             targetRotation
         );
-        print(relativePosition);
         float[] currentAngles = GetJointAngles();
         float[] ikResult = ikSolver.SolveIK(relativePosition, relativeRotation, currentAngles);
 
@@ -97,7 +96,9 @@ public class UR5Controller : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("UR5Controller: No IK solution found for target position");
+            Debug.LogWarning(
+                $"UR5Controller {gameObject.name}: No IK solution found for world position {targetPosition.ToString()}"
+            );
             return false;
         }
     }
@@ -109,7 +110,6 @@ public class UR5Controller : MonoBehaviour
         for (int i = 0; i < JointCount; i++)
         {
             ArticulationDrive drive = robotJoints[i].xDrive;
-            // print(drive.stiffness);
             drive.target = angles[i] * Mathf.Rad2Deg;
             robotJoints[i].xDrive = drive;
         }
@@ -146,16 +146,15 @@ public class UR5Controller : MonoBehaviour
     }
 
     // Get current end effector pose
-    public (Vector3 position, Quaternion rotation) GetEndEffectorPose()
+    public (Vector3 position, Quaternion rotation) GetEndEffectorPoseLocal()
     {
-        if (endEffector != null)
-        {
-            return ConvertToRobotCoordinates(endEffector.position, endEffector.rotation);
-        }
-        else
-        {
-            return (Vector3.zero, Quaternion.identity);
-        }
+        return ConvertToRobotCoordinates(endEffector.position, endEffector.rotation);
+    }
+
+    // Get current end effector pose
+    public (Vector3 position, Quaternion rotation) GetEndEffectorPoseWorld()
+    {
+        return (endEffector.position, endEffector.rotation);
     }
 
     void OnGUI()

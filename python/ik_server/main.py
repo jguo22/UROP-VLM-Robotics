@@ -43,7 +43,7 @@ class UR5IKServer:
         self.port = port
         self.socket = None
 
-        self.ik_solver = AnalyticSolver()
+        self.ik_solver = NumericSolver()
         self._solve_lock = threading.Lock()
 
     def handle_client(self, client_socket, address):

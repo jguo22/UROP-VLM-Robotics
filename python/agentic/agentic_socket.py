@@ -83,6 +83,7 @@ def wait_for_idle(s, timeout: float = IDLE_TIMEOUT) -> bool:
 
 def execute_command(s, agent, command: dict) -> bool:
     """Send one AI command to Unity. Returns False on fatal failure."""
+    print(f"[CMD] {json.dumps(command)}")
     resp = send_recv(s, command)
     if not resp.get("success", False):
         agent.log_error(f"Unity execution failure: {resp.get('message')}")

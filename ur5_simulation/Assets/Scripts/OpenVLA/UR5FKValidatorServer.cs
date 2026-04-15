@@ -159,7 +159,7 @@ public class UR5FKValidatorServer : MonoBehaviour
         double[] state = new double[13];
 
         // Get end effector pose
-        var (position, rotation) = ur5controller.GetEndEffectorPose();
+        var (position, rotation) = ur5controller.GetEndEffectorPoseLocal();
 
         // Get joint angles (in radians)
         float[] jointAngles = ur5controller.GetJointAngles();

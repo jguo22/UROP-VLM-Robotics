@@ -229,7 +229,6 @@ public class UR5IKSolver : MonoBehaviour
                 elapsed += sleepInterval;
             }
 
-            print("ik solve time: " + elapsed);
             if (!stream.DataAvailable)
             {
                 Debug.LogError("UR5IKSolver.SolveIK: Timeout waiting for server response");
@@ -254,7 +253,9 @@ public class UR5IKSolver : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("UR5IKSolver.SolveIK: Python server could not find IK solution");
+                Debug.LogWarning(
+                    $"UR5IKSolver.SolveIK: No IK solution for position {targetPosition.ToString()}"
+                );
                 return null;
             }
         }
