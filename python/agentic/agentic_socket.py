@@ -127,7 +127,7 @@ def run_episode(sock, agent, profiler) -> bool:
         if not execute_command(sock, agent, command):
             return False
         wait_for_idle(sock)
-        time.sleep(1)  # make it slower so that replay is more reliable
+        time.sleep(0.5)  # make it slower so that replay is more reliable
 
     profiler.record("command_loop")
     profiler.end_frame()

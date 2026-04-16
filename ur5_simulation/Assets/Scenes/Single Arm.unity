@@ -4705,10 +4705,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SuctionController
   enableSuction: 0
-  suctionDistance: 0.005
-  suctionForce: 10
-  attractionSpeed: 5
-  showDebugInfo: 1
   suctionActiveMaterial: {fileID: 0}
   suctionInactiveMaterial: {fileID: 0}
   targetBlocks: []
@@ -4741,7 +4737,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cd3073a93e5c43759eb024ea24a2935, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UR5Controller
-  stiffness: 50000
+  stiffness: 10000
   damping: 100
 --- !u!114 &1380065262
 MonoBehaviour:
