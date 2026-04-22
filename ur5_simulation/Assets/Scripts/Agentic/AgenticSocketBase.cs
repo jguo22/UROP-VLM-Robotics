@@ -109,18 +109,10 @@ public abstract class AgenticSocketBase : MonoBehaviour
 
     private void ReadEnv()
     {
-        Debug.Log(Application.dataPath);
-        string searchDir = Application.dataPath;
-        string envFile = null;
-        for (int i = 0; i < 8; i++)
+        string envFile = ProjectPaths.Get("socket.env");
+        if (!System.IO.File.Exists(envFile))
         {
-            searchDir = Directory.GetParent(searchDir).FullName;
-            string candidate = Path.Combine(searchDir, "socket.env");
-            if (File.Exists(candidate)) { envFile = candidate; break; }
-        }
-        if (envFile == null)
-        {
-            Debug.LogError("socket.env not found"); return;
+            Debug.LogError($"socket.env not found at {envFile}"); return;
         }
         foreach (var line in File.ReadAllLines(envFile))
         {

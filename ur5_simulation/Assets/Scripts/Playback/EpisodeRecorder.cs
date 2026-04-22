@@ -179,7 +179,9 @@ public class EpisodeRecorder : MonoBehaviour
     {
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         string folderName = appendTimestamp ? $"{sessionName}_{timestamp}" : sessionName;
-        sessionFolder = Path.Combine(Application.dataPath, "..", "Exports", "dataset", folderName);
+        sessionFolder = ProjectPaths.Get(
+            Path.Combine("ur5_simulation", "Exports", "dataset", folderName)
+        );
 
         Directory.CreateDirectory(Path.Combine(sessionFolder, "images"));
 
@@ -245,17 +247,34 @@ public class EpisodeRecorder : MonoBehaviour
 
         frameBuffer.Add(row);
 
-        // --- Screenshot: read after URP has rendered this frame ---
-        StartCoroutine(CaptureScreenshotCoroutine(frameIndex));
+        if (Application.isBatchMode)
+            CaptureScreenshotImmediate(frameIndex);
+        else
+            StartCoroutine(CaptureScreenshotCoroutine(frameIndex));
 
         frameIndex++;
     }
 
-    // Waits until URP has finished rendering the frame, then reads pixels from the
-    // render texture that the camera is already writing into (set in StartRecording).
+    private void CaptureScreenshotImmediate(int index)
+    {
+        recordingCamera.Render();
+        RenderTexture.active = renderTexture;
+        screenshotBuffer.ReadPixels(
+            new Rect(0, 0, renderTexture.width, renderTexture.height),
+            0,
+            0
+        );
+        screenshotBuffer.Apply();
+        RenderTexture.active = null;
+        byte[] png = screenshotBuffer.EncodeToPNG();
+        File.WriteAllBytes(Path.Combine(sessionFolder, "images", $"{index:D6}.png"), png);
+    }
+
     private IEnumerator CaptureScreenshotCoroutine(int index)
     {
         yield return new WaitForEndOfFrame();
+
+        recordingCamera.Render();
 
         RenderTexture.active = renderTexture;
         screenshotBuffer.ReadPixels(
