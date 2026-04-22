@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -119,6 +120,9 @@ public class EpisodeRecorder : MonoBehaviour
         InitRenderResources();
         SetupEpisode();
 
+        // Point the camera at the render texture so URP renders into it naturally
+        recordingCamera.targetTexture = renderTexture;
+
         isRecording = true;
         nextSampleTime = Time.time;
 
@@ -131,6 +135,9 @@ public class EpisodeRecorder : MonoBehaviour
             return;
         isRecording = false;
         isPaused = false;
+
+        // Restore the camera's display output
+        recordingCamera.targetTexture = null;
 
         FlushBufferToDisk();
 
@@ -238,10 +245,17 @@ public class EpisodeRecorder : MonoBehaviour
 
         frameBuffer.Add(row);
 
-        // --- Screenshot ---
-        RenderTexture prevRT = recordingCamera.targetTexture;
-        recordingCamera.targetTexture = renderTexture;
-        recordingCamera.Render();
+        // --- Screenshot: read after URP has rendered this frame ---
+        StartCoroutine(CaptureScreenshotCoroutine(frameIndex));
+
+        frameIndex++;
+    }
+
+    // Waits until URP has finished rendering the frame, then reads pixels from the
+    // render texture that the camera is already writing into (set in StartRecording).
+    private IEnumerator CaptureScreenshotCoroutine(int index)
+    {
+        yield return new WaitForEndOfFrame();
 
         RenderTexture.active = renderTexture;
         screenshotBuffer.ReadPixels(
@@ -251,13 +265,10 @@ public class EpisodeRecorder : MonoBehaviour
         );
         screenshotBuffer.Apply();
         RenderTexture.active = null;
-        recordingCamera.targetTexture = prevRT;
 
         byte[] png = screenshotBuffer.EncodeToPNG();
-        string imagePath = Path.Combine(sessionFolder, "images", $"{frameIndex:D6}.png");
+        string imagePath = Path.Combine(sessionFolder, "images", $"{index:D6}.png");
         File.WriteAllBytes(imagePath, png);
-
-        frameIndex++;
     }
 
     private void FlushBufferToDisk()

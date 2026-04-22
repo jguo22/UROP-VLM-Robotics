@@ -274,7 +274,7 @@ MonoBehaviour:
   - {fileID: 0}
   targets: []
   allRobotsActive: 1
-  agenticSocket: 1
+  agenticSocket: 0
   simulAgenticSocket: 0
   agenticSocketSetup: {fileID: 0}
   simulAgenticSocketSetup: {fileID: 0}
@@ -4746,12 +4746,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8b4e50cc6be9f4fc0880ee32f8155266, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JointPlayback
-  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260317_171714
+  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260421_213556
   csvFilePath: 
   blocksFilePath: 
   playbackSpeed: 1
