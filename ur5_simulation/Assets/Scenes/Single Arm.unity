@@ -4756,7 +4756,7 @@ MonoBehaviour:
   blocksFilePath: 
   playbackSpeed: 1
   loopTrajectory: 0
-  autoStart: 1
+  autoStart: 0
   minFrameInterval: 0
 --- !u!114 &1380065263
 MonoBehaviour:

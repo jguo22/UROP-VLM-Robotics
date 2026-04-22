@@ -106,7 +106,6 @@ public class DeltaPlayback : EpisodePlayback
         // accumulate expected deltas over a batch if multiple frames happened
         Vector3 deltaPosition = Vector3.zero;
         Quaternion deltaRotation = Quaternion.identity;
-        bool suctionOn = false;
         // Apply each delta exactly once, catching up if frames were skipped
         for (int f = lastAppliedFrame + 1; f <= targetFrame; f++)
         {
@@ -121,6 +120,6 @@ public class DeltaPlayback : EpisodePlayback
 
         // apply action
         ur5Controller.MoveDelta(deltaPosition, deltaRotation);
-        ur5Controller.SetSuction(suctionOn);
+        ur5Controller.SetSuction(suctionStates[targetFrame]);
     }
 }
