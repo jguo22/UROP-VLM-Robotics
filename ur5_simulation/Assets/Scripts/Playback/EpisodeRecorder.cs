@@ -1,7 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using UnityEngine;
 using static ConstantsUR5;
 
@@ -247,47 +247,21 @@ public class EpisodeRecorder : MonoBehaviour
 
         frameBuffer.Add(row);
 
-        if (Application.isBatchMode)
-            CaptureScreenshotImmediate(frameIndex);
-        else
-            StartCoroutine(CaptureScreenshotCoroutine(frameIndex));
+        CaptureScreenshot(frameIndex);
 
         frameIndex++;
     }
 
-    private void CaptureScreenshotImmediate(int index)
+    private void CaptureScreenshot(int index)
     {
         recordingCamera.Render();
         RenderTexture.active = renderTexture;
-        screenshotBuffer.ReadPixels(
-            new Rect(0, 0, renderTexture.width, renderTexture.height),
-            0,
-            0
-        );
+        screenshotBuffer.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
         screenshotBuffer.Apply();
         RenderTexture.active = null;
-        byte[] png = screenshotBuffer.EncodeToPNG();
-        File.WriteAllBytes(Path.Combine(sessionFolder, "images", $"{index:D6}.png"), png);
-    }
-
-    private IEnumerator CaptureScreenshotCoroutine(int index)
-    {
-        yield return new WaitForEndOfFrame();
-
-        recordingCamera.Render();
-
-        RenderTexture.active = renderTexture;
-        screenshotBuffer.ReadPixels(
-            new Rect(0, 0, renderTexture.width, renderTexture.height),
-            0,
-            0
-        );
-        screenshotBuffer.Apply();
-        RenderTexture.active = null;
-
         byte[] png = screenshotBuffer.EncodeToPNG();
         string imagePath = Path.Combine(sessionFolder, "images", $"{index:D6}.png");
-        File.WriteAllBytes(imagePath, png);
+        Task.Run(() => File.WriteAllBytes(imagePath, png));
     }
 
     private void FlushBufferToDisk()
