@@ -8,9 +8,8 @@ Agentic AI Digital Twin - Unity simulation of dual UR5 robotic arms controlled b
 
 ## Requirements
 
-- **Unity**: 6000.2.2f1 (exact version required)
-- **Platform**: Windows
-- **Python**: 3.x
+- **Unity**: 6000.2
+- **Python**: 3.11
 
 ---
 name: nia

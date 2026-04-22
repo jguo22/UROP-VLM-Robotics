@@ -706,4 +706,12 @@ OXE_DATASET_CONFIGS = {
         "state_encoding": StateEncoding.JOINT_BIMANUAL,
         "action_encoding": ActionEncoding.JOINT_POS_BIMANUAL,
     },
+    ### UR5 Unity simulation dataset
+    "ur5_unity": {
+        "image_obs_keys": {"primary": "image", "secondary": None, "wrist": None},
+        "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
+        "state_obs_keys": ["state", None],  # 7-dim state + 1 zero pad = 8-dim (matches LIBERO PROPRIO_DIM)
+        "state_encoding": StateEncoding.POS_EULER,
+        "action_encoding": ActionEncoding.EEF_POS,
+    },
 }

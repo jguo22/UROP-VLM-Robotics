@@ -846,6 +846,14 @@ def aloha_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     return trajectory
 
 
+def ur5_unity_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+    # Action is [delta_pos(3), delta_rot_vec(3), suction_cmd(-1/1), terminate(1)]
+    # Drop terminate dim; remap suction from {-1, 1} to {0, 1} to match gripper convention
+    suction = (trajectory["action"][:, 6:7] + 1.0) / 2.0
+    trajectory["action"] = tf.concat([trajectory["action"][:, :6], suction], axis=-1)
+    return trajectory
+
+
 # === Registry ===
 OXE_STANDARDIZATION_TRANSFORMS = {
     "bridge_oxe": bridge_oxe_dataset_transform,
@@ -930,4 +938,6 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "aloha1_fold_shirt_30_demos": aloha_dataset_transform,
     "aloha1_scoop_X_into_bowl_45_demos": aloha_dataset_transform,
     "aloha1_put_X_into_pot_300_demos": aloha_dataset_transform,
+    ### UR5 Unity simulation dataset
+    "ur5_unity": ur5_unity_dataset_transform,
 }

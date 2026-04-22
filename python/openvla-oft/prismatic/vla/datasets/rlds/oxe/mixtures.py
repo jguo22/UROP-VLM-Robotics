@@ -226,5 +226,9 @@ OXE_NAMED_MIXTURES: Dict[str, List[Tuple[str, float]]] = {
     "aloha1_put_X_into_pot_300_demos": [
         ("aloha1_put_X_into_pot_300_demos", 1.0),
     ],
+    # === UR5 Unity Simulation Dataset ===
+    "ur5_unity": [
+        ("ur5_unity", 1.0),
+    ],
 # fmt: on
 }
