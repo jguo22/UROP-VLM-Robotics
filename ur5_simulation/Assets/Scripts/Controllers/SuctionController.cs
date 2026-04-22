@@ -195,7 +195,7 @@ public class SuctionController : MonoBehaviour
         // Apply attraction force when suction is active but block isn't fully attached
         if (enableSuction && currentDistance <= suctionDistance * 2f && !isBlockAttached)
         {
-            ApplyAttractionForce();
+            // ApplyAttractionForce();
         }
     }
 

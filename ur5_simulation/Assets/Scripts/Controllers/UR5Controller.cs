@@ -130,9 +130,9 @@ public class UR5Controller : MonoBehaviour
     }
 
     // Control gripper/suction
-    public void SetSuction(bool close)
+    public void SetSuction(bool enabled)
     {
-        suctionController.enableSuction = close;
+        suctionController.enableSuction = enabled;
     }
 
     (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(

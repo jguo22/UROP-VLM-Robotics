@@ -298,10 +298,8 @@ public abstract class EpisodePlayback : MonoBehaviour
                     continue;
 
                 timestamps.Add(timestamp);
-
-                suctionStates.Add(values[suctionColIndex].Trim() == "TRUE");
-
-                attractedStates.Add(values[attractedColIndex].Trim() == "TRUE");
+                suctionStates.Add(values[suctionColIndex].Trim() == "True");
+                attractedStates.Add(values[attractedColIndex].Trim() == "True");
 
                 // Parse first frame joint angles for initial pose
                 if (i == 1)
