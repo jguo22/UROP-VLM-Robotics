@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Events;
@@ -491,6 +493,7 @@ namespace FaktoryStudiosGames
 #endif
     }
 
+#if UNITY_EDITOR
     [CustomEditor(typeof(ConveyorBelt))]
     public class ConveyorBeltEditor : Editor
     {
@@ -683,4 +686,5 @@ namespace FaktoryStudiosGames
             GUI.Label(rect, " Conveyor Belt System", titleStyle);
         }
     }
+#endif
 }

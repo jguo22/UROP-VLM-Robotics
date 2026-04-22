@@ -15,8 +15,6 @@ public abstract class AgenticSocketBase : MonoBehaviour
     protected NetworkStream stream;
     protected byte[] receiveBuffer = new byte[4096];
 
-    private static string unityAssetsFilePath = "ur5_simulation/Assets";
-    private string envFilePath = Application.dataPath.Replace(unityAssetsFilePath, "");
     protected string hostAddress;
     protected int portNumber;
 
@@ -112,7 +110,18 @@ public abstract class AgenticSocketBase : MonoBehaviour
     private void ReadEnv()
     {
         Debug.Log(Application.dataPath);
-        string envFile = Directory.GetFiles(envFilePath, "socket.env")[0];
+        string searchDir = Application.dataPath;
+        string envFile = null;
+        for (int i = 0; i < 8; i++)
+        {
+            searchDir = Directory.GetParent(searchDir).FullName;
+            string candidate = Path.Combine(searchDir, "socket.env");
+            if (File.Exists(candidate)) { envFile = candidate; break; }
+        }
+        if (envFile == null)
+        {
+            Debug.LogError("socket.env not found"); return;
+        }
         foreach (var line in File.ReadAllLines(envFile))
         {
             if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
