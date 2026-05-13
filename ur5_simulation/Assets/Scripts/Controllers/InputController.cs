@@ -12,9 +12,6 @@ public class InputController : MonoBehaviour
     [SerializeField]
     private float ikMoveSpeed = 1f; // meters per second
 
-    [SerializeField]
-    private float ikRotateSpeed = 30.0f; // degrees per second
-
     private UR5Controller ur5Controller;
 
     // Internal pose state

@@ -7508,10 +7508,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SuctionController
   enableSuction: 0
-  suctionDistance: 0.005
-  suctionForce: 10
-  attractionSpeed: 5
-  showDebugInfo: 1
   suctionActiveMaterial: {fileID: 0}
   suctionInactiveMaterial: {fileID: 0}
   targetBlocks: []
@@ -10424,10 +10420,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SuctionController
   enableSuction: 0
-  suctionDistance: 0.005
-  suctionForce: 10
-  attractionSpeed: 5
-  showDebugInfo: 1
   suctionActiveMaterial: {fileID: 0}
   suctionInactiveMaterial: {fileID: 0}
   targetBlocks: []

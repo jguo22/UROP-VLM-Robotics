@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+use [SerializeField] private instead of public
+
 ## Project Overview
 
 Agentic AI Digital Twin - Unity simulation of dual UR5 robotic arms controlled by OpenAI-powered AI agents via socket communication. Enables autonomous pick-and-place with real-time inverse kinematics.

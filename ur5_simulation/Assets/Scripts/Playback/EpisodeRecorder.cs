@@ -20,9 +20,8 @@ public class EpisodeRecorder : MonoBehaviour
     public float recordingFPS = 10f;
 
     [Header("References")]
-    public Camera recordingCamera;
-    public SuctionController suctionController;
-    public RobotArmSetup robotArmSetup;
+    [SerializeField]
+    private ObservationCapture observation;
 
     [Header("Export Settings")]
     public string sessionName = "recording";
@@ -35,13 +34,7 @@ public class EpisodeRecorder : MonoBehaviour
     private string sessionFolder;
     private int frameIndex = 0;
 
-    // Render resources — allocated once, reused across episodes
-    private RenderTexture renderTexture;
-    private Texture2D screenshotBuffer;
-    private bool renderResourcesReady = false;
-
-    // Cached end effector transform
-    private Transform endEffector;
+    private SceneSetup sceneSetup;
 
     // Per-frame pose for delta calculation at flush time
     private List<Vector3> framePositions = new List<Vector3>();
@@ -70,6 +63,8 @@ public class EpisodeRecorder : MonoBehaviour
 
     private void Start()
     {
+        sceneSetup = FindAnyObjectByType<SceneSetup>();
+
         if (recordOnStart)
             StartRecording();
     }
@@ -85,43 +80,21 @@ public class EpisodeRecorder : MonoBehaviour
         nextSampleTime = Time.time + (1f / recordingFPS);
     }
 
-    private void OnDestroy()
-    {
-        if (renderTexture != null)
-        {
-            renderTexture.Release();
-            Destroy(renderTexture);
-        }
-        if (screenshotBuffer != null)
-        {
-            Destroy(screenshotBuffer);
-        }
-    }
-
     // -------------------------------------------------------------------------
 
     public void StartRecording()
     {
         if (isRecording)
             return;
-        if (recordingCamera == null)
+        if (observation == null)
         {
-            Debug.LogError("EpisodeRecorder: recordingCamera not assigned.");
-            return;
-        }
-        if (robotArmSetup == null)
-        {
-            Debug.LogError("EpisodeRecorder: robotArmSetup not assigned.");
+            Debug.LogError("EpisodeRecorder: observation not assigned.");
             return;
         }
 
-        endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
+        observation.Initialize();
 
-        InitRenderResources();
         SetupEpisode();
-
-        // Point the camera at the render texture so URP renders into it naturally
-        recordingCamera.targetTexture = renderTexture;
 
         isRecording = true;
         nextSampleTime = Time.time;
@@ -136,8 +109,7 @@ public class EpisodeRecorder : MonoBehaviour
         isRecording = false;
         isPaused = false;
 
-        // Restore the camera's display output
-        recordingCamera.targetTexture = null;
+        observation.ReleaseCameraTarget();
 
         FlushBufferToDisk();
 
@@ -161,19 +133,6 @@ public class EpisodeRecorder : MonoBehaviour
 
     // -------------------------------------------------------------------------
 
-    /// <summary>Allocates render texture and screenshot buffer once. Safe to call repeatedly.</summary>
-    private void InitRenderResources()
-    {
-        if (renderResourcesReady)
-            return;
-
-        int width = 224;
-        int height = 224;
-        renderTexture = new RenderTexture(width, height, 24);
-        screenshotBuffer = new Texture2D(width, height, TextureFormat.RGB24, false);
-        renderResourcesReady = true;
-    }
-
     /// <summary>Creates a new episode folder, saves starting block positions, and resets per-episode state.</summary>
     private void SetupEpisode()
     {
@@ -196,7 +155,6 @@ public class EpisodeRecorder : MonoBehaviour
     /// <summary>Writes blocks.csv with the name and world position of each target block at episode start.</summary>
     private void SaveBlockPositions()
     {
-        SceneSetup sceneSetup = FindObjectOfType<SceneSetup>();
         if (sceneSetup == null || sceneSetup.targets == null || sceneSetup.targets.Length == 0)
             return;
 
@@ -216,50 +174,35 @@ public class EpisodeRecorder : MonoBehaviour
 
     private void CaptureFrame()
     {
-        // --- Store pose for delta computation at flush ---
-        Vector3 pos = endEffector.position;
-        Quaternion rot = endEffector.rotation;
-        framePositions.Add(pos);
-        frameRotations.Add(rot);
+        ObservationCapture.Observation obs = observation.CaptureState();
 
-        // --- Suction ---
-        bool suction = suctionController != null && suctionController.enableSuction;
+        framePositions.Add(obs.endEffectorPosition);
+        frameRotations.Add(obs.endEffectorRotation);
 
-        // --- Joint angles (degrees) ---
-        ArticulationBody[] joints = robotArmSetup.robotJoints;
         string jointAngleCols = "";
         for (int i = 0; i < JointCount; i++)
-            jointAngleCols += $"{joints[i].jointPosition[0] * Mathf.Rad2Deg:F5},";
+            jointAngleCols += $"{obs.jointAnglesDeg[i]:F5},";
 
-        // --- Block attracted ---
-        bool blockAttracted = suctionController != null && suctionController.isBlockAttached;
-
-        // --- Episode flags (is_last/is_terminal/reward appended at flush) ---
         int isFirst = frameIndex == 0 ? 1 : 0;
 
         // Row without deltas — deltas computed at flush as (next frame - current frame)
         string row =
             $"{frameIndex},{Time.time:F4},"
-            + $"{suction},"
+            + $"{obs.suctionOn},"
             + jointAngleCols
-            + $"{blockAttracted},"
+            + $"{obs.blockAttracted},"
             + $"{isFirst}";
 
         frameBuffer.Add(row);
 
-        CaptureScreenshot(frameIndex);
+        WriteScreenshotAsync(frameIndex);
 
         frameIndex++;
     }
 
-    private void CaptureScreenshot(int index)
+    private void WriteScreenshotAsync(int index)
     {
-        recordingCamera.Render();
-        RenderTexture.active = renderTexture;
-        screenshotBuffer.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
-        screenshotBuffer.Apply();
-        RenderTexture.active = null;
-        byte[] png = screenshotBuffer.EncodeToPNG();
+        byte[] png = observation.CaptureScreenshotPng();
         string imagePath = Path.Combine(sessionFolder, "images", $"{index:D6}.png");
         Task.Run(() => File.WriteAllBytes(imagePath, png));
     }

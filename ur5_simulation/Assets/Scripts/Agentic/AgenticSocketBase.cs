@@ -39,7 +39,6 @@ public abstract class AgenticSocketBase : MonoBehaviour
     void Start()
     {
         InitializeScene();
-        InitializeRecorder();
         ReadEnv();
         StartSocket();
     }
@@ -83,8 +82,6 @@ public abstract class AgenticSocketBase : MonoBehaviour
         }
     }
 
-    protected abstract void InitializeRecorder();
-
     private void StartSocket()
     {
         try
@@ -112,7 +109,8 @@ public abstract class AgenticSocketBase : MonoBehaviour
         string envFile = ProjectPaths.Get("socket.env");
         if (!System.IO.File.Exists(envFile))
         {
-            Debug.LogError($"socket.env not found at {envFile}"); return;
+            Debug.LogError($"socket.env not found at {envFile}");
+            return;
         }
         foreach (var line in File.ReadAllLines(envFile))
         {

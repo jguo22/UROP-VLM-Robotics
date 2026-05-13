@@ -31,11 +31,6 @@ public class UR5IKSolver : MonoBehaviour
     [Tooltip("Connection timeout in milliseconds")]
     private int connectionTimeout = 5000; // Initial connection timeout (5 seconds)
 
-    // [Header("Debug")]
-    // [SerializeField]
-    // [Tooltip("Enable detailed logging")]
-    private bool debugMode = true;
-
     // TCP client for communication with Python server
     private TcpClient client;
     private NetworkStream stream;

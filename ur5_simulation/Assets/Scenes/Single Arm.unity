@@ -295,9 +295,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EpisodeRecorder
   recordOnStart: 0
   recordingFPS: 10
-  recordingCamera: {fileID: 963194227}
-  suctionController: {fileID: 1380065255}
-  robotArmSetup: {fileID: 1380065248}
+  observation: {fileID: 1380065265}
   sessionName: recording
   appendTimestamp: 1
 --- !u!1 &71188741
@@ -4633,6 +4631,8 @@ GameObject:
   - component: {fileID: 1380065260}
   - component: {fileID: 1380065262}
   - component: {fileID: 1380065263}
+  - component: {fileID: 1380065264}
+  - component: {fileID: 1380065265}
   m_Layer: 0
   m_Name: ur5_left
   m_TagString: robot
@@ -4777,6 +4777,38 @@ MonoBehaviour:
   loopTrajectory: 0
   autoStart: 0
   minFrameInterval: 0
+--- !u!114 &1380065264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380065241}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a508eb1cc3a584c0bab4c847080bd779, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OpenVLAController
+  serverUrl: http://localhost:8777/act
+  instruction: put blue, red, and green gears into planetary gearbox
+  observation: {fileID: 1380065265}
+  controlFrequency: 5
+  autoQuery: 1
+--- !u!114 &1380065265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380065241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db78302c0676d497eb37fe1f8eaaf0a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObservationCapture
+  recordingCamera: {fileID: 963194227}
+  suctionController: {fileID: 1380065255}
+  robotArmSetup: {fileID: 1380065248}
 --- !u!1001 &1394512415
 PrefabInstance:
   m_ObjectHideFlags: 0

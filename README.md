@@ -7,4 +7,3 @@ current workflow for creating trajectories is run unity and then agentic_socket.
 agentic_socket.py will do the flow and start and stop recordings of episodes
 though api
 
-

@@ -5,14 +5,6 @@ using static ConstantsUR5;
 
 public class AgenticSocketSetup : AgenticSocketBase
 {
-    protected override void InitializeRecorder()
-    {
-        if (recorder == null) return;
-        recorder.robotArmSetup = robotArmSetups[0];
-        recorder.suctionController = suctionControllers[0];
-        recorder.recordingCamera = Camera.main;
-    }
-
     protected override string ProcessAICommand(string commandJson)
     {
         try

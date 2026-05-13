@@ -10,11 +10,6 @@ public class SimulAgenticSocketSetup : AgenticSocketBase
     [HideInInspector]
     public bool moveArmsNow = false;
 
-    protected override void InitializeRecorder()
-    {
-        // Simul mode does not wire recorder to a specific arm
-    }
-
     protected override string ProcessAICommand(string commandJson)
     {
         try
