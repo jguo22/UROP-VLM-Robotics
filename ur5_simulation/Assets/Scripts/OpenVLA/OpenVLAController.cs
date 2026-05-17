@@ -7,15 +7,15 @@ using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 // HTTP client that talks to an OpenVLA-OFT `deploy.py` server (FastAPI, POST /act).
-// Captures a camera frame, packages it with the instruction as a flat json_numpy
-// observation dict, posts to the server, and applies the returned action chunk
-// to the UR5 each control tick.
+// Captures a camera frame, packages it with the instruction as a json_numpy
+// payload, posts to the server, and applies the returned action chunk to the
+// UR5 each control tick.
 //
-// The /act body is the observation dict itself (NOT nested under "observation"):
-//   { "full_image": <uint8 HxWx3 RGB ndarray>, "instruction": <str> }
-// plus "*wrist*" image keys if the server was launched with num_images_in_input>1
-// and "state" if it was launched with --use_proprio. The action un-normalization
-// key is configured server-side, so it is not sent here.
+// Body shape: { "observation": { "full_image": <uint8 HxWx3 RGB ndarray>, ... },
+//               "instruction": <str> }
+// Add "*wrist*" image keys inside "observation" if the server was launched with
+// num_images_in_input>1, and "state" if it was launched with --use_proprio.
+// The action un-normalization key is configured server-side.
 public class OpenVLAController : MonoBehaviour
 {
     [Header("OpenVLA Server")]
@@ -23,7 +23,8 @@ public class OpenVLAController : MonoBehaviour
     public string instruction = "put blue, red, and green gears into planetary gearbox";
 
     [Header("Capture")]
-    [SerializeField] private ObservationCapture observation;
+    [SerializeField]
+    private ObservationCapture observation;
 
     [Header("Control")]
     [Tooltip("How often to query the VLA (Hz). BridgeData V2 trained at 5 Hz.")]
@@ -97,7 +98,8 @@ public class OpenVLAController : MonoBehaviour
             string payload = BuildPayload(
                 rgbBytes,
                 ObservationCapture.ImageWidth,
-                ObservationCapture.ImageHeight
+                ObservationCapture.ImageHeight,
+                this.observation.CaptureState().jointAnglesDeg
             );
 
             using var content = new StringContent(payload, Encoding.UTF8, "application/json");
@@ -111,9 +113,10 @@ public class OpenVLAController : MonoBehaviour
                 // deploy.py's catch-all returns the bare string "error" on any exception;
                 // the real traceback is in the server's stdout on the compute node
                 // (usually a bad unnorm_key or an unexpected image shape).
-                string hint = body.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0
-                    ? " — server raised an exception; check the deploy.py log on the compute node"
-                    : "";
+                string hint =
+                    body.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0
+                        ? " — server raised an exception; check the deploy.py log on the compute node"
+                        : "";
                 Debug.LogWarning($"OpenVLAServer: bad action response: {body}{hint}");
                 return;
             }
@@ -151,21 +154,24 @@ public class OpenVLAController : MonoBehaviour
         return dst;
     }
 
-    string BuildPayload(byte[] imageBytes, int width, int height)
+    string BuildPayload(byte[] imageBytes, int width, int height, float[] state)
     {
         // json_numpy encodes an ndarray as {"__ndarray__": <base64 raw bytes>, "dtype": "...", "shape": [...]}.
-        // The body is the observation dict itself; "full_image" is the required RGB key.
+        // deploy.py expects {"observation": {...}, "instruction": str}.
         var payload = new
         {
             full_image = new
             {
-                __ndarray__ = Convert.ToBase64String(imageBytes),
+                __numpy__ = Convert.ToBase64String(imageBytes),
                 dtype = "uint8",
                 shape = new[] { height, width, 3 },
             },
+            state = state,
             instruction,
         };
-        return JsonConvert.SerializeObject(payload);
+        string result = JsonConvert.SerializeObject(payload);
+        print(result);
+        return result;
     }
 
     static float[] ParseActionResponse(string body)

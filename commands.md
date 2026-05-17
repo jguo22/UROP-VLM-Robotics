@@ -1,2 +1,2 @@
-ssh -v -N -o ControlMaster=no -o ControlPath=none -L 8777:node4209:8777 junhui@orcd-login.mit.edu
+ssh -v -N -L 8777:node0000:8777 orcd-login
 curl -sv http://localhost:8777/docs

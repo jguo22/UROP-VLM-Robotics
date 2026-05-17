@@ -274,7 +274,7 @@ MonoBehaviour:
   - {fileID: 0}
   targets: []
   allRobotsActive: 1
-  agenticSocket: 1
+  agenticSocket: 0
   simulAgenticSocket: 0
   agenticSocketSetup: {fileID: 0}
   simulAgenticSocketSetup: {fileID: 0}
@@ -4784,7 +4784,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a508eb1cc3a584c0bab4c847080bd779, type: 3}
   m_Name: 
