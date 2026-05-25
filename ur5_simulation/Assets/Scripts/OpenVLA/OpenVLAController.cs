@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,25 +13,41 @@ using UnityEngine;
 // UR5 each control tick.
 public class OpenVLAController : MonoBehaviour
 {
-    [Header("OpenVLA Server")] [SerializeField]
+    [Header("OpenVLA Server")]
+    [SerializeField]
     private string serverUrl = "http://localhost:8777/act";
 
-    [SerializeField] private string instruction = "put blue, red, and green gears into planetary gearbox";
+    [SerializeField]
+    private string instruction = "put blue, red, and green gears into planetary gearbox";
 
-    [Header("Capture")] [SerializeField] private ObservationCapture observationCapture;
+    [Header("Capture")]
+    [SerializeField]
+    private ObservationCapture observationCapture;
 
-    [Header("Control")] [Tooltip("How often to query the VLA (Hz).")] [SerializeField]
+    [Header("Control")]
+    [Tooltip("How often to query the VLA (Hz).")]
+    [SerializeField]
     private float controlFrequency = 10.0f;
 
     [Tooltip("Automatically query the server every 1/controlFrequency seconds")]
     public bool autoQuery = true;
 
-    [Header("Action Scaling")] [Tooltip("Training control frequency")] [SerializeField]
+    [Header("Action Scaling")]
+    [Tooltip("Training control frequency")]
+    [SerializeField]
     private float trainingFrequency = 10.0f;
 
+    [Header("UI")]
+    [SerializeField]
+    private Rect startButtonRect = new Rect(20f, 20f, 160f, 40f);
+
+    private const int ActionDim = 7;
+
     private HttpClient httpClient;
-    private float lastQueryTime = -1f;
+    private float lastStepTime = -1f;
     private bool requestInFlight;
+    private bool started;
+    private readonly Queue<float[]> pendingActions = new();
 
     private UR5Controller robotController;
 
@@ -60,15 +77,29 @@ public class OpenVLAController : MonoBehaviour
 
     private void Update()
     {
-        if (!autoQuery || requestInFlight)
+        if (!started)
             return;
 
         float interval = 1f / controlFrequency;
-        if (Time.time - lastQueryTime < interval)
+        if (Time.time - lastStepTime < interval)
             return;
 
-        lastQueryTime = Time.time;
-        _ = QueryAndApplyAsync();
+        if (pendingActions.Count > 0)
+        {
+            lastStepTime = Time.time;
+            ApplyAction(pendingActions.Dequeue());
+            return;
+        }
+
+        if (autoQuery && !requestInFlight)
+            _ = QueryAsync();
+    }
+
+    private void OnGUI()
+    {
+        string label = started ? "Stop OpenVLA" : "Start OpenVLA";
+        if (GUI.Button(startButtonRect, label))
+            started = !started;
     }
 
     private void OnDestroy()
@@ -76,7 +107,7 @@ public class OpenVLAController : MonoBehaviour
         httpClient?.Dispose();
     }
 
-    private async Task QueryAndApplyAsync()
+    private async Task QueryAsync()
     {
         requestInFlight = true;
         try
@@ -88,8 +119,8 @@ public class OpenVLAController : MonoBehaviour
             response.EnsureSuccessStatusCode();
             string body = await response.Content.ReadAsStringAsync();
 
-            float[] action = ParseActionResponse(body);
-            if (action == null || action.Length < 7)
+            float[][] chunk = ParseActionChunk(body);
+            if (chunk == null || chunk.Length == 0)
             {
                 // deploy.py's catch-all returns the bare string "error" on any exception;
                 // the real traceback is in the server's stdout on the compute node
@@ -102,7 +133,8 @@ public class OpenVLAController : MonoBehaviour
                 return;
             }
 
-            ApplyAction(action);
+            foreach (float[] a in chunk)
+                pendingActions.Enqueue(a);
         }
         catch (Exception e)
         {
@@ -120,8 +152,11 @@ public class OpenVLAController : MonoBehaviour
         byte[] imageBytes = CaptureImageRGB();
 
         ObservationCapture.Observation observation = observationCapture.CaptureState();
-        float[] state = new float[observation.jointAnglesDeg.Length + 2];
-        observation.jointAnglesDeg.CopyTo(state, 0);
+        float[] anglesDeg = observation.jointAnglesDeg;
+        float[] state = new float[anglesDeg.Length + 2];
+        // OpenVLA-OFT proprio is trained in radians.
+        for (int i = 0; i < anglesDeg.Length; i++)
+            state[i] = anglesDeg[i] * Mathf.Deg2Rad;
         state[^2] = 0;
         state[^1] = observation.suctionOn ? 1 : -1;
 
@@ -131,10 +166,10 @@ public class OpenVLAController : MonoBehaviour
             {
                 __numpy__ = Convert.ToBase64String(imageBytes),
                 dtype = "uint8",
-                shape = new[] { ObservationCapture.ImageWidth, ObservationCapture.ImageHeight, 3 }
+                shape = new[] { ObservationCapture.ImageWidth, ObservationCapture.ImageHeight, 3 },
             },
             state,
-            instruction
+            instruction,
         };
 
         return JsonConvert.SerializeObject(payloadDict);
@@ -161,7 +196,9 @@ public class OpenVLAController : MonoBehaviour
         return dst;
     }
 
-    private static float[] ParseActionResponse(string body)
+    // deploy.py returns a json_numpy array of shape (chunk_size, ActionDim).
+    // Slice the flat float buffer into one float[ActionDim] per step.
+    private static float[][] ParseActionChunk(string body)
     {
         JToken obj = JArray.Parse(body)[0];
 
@@ -170,7 +207,19 @@ public class OpenVLAController : MonoBehaviour
 
         if (b64 == null || dtype == null)
             return null;
-        return DecodeFloatArray(Convert.FromBase64String(b64), dtype);
+
+        float[] flat = DecodeFloatArray(Convert.FromBase64String(b64), dtype);
+        if (flat == null || flat.Length < ActionDim)
+            return null;
+
+        int chunkSize = flat.Length / ActionDim;
+        float[][] chunk = new float[chunkSize][];
+        for (int i = 0; i < chunkSize; i++)
+        {
+            chunk[i] = new float[ActionDim];
+            Array.Copy(flat, i * ActionDim, chunk[i], 0, ActionDim);
+        }
+        return chunk;
     }
 
     // Reinterprets json_numpy's raw little-endian bytes as a float[], widening float64 to float32.
@@ -197,18 +246,17 @@ public class OpenVLAController : MonoBehaviour
 
     private void ApplyAction(float[] action)
     {
+        // for (int i = 0; i < action.Length-1; i++)
+        // {
+        //     action[i] *= 0.7f;
+        // }
         Debug.Log($"OpenVLA action (raw): {string.Join(", ", action)}");
 
-        float frequencyScale = trainingFrequency / Mathf.Max(controlFrequency, 0.01f);
-        float[] scaled = new float[7];
-        for (int i = 0; i < 6; i++)
-            scaled[i] = action[i] * frequencyScale;
-        scaled[6] = action[6];
-
-        var deltaPosition = new Vector3(scaled[0], scaled[1], scaled[2]);
-        Quaternion deltaRotation = Quaternion.Euler(scaled[3], scaled[4], scaled[5]);
+        var deltaPosition = new Vector3(action[0], action[1], action[2]);
+        Quaternion deltaRotation = Quaternion.Euler(action[3], action[4], action[5]);
         robotController.MoveDelta(deltaPosition, deltaRotation);
 
-        robotController.SetSuction(scaled[6] < 0.5f);
+        robotController.SetSuction(action[6] < 0.5f);
     }
 }
+
