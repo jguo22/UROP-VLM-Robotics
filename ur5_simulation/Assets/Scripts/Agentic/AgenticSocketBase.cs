@@ -36,14 +36,14 @@ public abstract class AgenticSocketBase : MonoBehaviour
 
     protected const float IdleVelocityThreshold = 0.05f;
 
-    void Start()
+    private void Start()
     {
         InitializeScene();
         ReadEnv();
         StartSocket();
     }
 
-    void Update()
+    private void Update()
     {
         lock (lockObject)
         {
@@ -390,7 +390,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
             listener.Stop();
     }
 
-    void OnApplicationQuit()
+    private void OnApplicationQuit()
     {
         closeSocket();
     }

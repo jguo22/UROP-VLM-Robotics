@@ -86,12 +86,12 @@ public abstract class EpisodePlayback : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         HandleInput();
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         if (!isPlaying || isPaused)
             return;
@@ -139,7 +139,7 @@ public abstract class EpisodePlayback : MonoBehaviour
         }
     }
 
-    void OnGUI()
+    private void OnGUI()
     {
         DrawTrajectoryGUI();
     }

@@ -27,7 +27,7 @@ public class UR5FKValidatorServer : MonoBehaviour
     private bool isRunning = true;
     private UR5Controller ur5controller;
 
-    async void Start()
+    private async void Start()
     {
         // Get UR5Controller component
         ur5controller = GetComponent<UR5Controller>();
@@ -49,7 +49,7 @@ public class UR5FKValidatorServer : MonoBehaviour
     /// <summary>
     /// Accept client connections asynchronously
     /// </summary>
-    async Task HandleClientAsync()
+    private async Task HandleClientAsync()
     {
         try
         {
@@ -99,7 +99,7 @@ public class UR5FKValidatorServer : MonoBehaviour
     /// <summary>
     /// Stream robot state to individual client
     /// </summary>
-    async Task StreamToClientAsync(TcpClient client)
+    private async Task StreamToClientAsync(TcpClient client)
     {
         try
         {
@@ -154,7 +154,7 @@ public class UR5FKValidatorServer : MonoBehaviour
     /// <summary>
     /// Get current robot state from Unity components (main thread only)
     /// </summary>
-    double[] GetRobotState()
+    private double[] GetRobotState()
     {
         double[] state = new double[13];
 
@@ -195,7 +195,7 @@ public class UR5FKValidatorServer : MonoBehaviour
     /// Send robot state in binary format (104 bytes) asynchronously
     /// Format: 13 doubles (little-endian) - [ee_x, ee_y, ee_z, quat_x, quat_y, quat_z, quat_w, j1, j2, j3, j4, j5, j6]
     /// </summary>
-    async Task SendBinaryStateAsync(NetworkStream stream, double[] state)
+    private async Task SendBinaryStateAsync(NetworkStream stream, double[] state)
     {
         // Pack 13 doubles into 104 bytes (little-endian)
         byte[] buffer = new byte[104];
@@ -211,17 +211,17 @@ public class UR5FKValidatorServer : MonoBehaviour
         await stream.FlushAsync();
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         Cleanup();
     }
 
-    void OnApplicationQuit()
+    private void OnApplicationQuit()
     {
         Cleanup();
     }
 
-    void Cleanup()
+    private void Cleanup()
     {
         // Stop server
         isRunning = false;

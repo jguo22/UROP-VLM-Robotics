@@ -27,12 +27,12 @@ public class InputController : MonoBehaviour
         rotZ = "0";
     private string statusMessage = "";
 
-    void Start()
+    private void Start()
     {
         ur5Controller = GetComponent<UR5Controller>();
     }
 
-    void Update()
+    private void Update()
     {
         // Translation (WASDQE)
         Vector3 deltaPosition = Vector3.zero;
@@ -59,7 +59,7 @@ public class InputController : MonoBehaviour
         }
     }
 
-    void OnGUI()
+    private void OnGUI()
     {
         float panelWidth = 320f;
         float panelHeight = 210f;

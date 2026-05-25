@@ -44,7 +44,7 @@ public class SceneSetup : MonoBehaviour
     private SceneResetController sceneResetController;
 
 
-    void Start()
+    private void Start()
     {
         if (robotArms == null || robotArms.Length == 0)
         {
@@ -124,7 +124,7 @@ public class SceneSetup : MonoBehaviour
         }
     }
 
-    void RobotSetup(GameObject robot, int idx)
+    private void RobotSetup(GameObject robot, int idx)
     {
         Debug.Log($"RobotSetup: {robot.name}");
 
@@ -153,7 +153,7 @@ public class SceneSetup : MonoBehaviour
         sceneResetController.ResetSceneState();
     }
 
-    void Update()
+    private void Update()
     {
         bool resetScene = Input.GetKeyDown(KeyCode.R);
         if (resetScene)
@@ -174,7 +174,7 @@ public class SceneSetup : MonoBehaviour
         }
     }
 
-    void OnGUI()
+    private void OnGUI()
     {
         if (allRobotsActive)
             return;

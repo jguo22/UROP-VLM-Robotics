@@ -10,42 +10,31 @@ using UnityEngine;
 // Captures a camera frame, packages it with the instruction as a json_numpy
 // payload, posts to the server, and applies the returned action chunk to the
 // UR5 each control tick.
-//
-// Body shape: { "observation": { "full_image": <uint8 HxWx3 RGB ndarray>, ... },
-//               "instruction": <str> }
-// Add "*wrist*" image keys inside "observation" if the server was launched with
-// num_images_in_input>1, and "state" if it was launched with --use_proprio.
-// The action un-normalization key is configured server-side.
 public class OpenVLAController : MonoBehaviour
 {
-    [Header("OpenVLA Server")]
-    public string serverUrl = "http://localhost:8777/act";
-    public string instruction = "put blue, red, and green gears into planetary gearbox";
+    [Header("OpenVLA Server")] [SerializeField]
+    private string serverUrl = "http://localhost:8777/act";
 
-    [Header("Capture")]
-    [SerializeField]
-    private ObservationCapture observation;
+    [SerializeField] private string instruction = "put blue, red, and green gears into planetary gearbox";
 
-    [Header("Control")]
-    [Tooltip("How often to query the VLA (Hz). BridgeData V2 trained at 5 Hz.")]
-    public float controlFrequency = 5.0f;
+    [Header("Capture")] [SerializeField] private ObservationCapture observationCapture;
+
+    [Header("Control")] [Tooltip("How often to query the VLA (Hz).")] [SerializeField]
+    private float controlFrequency = 10.0f;
 
     [Tooltip("Automatically query the server every 1/controlFrequency seconds")]
     public bool autoQuery = true;
 
-    [Header("Action Scaling")]
-    [Tooltip("Training control frequency (BridgeData V2 = 5 Hz)")]
-    private float trainingFrequency = 5.0f;
+    [Header("Action Scaling")] [Tooltip("Training control frequency")] [SerializeField]
+    private float trainingFrequency = 10.0f;
 
-    [Tooltip("Additional workspace scale factor (tune empirically)")]
-    private float workspaceScale = 2.0f;
+    private HttpClient httpClient;
+    private float lastQueryTime = -1f;
+    private bool requestInFlight;
 
     private UR5Controller robotController;
-    private HttpClient httpClient;
-    private bool requestInFlight = false;
-    private float lastQueryTime = -1f;
 
-    void Start()
+    private void Start()
     {
         robotController = GetComponent<UR5Controller>();
         if (robotController == null)
@@ -55,20 +44,21 @@ public class OpenVLAController : MonoBehaviour
             return;
         }
 
-        if (observation == null)
+        if (observationCapture == null)
         {
             Debug.LogError("OpenVLAController: observation not assigned.");
             enabled = false;
             return;
         }
-        observation.Initialize();
+
+        observationCapture.Initialize();
 
         httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
 
         Debug.Log($"OpenVLAServer client targeting {serverUrl}");
     }
 
-    void Update()
+    private void Update()
     {
         if (!autoQuery || requestInFlight)
             return;
@@ -81,29 +71,20 @@ public class OpenVLAController : MonoBehaviour
         _ = QueryAndApplyAsync();
     }
 
-    public void QueryOnce()
+    private void OnDestroy()
     {
-        if (requestInFlight)
-            return;
-        _ = QueryAndApplyAsync();
+        httpClient?.Dispose();
     }
 
-    async Task QueryAndApplyAsync()
+    private async Task QueryAndApplyAsync()
     {
         requestInFlight = true;
         try
         {
-            // Image capture must happen on the main thread
-            byte[] rgbBytes = CaptureImageRGB();
-            string payload = BuildPayload(
-                rgbBytes,
-                ObservationCapture.ImageWidth,
-                ObservationCapture.ImageHeight,
-                this.observation.CaptureState().jointAnglesDeg
-            );
+            string payload = GetJsonObservation();
 
             using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync(serverUrl, content);
+            HttpResponseMessage response = await httpClient.PostAsync(serverUrl, content);
             response.EnsureSuccessStatusCode();
             string body = await response.Content.ReadAsStringAsync();
 
@@ -133,10 +114,36 @@ public class OpenVLAController : MonoBehaviour
         }
     }
 
-    byte[] CaptureImageRGB()
+    private string GetJsonObservation()
+    {
+        // Image capture must happen on the main thread
+        byte[] imageBytes = CaptureImageRGB();
+
+        ObservationCapture.Observation observation = observationCapture.CaptureState();
+        float[] state = new float[observation.jointAnglesDeg.Length + 2];
+        observation.jointAnglesDeg.CopyTo(state, 0);
+        state[^2] = 0;
+        state[^1] = observation.suctionOn ? 1 : -1;
+
+        var payloadDict = new
+        {
+            full_image = new
+            {
+                __numpy__ = Convert.ToBase64String(imageBytes),
+                dtype = "uint8",
+                shape = new[] { ObservationCapture.ImageWidth, ObservationCapture.ImageHeight, 3 }
+            },
+            state,
+            instruction
+        };
+
+        return JsonConvert.SerializeObject(payloadDict);
+    }
+
+    private byte[] CaptureImageRGB()
     {
         // Unity's ReadPixels gives bottom-up rows; OpenVLA/PIL expects top-down.
-        byte[] raw = observation.CaptureScreenshotRgb();
+        byte[] raw = observationCapture.CaptureScreenshotRgb();
         return FlipImageVertically(
             raw,
             ObservationCapture.ImageWidth,
@@ -145,7 +152,7 @@ public class OpenVLAController : MonoBehaviour
         );
     }
 
-    static byte[] FlipImageVertically(byte[] src, int width, int height, int channels)
+    private static byte[] FlipImageVertically(byte[] src, int width, int height, int channels)
     {
         byte[] dst = new byte[src.Length];
         int rowSize = width * channels;
@@ -154,60 +161,31 @@ public class OpenVLAController : MonoBehaviour
         return dst;
     }
 
-    string BuildPayload(byte[] imageBytes, int width, int height, float[] state)
+    private static float[] ParseActionResponse(string body)
     {
-        // json_numpy encodes an ndarray as {"__ndarray__": <base64 raw bytes>, "dtype": "...", "shape": [...]}.
-        // deploy.py expects {"observation": {...}, "instruction": str}.
-        var payload = new
-        {
-            full_image = new
-            {
-                __numpy__ = Convert.ToBase64String(imageBytes),
-                dtype = "uint8",
-                shape = new[] { height, width, 3 },
-            },
-            state = state,
-            instruction,
-        };
-        string result = JsonConvert.SerializeObject(payload);
-        print(result);
-        return result;
-    }
+        JToken obj = JArray.Parse(body)[0];
 
-    static float[] ParseActionResponse(string body)
-    {
-        // json_numpy ndarray: {"__ndarray__": "<base64 raw bytes>", "dtype": "<f4", "shape": [...]}
-        // (some json_numpy versions use the key "__numpy__" — accept either).
-        JObject obj;
-        try
-        {
-            obj = JObject.Parse(body);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        string b64 = (string)obj["__numpy__"];
+        string dtype = (string)obj["dtype"];
 
-        var b64 = (string)(obj["__ndarray__"] ?? obj["__numpy__"]);
-        var dtype = (string)obj["dtype"];
         if (b64 == null || dtype == null)
             return null;
-
         return DecodeFloatArray(Convert.FromBase64String(b64), dtype);
     }
 
     // Reinterprets json_numpy's raw little-endian bytes as a float[], widening float64 to float32.
-    static float[] DecodeFloatArray(byte[] bytes, string dtype)
+    private static float[] DecodeFloatArray(byte[] bytes, string dtype)
     {
         if (dtype.Contains("f4") || dtype.Contains("float32"))
         {
-            var arr = new float[bytes.Length / 4];
+            float[] arr = new float[bytes.Length / 4];
             Buffer.BlockCopy(bytes, 0, arr, 0, arr.Length * 4);
             return arr;
         }
+
         if (dtype.Contains("f8") || dtype.Contains("float64"))
         {
-            var arr = new float[bytes.Length / 8];
+            float[] arr = new float[bytes.Length / 8];
             for (int i = 0; i < arr.Length; i++)
                 arr[i] = (float)BitConverter.ToDouble(bytes, i * 8);
             return arr;
@@ -217,26 +195,20 @@ public class OpenVLAController : MonoBehaviour
         return null;
     }
 
-    void ApplyAction(float[] action)
+    private void ApplyAction(float[] action)
     {
         Debug.Log($"OpenVLA action (raw): {string.Join(", ", action)}");
 
         float frequencyScale = trainingFrequency / Mathf.Max(controlFrequency, 0.01f);
         float[] scaled = new float[7];
         for (int i = 0; i < 6; i++)
-            scaled[i] = action[i] * frequencyScale * workspaceScale;
+            scaled[i] = action[i] * frequencyScale;
         scaled[6] = action[6];
 
-        Vector3 deltaPosition = new Vector3(scaled[0], scaled[1], scaled[2]);
+        var deltaPosition = new Vector3(scaled[0], scaled[1], scaled[2]);
         Quaternion deltaRotation = Quaternion.Euler(scaled[3], scaled[4], scaled[5]);
         robotController.MoveDelta(deltaPosition, deltaRotation);
 
-        // OpenVLA gripper convention: 1.0 = open, 0.0 = closed (BridgeData V2)
         robotController.SetSuction(scaled[6] < 0.5f);
-    }
-
-    void OnDestroy()
-    {
-        httpClient?.Dispose();
     }
 }

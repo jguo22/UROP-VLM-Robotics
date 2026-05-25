@@ -40,12 +40,12 @@ public class UR5IKSolver : MonoBehaviour
     private bool isConnecting = false;
     private Task connectionTask = null;
 
-    void Start()
+    private void Start()
     {
         EnsureConnection();
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         DisconnectFromServer();
     }
@@ -67,8 +67,8 @@ public class UR5IKSolver : MonoBehaviour
 
             // Enable TCP keepalive to prevent idle disconnects
             client.Client.SetSocketOption(
-                System.Net.Sockets.SocketOptionLevel.Socket,
-                System.Net.Sockets.SocketOptionName.KeepAlive,
+                SocketOptionLevel.Socket,
+                SocketOptionName.KeepAlive,
                 true
             );
 
@@ -115,14 +115,10 @@ public class UR5IKSolver : MonoBehaviour
     {
         try
         {
-            if (writer != null)
-                writer.Close();
-            if (reader != null)
-                reader.Close();
-            if (stream != null)
-                stream.Close();
-            if (client != null)
-                client.Close();
+            writer?.Close();
+            reader?.Close();
+            stream?.Close();
+            client?.Close();
 
             isConnected = false;
             // Debug.Log("UR5IKSolver: Disconnected from Python IK server");
@@ -215,8 +211,8 @@ public class UR5IKSolver : MonoBehaviour
             writer.Flush();
 
             int timeout = 1000;
-            int elapsed = 0;
             int sleepInterval = 10; // ms
+            int elapsed = 0;
 
             while (!stream.DataAvailable && elapsed < timeout)
             {

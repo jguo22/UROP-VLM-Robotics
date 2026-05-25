@@ -22,12 +22,12 @@ namespace FaktoryStudiosGames
         private bool isGrounded;
         private bool touchingConveyor = false;
 
-        void Start()
+        private void Start()
         {
             controller = GetComponent<CharacterController>();
         }
 
-        void Update()
+        private void Update()
         {
             isGrounded = controller.isGrounded;
             if (isGrounded && velocity.y < 0)
@@ -54,7 +54,7 @@ namespace FaktoryStudiosGames
             touchingConveyor = false;
         }
 
-        void OnTriggerStay(Collider other)
+        private void OnTriggerStay(Collider other)
         {
             if (other.tag.Equals("ConveyorBelt"))
             {

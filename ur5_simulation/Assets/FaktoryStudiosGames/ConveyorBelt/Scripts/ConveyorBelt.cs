@@ -79,7 +79,7 @@ namespace FaktoryStudiosGames
         private float lastUvSpeed = 0f;
         private float currentUvSpeed = 0f;
 
-        void OnEnable()
+        private void OnEnable()
         {
 #if UNITY_EDITOR
             if (!Application.isPlaying && pendingMesh != null)
@@ -99,7 +99,7 @@ namespace FaktoryStudiosGames
             }
         }
 
-        void OnValidate()
+        private void OnValidate()
         {
             length = Mathf.Max(0f, length);
             height = Mathf.Max(0f, height);

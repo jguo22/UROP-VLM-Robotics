@@ -6,58 +6,43 @@ using UnityEngine;
 using static ConstantsUR5;
 
 /// <summary>
-/// Records per-step RLDS-compatible data: joint state, delta EE action, suction,
-/// episode boundary flags, reward, and a camera screenshot at an adjustable FPS.
-/// Also saves starting block positions at the beginning of each episode.
-/// Attach to any GameObject. Assign references in Inspector.
-/// StartRecording/StopRecording can be called repeatedly without reinitializing.
-/// language_instruction is left empty — populate externally before training.
+///     Records per-step RLDS-compatible data: joint state, delta EE action, suction,
+///     episode boundary flags, reward, and a camera screenshot at an adjustable FPS.
+///     Also saves starting block positions at the beginning of each episode.
+///     Attach to any GameObject. Assign references in Inspector.
+///     StartRecording/StopRecording can be called repeatedly without reinitializing.
+///     language_instruction is left empty — populate externally before training.
 /// </summary>
 public class EpisodeRecorder : MonoBehaviour
 {
-    [Header("Recording Settings")]
-    public bool recordOnStart = false;
+    private static readonly string PoseHeader = BuildPoseHeader();
+
+    [Header("Recording Settings")] public bool recordOnStart = false;
+
     public float recordingFPS = 10f;
 
-    [Header("References")]
-    [SerializeField]
+    [Header("References")] [SerializeField]
     private ObservationCapture observation;
 
-    [Header("Export Settings")]
-    public string sessionName = "recording";
+    [Header("Export Settings")] public string sessionName = "recording";
+
     public bool appendTimestamp = true;
+
+    // Buffer rows (without deltas) — deltas and is_last/is_terminal/reward applied at flush
+    private readonly List<string> frameBuffer = new();
+    private int frameIndex = 0;
+
+    // Per-frame pose for delta calculation at flush time
+    private readonly List<Vector3> framePositions = new();
+    private readonly List<Quaternion> frameRotations = new();
+    private bool isPaused = false;
 
     // Runtime state
     private bool isRecording = false;
-    private bool isPaused = false;
     private float nextSampleTime = 0f;
-    private string sessionFolder;
-    private int frameIndex = 0;
 
     private SceneSetup sceneSetup;
-
-    // Per-frame pose for delta calculation at flush time
-    private List<Vector3> framePositions = new List<Vector3>();
-    private List<Quaternion> frameRotations = new List<Quaternion>();
-
-    // Buffer rows (without deltas) — deltas and is_last/is_terminal/reward applied at flush
-    private List<string> frameBuffer = new List<string>();
-
-    private static string BuildPoseHeader()
-    {
-        string h =
-            "frame,Timestamp,"
-            + "delta_pos_x,delta_pos_y,delta_pos_z,"
-            + "delta_rot_x,delta_rot_y,delta_rot_z,delta_rot_w,"
-            + "suctionOn,";
-        for (int i = 0; i < JointCount; i++)
-            h += $"joint_{i},";
-        h += "blockAttracted,";
-        h += "is_first,is_last,is_terminal,reward,discount";
-        return h;
-    }
-
-    private static readonly string PoseHeader = BuildPoseHeader();
+    private string sessionFolder;
 
     // -------------------------------------------------------------------------
 
@@ -77,7 +62,21 @@ public class EpisodeRecorder : MonoBehaviour
             return;
 
         CaptureFrame();
-        nextSampleTime = Time.time + (1f / recordingFPS);
+        nextSampleTime = Time.time + 1f / recordingFPS;
+    }
+
+    private static string BuildPoseHeader()
+    {
+        string h =
+            "frame,Timestamp,"
+            + "delta_pos_x,delta_pos_y,delta_pos_z,"
+            + "delta_rot_x,delta_rot_y,delta_rot_z,delta_rot_w,"
+            + "suctionOn,";
+        for (int i = 0; i < JointCount; i++)
+            h += $"joint_{i},";
+        h += "blockAttracted,";
+        h += "is_first,is_last,is_terminal,reward,discount";
+        return h;
     }
 
     // -------------------------------------------------------------------------
@@ -159,16 +158,14 @@ public class EpisodeRecorder : MonoBehaviour
             return;
 
         string blocksPath = Path.Combine(sessionFolder, "blocks.csv");
-        using (StreamWriter writer = new StreamWriter(blocksPath, false))
+        using var writer = new StreamWriter(blocksPath, false);
+        writer.WriteLine("name,pos_x,pos_y,pos_z");
+        foreach (GameObject block in sceneSetup.targets)
         {
-            writer.WriteLine("name,pos_x,pos_y,pos_z");
-            foreach (GameObject block in sceneSetup.targets)
-            {
-                if (block == null)
-                    continue;
-                Vector3 p = block.transform.position;
-                writer.WriteLine($"{block.name},{p.x:F5},{p.y:F5},{p.z:F5}");
-            }
+            if (block == null)
+                continue;
+            Vector3 p = block.transform.position;
+            writer.WriteLine($"{block.name},{p.x:F5},{p.y:F5},{p.z:F5}");
         }
     }
 
@@ -213,7 +210,7 @@ public class EpisodeRecorder : MonoBehaviour
             return;
 
         string posesPath = Path.Combine(sessionFolder, "poses.csv");
-        using (StreamWriter writer = new StreamWriter(posesPath, false))
+        using (var writer = new StreamWriter(posesPath, false))
         {
             writer.WriteLine(PoseHeader);
             for (int i = 0; i < frameBuffer.Count; i++)

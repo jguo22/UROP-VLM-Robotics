@@ -42,7 +42,7 @@ public class ObservationCapture : MonoBehaviour
     {
         if (!resourcesAllocated)
         {
-            endEffector = robotArmSetup.robotJoints[robotArmSetup.robotJoints.Length - 1].transform;
+            endEffector = robotArmSetup.robotJoints[^1].transform;
             renderTexture = new RenderTexture(ImageWidth, ImageHeight, 24);
             screenshotBuffer = new Texture2D(ImageWidth, ImageHeight, TextureFormat.RGB24, false);
             resourcesAllocated = true;
@@ -68,9 +68,9 @@ public class ObservationCapture : MonoBehaviour
         {
             endEffectorPosition = endEffector.position,
             endEffectorRotation = endEffector.rotation,
-            suctionOn = suctionController != null && suctionController.enableSuction,
+            suctionOn = suctionController.enableSuction,
             jointAnglesDeg = anglesDeg,
-            blockAttracted = suctionController != null && suctionController.isBlockAttached,
+            blockAttracted = suctionController.isBlockAttached,
         };
     }
 

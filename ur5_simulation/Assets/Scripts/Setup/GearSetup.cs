@@ -7,7 +7,7 @@ public class GearSetup : MonoBehaviour
 {
     public GameObject[] originalGears;
 
-    void Start()
+    private void Start()
     {
         foreach (var gear in originalGears)
         {

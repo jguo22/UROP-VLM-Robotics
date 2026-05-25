@@ -20,7 +20,7 @@ public class UR5Controller : MonoBehaviour
     private Transform endEffector;
     private Transform originTransform; // used to calculate the relative position of the end effector to the base of the robot
 
-    void Start()
+    private void Start()
     {
         // Get RobotArmSetup component
         robotArmSetup = GetComponent<RobotArmSetup>();
@@ -54,7 +54,7 @@ public class UR5Controller : MonoBehaviour
         ConfigureJointDrives();
     }
 
-    void ConfigureJointDrives()
+    private void ConfigureJointDrives()
     {
         // Configure drives for the 6 robot arm joints (indices 0-5 in robotJoints)
         for (int i = 0; i < JointCount; i++)
@@ -135,7 +135,7 @@ public class UR5Controller : MonoBehaviour
         suctionController.enableSuction = enabled;
     }
 
-    (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(
+    private (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(
         Vector3 inputPosition,
         Quaternion inputRotation
     )
@@ -157,7 +157,7 @@ public class UR5Controller : MonoBehaviour
         return (endEffector.position, endEffector.rotation);
     }
 
-    void OnGUI()
+    private void OnGUI()
     {
         if (endEffector == null)
             return;

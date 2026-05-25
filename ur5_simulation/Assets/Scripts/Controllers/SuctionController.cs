@@ -39,13 +39,13 @@ public class SuctionController : MonoBehaviour
     private LineRenderer suctionLine;
     private GameObject suctionIndicator;
 
-    void Start()
+    private void Start()
     {
         InitializeComponents();
         //SetupVisualFeedback();
     }
 
-    void InitializeComponents()
+    private void InitializeComponents()
     {
         // Get articulation chain and setup joints
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
@@ -74,7 +74,7 @@ public class SuctionController : MonoBehaviour
         endEffector = robotJoints[JointCount].transform;
     }
 
-    void Update()
+    private void Update()
     {
         if (targetBlocks == null || targetBlocks.Length == 0)
         {
@@ -153,7 +153,7 @@ public class SuctionController : MonoBehaviour
         HandleBlockAttachment();
     }
 
-    void HandleSuctionState()
+    private void HandleSuctionState()
     {
         bool shouldBeActive = enableSuction && currentDistance <= suctionDistance;
 
@@ -176,7 +176,7 @@ public class SuctionController : MonoBehaviour
         }
     }
 
-    void HandleBlockAttachment()
+    private void HandleBlockAttachment()
     {
         if (targetBlock == null)
             return;
@@ -199,7 +199,7 @@ public class SuctionController : MonoBehaviour
         }
     }
 
-    void AttachBlock()
+    private void AttachBlock()
     {
         if (isBlockAttached)
             return;
@@ -228,7 +228,7 @@ public class SuctionController : MonoBehaviour
         //suctionDistance = 0.1f;
     }
 
-    void DetachBlock()
+    private void DetachBlock()
     {
         if (!isBlockAttached)
             return;
@@ -259,7 +259,7 @@ public class SuctionController : MonoBehaviour
         // Debug.Log("Block detached from suction");
     }
 
-    void ApplyAttractionForce()
+    private void ApplyAttractionForce()
     {
         if (blockRigidbody == null || blockRigidbody.isKinematic)
             return;
@@ -275,7 +275,7 @@ public class SuctionController : MonoBehaviour
         blockRigidbody.angularVelocity *= 0.9f;
     }
 
-    void UpdateVisualFeedback()
+    private void UpdateVisualFeedback()
     {
         // Update suction indicator
         if (suctionIndicator != null)
@@ -386,7 +386,7 @@ public class SuctionController : MonoBehaviour
     }
 
     // Debug information
-    void OnGUI()
+    private void OnGUI()
     {
         if (!showDebugInfo)
             return;

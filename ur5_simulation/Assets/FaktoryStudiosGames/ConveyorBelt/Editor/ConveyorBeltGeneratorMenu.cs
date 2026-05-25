@@ -6,7 +6,7 @@ namespace FaktoryStudiosGames
     public class ConveyorBeltGeneratorMenu
     {
         [MenuItem("GameObject/3D Object/Conveyor Belt", false, 10)]
-        static void CreateTankTread()
+        private static void CreateTankTread()
         {
             GameObject go = new GameObject("Conveyor Belt");
             go.AddComponent<MeshFilter>();
