@@ -13,43 +13,34 @@ using UnityEngine;
 // UR5 each control tick.
 public class OpenVLAController : MonoBehaviour
 {
-    [Header("OpenVLA Server")]
-    [SerializeField]
-    private string serverUrl = "http://localhost:8777/act";
+    private const int ActionDim = 7;
 
-    [SerializeField]
-    private string instruction = "put blue, red, and green gears into planetary gearbox";
+    [Header("OpenVLA Server")] 
+    private readonly string serverUrl = "http://localhost:8778/act";
 
-    [Header("Capture")]
-    [SerializeField]
-    private ObservationCapture observationCapture;
+    [SerializeField] private string instruction = "put blue, red, and green gears into planetary gearbox";
 
-    [Header("Control")]
-    [Tooltip("How often to query the VLA (Hz).")]
-    [SerializeField]
+    [Header("Capture")] [SerializeField] private ObservationCapture observationCapture;
+
+    [Header("Control")] [Tooltip("How often to query the VLA (Hz).")] [SerializeField]
     private float controlFrequency = 10.0f;
 
     [Tooltip("Automatically query the server every 1/controlFrequency seconds")]
     public bool autoQuery = true;
 
-    [Header("Action Scaling")]
-    [Tooltip("Training control frequency")]
-    [SerializeField]
+    [Header("Action Scaling")] [Tooltip("Training control frequency")] [SerializeField]
     private float trainingFrequency = 10.0f;
 
-    [Header("UI")]
-    [SerializeField]
-    private Rect startButtonRect = new Rect(20f, 20f, 160f, 40f);
+    [Header("UI")] [SerializeField] private Rect startButtonRect = new(20f, 20f, 160f, 40f);
 
-    private const int ActionDim = 7;
+    private readonly Queue<float[]> pendingActions = new();
 
     private HttpClient httpClient;
     private float lastStepTime = -1f;
     private bool requestInFlight;
-    private bool started;
-    private readonly Queue<float[]> pendingActions = new();
 
     private UR5Controller robotController;
+    private bool started;
 
     private void Start()
     {
@@ -95,16 +86,16 @@ public class OpenVLAController : MonoBehaviour
             _ = QueryAsync();
     }
 
+    private void OnDestroy()
+    {
+        httpClient?.Dispose();
+    }
+
     private void OnGUI()
     {
         string label = started ? "Stop OpenVLA" : "Start OpenVLA";
         if (GUI.Button(startButtonRect, label))
             started = !started;
-    }
-
-    private void OnDestroy()
-    {
-        httpClient?.Dispose();
     }
 
     private async Task QueryAsync()
@@ -157,9 +148,8 @@ public class OpenVLAController : MonoBehaviour
         // OpenVLA-OFT proprio is trained in radians.
         for (int i = 0; i < anglesDeg.Length; i++)
             state[i] = anglesDeg[i] * Mathf.Deg2Rad;
-        // Layout matches OFT's ur5_unity_dataset_transform: [6 joints (rad), 0-pad, suction {0,1}].
         state[^2] = 0;
-        state[^1] = observation.suctionOn ? 1f : 0f;
+        state[^1] = observation.suctionOn ? 1 : -1;
 
         var payloadDict = new
         {
@@ -167,10 +157,10 @@ public class OpenVLAController : MonoBehaviour
             {
                 __numpy__ = Convert.ToBase64String(imageBytes),
                 dtype = "uint8",
-                shape = new[] { ObservationCapture.ImageWidth, ObservationCapture.ImageHeight, 3 },
+                shape = new[] { ObservationCapture.ImageWidth, ObservationCapture.ImageHeight, 3 }
             },
             state,
-            instruction,
+            instruction
         };
 
         return JsonConvert.SerializeObject(payloadDict);
@@ -220,6 +210,7 @@ public class OpenVLAController : MonoBehaviour
             chunk[i] = new float[ActionDim];
             Array.Copy(flat, i * ActionDim, chunk[i], 0, ActionDim);
         }
+
         return chunk;
     }
 
@@ -254,22 +245,9 @@ public class OpenVLAController : MonoBehaviour
         Debug.Log($"OpenVLA action (raw): {string.Join(", ", action)}");
 
         var deltaPosition = new Vector3(action[0], action[1], action[2]);
-        // action[3..5] is a rotation vector (axis-angle, radians) — NOT Euler degrees.
-        var rotvec = new Vector3(action[3], action[4], action[5]);
-        Quaternion deltaRotation = RotvecToQuaternion(rotvec);
+        Quaternion deltaRotation = Quaternion.Euler(action[3], action[4], action[5]);
         robotController.MoveDelta(deltaPosition, deltaRotation);
 
-        // Trained gripper convention (OFT transform): 0 = closed (suction on), 1 = open.
         robotController.SetSuction(action[6] < 0.5f);
     }
-
-    private static Quaternion RotvecToQuaternion(Vector3 rotvec)
-    {
-        float angleRad = rotvec.magnitude;
-        if (angleRad < 1e-6f)
-            return Quaternion.identity;
-        Vector3 axis = rotvec / angleRad;
-        return Quaternion.AngleAxis(angleRad * Mathf.Rad2Deg, axis);
-    }
 }
-
