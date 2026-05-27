@@ -4,3 +4,4 @@ config.env
 __pycache__/
 *.log
 testing.txt
+.idea/
