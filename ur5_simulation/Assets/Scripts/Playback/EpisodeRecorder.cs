@@ -5,26 +5,49 @@ using System.Threading.Tasks;
 using UnityEngine;
 using static ConstantsUR5;
 
-/// <summary>
-///     Records per-step RLDS-compatible data: joint state, delta EE action, suction,
-///     episode boundary flags, reward, and a camera screenshot at an adjustable FPS.
-///     Also saves starting block positions at the beginning of each episode.
-///     Attach to any GameObject. Assign references in Inspector.
-///     StartRecording/StopRecording can be called repeatedly without reinitializing.
-///     language_instruction is left empty — populate externally before training.
-/// </summary>
+// Records per-episode RLDS-compatible data.
+// Consumed by python/rlds_dataset_builder/ur5_unity/ur5_unity_dataset_builder.py.
+//
+// Output: ur5_simulation/Exports/dataset/<sessionName>[_<timestamp>]/
+//   poses.csv     — one row per sampled frame (columns below)
+//   images/NNNNNN.png — RGB capture per frame, indexed by `frame`
+//   blocks.csv    — world position of each SceneSetup.targets at episode start
+//
+// Frame: Unity world (left-handed, Y-up, Z-forward). Positions in meters.
+// Rotations are Hamiltonian quaternions (x,y,z,w) straight from Transform.rotation.
+//
+// poses.csv columns:
+//   frame           — zero-based int index
+//   Timestamp       — Unity Time.time seconds at capture (F4)
+//   delta_pos_x/y/z — world-frame meters; pos[i+1] - pos[i]. Last row = 0.
+//   delta_rot_x/y/z/w — world-frame quaternion delta (xyzw);
+//                      rot[i+1] * Inverse(rot[i]) so R_next = R_delta * R_curr.
+//                      Last row = identity.
+//   suctionOn       — bool serialized as "True"/"False".
+//   joint_0..joint_(JointCount-1) — joint angles in DEGREES (F5).
+//   blockAttracted  — bool, true while suction is holding a block.
+//   is_first        — 1 only on frame==0, else 0.
+//   is_last, is_terminal — 1 only on the final row (successful-demo convention).
+//   reward          — 1.0 only on the final row, else 0.0.
+//   discount        — 1.0 on every row.
+//
+// Timing: capture is gated by recordingFPS (default 10 Hz) and quantized to Unity's
+// render tick.
 public class EpisodeRecorder : MonoBehaviour
 {
     private static readonly string PoseHeader = BuildPoseHeader();
 
-    [Header("Recording Settings")] public bool recordOnStart = false;
+    [Header("Recording Settings")]
+    public bool recordOnStart = false;
 
     public float recordingFPS = 10f;
 
-    [Header("References")] [SerializeField]
+    [Header("References")]
+    [SerializeField]
     private ObservationCapture observation;
 
-    [Header("Export Settings")] public string sessionName = "recording";
+    [Header("Export Settings")]
+    public string sessionName = "recording";
 
     public bool appendTimestamp = true;
 
@@ -255,3 +278,4 @@ public class EpisodeRecorder : MonoBehaviour
         frameRotations.Clear();
     }
 }
+

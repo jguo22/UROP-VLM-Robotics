@@ -157,8 +157,9 @@ public class OpenVLAController : MonoBehaviour
         // OpenVLA-OFT proprio is trained in radians.
         for (int i = 0; i < anglesDeg.Length; i++)
             state[i] = anglesDeg[i] * Mathf.Deg2Rad;
+        // Layout matches OFT's ur5_unity_dataset_transform: [6 joints (rad), 0-pad, suction {0,1}].
         state[^2] = 0;
-        state[^1] = observation.suctionOn ? 1 : -1;
+        state[^1] = observation.suctionOn ? 1f : 0f;
 
         var payloadDict = new
         {
@@ -253,10 +254,22 @@ public class OpenVLAController : MonoBehaviour
         Debug.Log($"OpenVLA action (raw): {string.Join(", ", action)}");
 
         var deltaPosition = new Vector3(action[0], action[1], action[2]);
-        Quaternion deltaRotation = Quaternion.Euler(action[3], action[4], action[5]);
+        // action[3..5] is a rotation vector (axis-angle, radians) — NOT Euler degrees.
+        var rotvec = new Vector3(action[3], action[4], action[5]);
+        Quaternion deltaRotation = RotvecToQuaternion(rotvec);
         robotController.MoveDelta(deltaPosition, deltaRotation);
 
+        // Trained gripper convention (OFT transform): 0 = closed (suction on), 1 = open.
         robotController.SetSuction(action[6] < 0.5f);
+    }
+
+    private static Quaternion RotvecToQuaternion(Vector3 rotvec)
+    {
+        float angleRad = rotvec.magnitude;
+        if (angleRad < 1e-6f)
+            return Quaternion.identity;
+        Vector3 axis = rotvec / angleRad;
+        return Quaternion.AngleAxis(angleRad * Mathf.Rad2Deg, axis);
     }
 }
 

@@ -1,3 +1,30 @@
+"""TFDS builder for UR5 Unity episodes recorded by EpisodeRecorder.cs.
+
+Input: DATASET_DIR/recording_*/{poses.csv, images/NNNNNN.png}
+       (see EpisodeRecorder.cs header for poses.csv column spec).
+
+Coordinate frame is preserved: Unity world (left-handed, Y-up, Z-forward, meters,
+Hamiltonian xyzw quaternions). No axis remap or handedness flip is applied.
+
+Per-step output (one entry in `steps`):
+  observation.image — uint8 RGB, original capture resolution (resized to 128x128
+                      LANCZOS later in example_transform/transform.py).
+  observation.state — float32[7] = [joint_0..5 RAD, suction {0.0, 1.0}].
+                      Joint angles are converted deg → rad here; CSV stores degrees.
+  action            — float32[8] = [Δpos_xyz (world, m),
+                                    Δrot_rotvec_xyz (axis-angle, rad),
+                                    suction_cmd {-1.0, +1.0},
+                                    terminate (= is_terminal as float)].
+                      Δrot comes from CSV's quaternion delta via
+                      scipy Rotation.from_quat(xyzw).as_rotvec().
+  reward, discount, is_first/last/terminal — copied from poses.csv as-is.
+  language_instruction — hard-coded LANGUAGE_INSTRUCTION (not stored in CSV).
+  language_embedding   — USE-large embedding of LANGUAGE_INSTRUCTION.
+
+Split: first TRAIN_SPLIT (90%) of sorted recording_* dirs → train, rest → val.
+Env: override input dir with DATASET_DIR=...
+"""
+
 from typing import Iterator, Tuple, Any
 
 import csv
