@@ -91,6 +91,7 @@ def replay_episode(
     server_url: str,
     instruction: str,
     max_frames: int | None,
+    print_steps: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, list[int]]:
     """Returns (preds, recs, frame_indices). preds and recs are (N, 7)."""
     poses_path = recording_dir / "poses.csv"
@@ -107,7 +108,13 @@ def replay_episode(
     recs: list[np.ndarray] = []
     indices: list[int] = []
 
-    for row in rows:
+    # Open-loop chunked replay: query at frame i, then roll the whole predicted
+    # action chunk (the server is configured for chunks of 8) against the next
+    # consecutive recorded frames, then jump ahead by the chunk length and
+    # re-query. This mirrors how the chunk is executed at deploy time.
+    i = 0
+    while i < len(rows):
+        row = rows[i]
         frame_idx = int(row["frame"])
         img_path = images_dir / f"{frame_idx:06d}.png"
         img = np.asarray(Image.open(img_path).convert("RGB"))
@@ -121,12 +128,37 @@ def replay_episode(
         resp.raise_for_status()
 
         action_chunk = parse_response(resp.text)
-        predicted = action_chunk if action_chunk.ndim == 1 else action_chunk[0]
-        recorded = build_recorded_action(row)
+        if action_chunk.ndim == 1:
+            action_chunk = action_chunk[None, :]
+        chunk_len = action_chunk.shape[0]
 
-        preds.append(predicted.astype(np.float64))
-        recs.append(recorded.astype(np.float64))
-        indices.append(frame_idx)
+        if print_steps:
+            print(f"  query @ frame {frame_idx:>4}  (chunk_len={chunk_len})")
+
+        # Compare each action in the chunk to the recorded action at the
+        # corresponding successor frame; stop early at the episode end.
+        for k in range(chunk_len):
+            if i + k >= len(rows):
+                break
+            step_row = rows[i + k]
+            step_frame = int(step_row["frame"])
+            predicted = action_chunk[k].astype(np.float64)
+            recorded = build_recorded_action(step_row).astype(np.float64)
+
+            if print_steps:
+                fmt = lambda a: "[" + " ".join(f"{v:+7.4f}" for v in a) + "]"
+                err = np.abs(predicted - recorded)
+                print(f"    frame {step_frame:>4} (chunk[{k}])  "
+                      f"|err|_2={np.linalg.norm(err):.4f}")
+                print(f"      pred {fmt(predicted)}")
+                print(f"      rec  {fmt(recorded)}")
+                print(f"      err  {fmt(err)}")
+
+            preds.append(predicted)
+            recs.append(recorded)
+            indices.append(step_frame)
+
+        i += chunk_len
 
     if not preds:
         empty = np.zeros((0, 7), dtype=np.float64)
@@ -174,6 +206,8 @@ def main() -> None:
     ap.add_argument("--max-episodes", type=int, default=None)
     ap.add_argument("--max-frames", type=int, default=None,
                     help="Per-episode frame cap (for quick smoke tests).")
+    ap.add_argument("--print-steps", action="store_true",
+                    help="Print predicted vs recorded action for every frame.")
     ap.add_argument("--csv", type=Path, default=None)
     args = ap.parse_args()
 
@@ -194,8 +228,10 @@ def main() -> None:
     rows_for_csv: list[tuple[str, int, np.ndarray, np.ndarray]] = []
 
     for ep in episodes:
+        if args.print_steps:
+            print(f"--- {ep.name}  (dims: {' '.join(ACTION_DIMS)}) ---")
         preds, recs, indices = replay_episode(
-            ep, args.server, args.instruction, args.max_frames
+            ep, args.server, args.instruction, args.max_frames, args.print_steps
         )
         if len(preds) == 0:
             print(f"  {ep.name:<40}  (empty)")
