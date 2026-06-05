@@ -245,7 +245,15 @@ public class OpenVLAController : MonoBehaviour
         Debug.Log($"OpenVLA action (raw): {string.Join(", ", action)}");
 
         var deltaPosition = new Vector3(action[0], action[1], action[2]);
-        Quaternion deltaRotation = Quaternion.Euler(action[3], action[4], action[5]);
+
+        // action[3..5] is an axis-angle rotation vector in RADIANS (scipy as_rotvec),
+        // matching ur5_unity_dataset_builder.py. Decode as axis-angle, not Euler.
+        var rotVec = new Vector3(action[3], action[4], action[5]);
+        float angleRad = rotVec.magnitude;
+        Quaternion deltaRotation = angleRad < 1e-8f
+            ? Quaternion.identity
+            : Quaternion.AngleAxis(angleRad * Mathf.Rad2Deg, rotVec / angleRad);
+
         robotController.MoveDelta(deltaPosition, deltaRotation);
 
         robotController.SetSuction(action[6] < 0.5f);
