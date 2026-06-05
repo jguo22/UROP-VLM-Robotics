@@ -1,6 +1,5 @@
 from typing import Any, Dict
 import numpy as np
-from PIL import Image
 
 
 ################################################################################################
@@ -61,11 +60,10 @@ from PIL import Image
 def transform_step(step: Dict[str, Any]) -> Dict[str, Any]:
     """Maps step from source dataset to target dataset config.
        Input is dict of numpy arrays."""
-    img = Image.fromarray(step['observation']['image']).resize(
-        (128, 128), Image.Resampling.LANCZOS)
     transformed_step = {
         'observation': {
-            'image': np.array(img),
+            # Keep original capture resolution; no 128x128 downsample.
+            'image': step['observation']['image'],
         },
         'action': np.concatenate(
             [step['action'][:3], step['action'][5:8], step['action'][-2:]]),

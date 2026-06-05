@@ -1,34 +1,41 @@
 """TFDS builder for UR5 Unity episodes recorded by EpisodeRecorder.cs.
 
-Input: DATASET_DIR/recording_*/{poses.csv, images/NNNNNN.png}
+Input: DATASET_DIR/<episode>/{poses.csv, images/NNNNNN.png}
+       DATASET_DIR is the dataset root; every immediate child directory is treated
+       as one episode (those missing poses.csv or images/ are skipped).
        (see EpisodeRecorder.cs header for poses.csv column spec).
 
 Coordinate frame is preserved: Unity world (left-handed, Y-up, Z-forward, meters,
 Hamiltonian xyzw quaternions). No axis remap or handedness flip is applied.
 
 Per-step output (one entry in `steps`):
-  observation.image — uint8 RGB, original capture resolution (resized to 128x128
-                      LANCZOS later in example_transform/transform.py).
+  observation.image — uint8 RGB, asserted to already be 224x224.
   observation.state — float32[7] = [joint_0..5 RAD, suction {0.0, 1.0}].
                       Joint angles are converted deg → rad here; CSV stores degrees.
-  action            — float32[8] = [Δpos_xyz (world, m),
+  action            — float32[7] = [Δpos_xyz (world, m),
                                     Δrot_rotvec_xyz (axis-angle, rad),
-                                    suction_cmd {-1.0, +1.0},
-                                    terminate (= is_terminal as float)].
+                                    suction_cmd {-1.0, +1.0}].
                       Δrot comes from CSV's quaternion delta via
                       scipy Rotation.from_quat(xyzw).as_rotvec().
-  reward, discount, is_first/last/terminal — copied from poses.csv as-is.
+                      Episode-end is carried by the separate is_terminal field,
+                      not the action vector.
+  The following are derived from the step's position in the episode, not read
+  from poses.csv:
+  is_first    — True on the first step (step_idx == 0).
+  is_last     — True on the last step (step_idx == num_steps - 1).
+  is_terminal — same as is_last (demos terminate on the last step).
+  reward      — 1.0 on the last step, 0.0 otherwise.
+  discount    — fixed at 1.0.
   language_instruction — hard-coded LANGUAGE_INSTRUCTION (not stored in CSV).
   language_embedding   — USE-large embedding of LANGUAGE_INSTRUCTION.
 
-Split: first TRAIN_SPLIT (90%) of sorted recording_* dirs → train, rest → val.
+Split: first TRAIN_SPLIT (90%) of sorted child dirs of DATASET_DIR → train, rest → val.
 Env: override input dir with DATASET_DIR=...
 """
 
 from typing import Iterator, Tuple, Any
 
 import csv
-import glob
 import numpy as np
 import os
 import tensorflow_datasets as tfds
@@ -45,10 +52,10 @@ _DEFAULT_DATASET_DIR = os.path.normpath(
         "..",
         "ur5_simulation",
         "Exports",
-        "dataset1"))
+        "overfit_dataset"))
 DATASET_DIR = os.environ.get("DATASET_DIR", _DEFAULT_DATASET_DIR)
 TRAIN_SPLIT = 0.9
-LANGUAGE_INSTRUCTION = "put blue, red, and green gear into planetary gearbox"
+LANGUAGE_INSTRUCTION = "put blue, red, and green gears into planetary gearbox"
 
 
 class Ur5Unity(tfds.core.GeneratorBasedBuilder):
@@ -68,10 +75,10 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
                 "steps": tfds.features.Dataset({
                     "observation": tfds.features.FeaturesDict({
                         "image": tfds.features.Image(
-                            shape=(None, None, 3),
+                            shape=(224, 224, 3),
                             dtype=np.uint8,
                             encoding_format="png",
-                            doc="Main camera RGB observation.",
+                            doc="Main camera RGB observation (224x224).",
                         ),
                         "state": tfds.features.Tensor(
                             shape=(7,),
@@ -80,10 +87,10 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
                         ),
                     }),
                     "action": tfds.features.Tensor(
-                        shape=(8,),
+                        shape=(7,),
                         dtype=np.float32,
                         doc="Robot action: [3x delta EE pos, 3x delta EE rot (rotation vector), "
-                            "1x suction command (-1/1), 1x terminate episode].",
+                            "1x suction command (-1/1)].",
                     ),
                     "discount": tfds.features.Scalar(dtype=np.float32, doc="Discount if provided, default to 1."),
                     "reward": tfds.features.Scalar(dtype=np.float32, doc="Reward if provided, 1 on final step for demos."),
@@ -104,11 +111,15 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        # DATASET_DIR is the dataset root; each immediate child directory is one
+        # recorded episode (containing poses.csv + an images/ folder). Take every
+        # child dir, not just recording_*-named ones.
         episode_dirs = sorted(
-            glob.glob(
-                os.path.join(
-                    DATASET_DIR,
-                    "recording_*")))
+            os.path.join(DATASET_DIR, name)
+            for name in os.listdir(DATASET_DIR)
+            if os.path.isdir(os.path.join(DATASET_DIR, name))
+        )
+        # Keep only valid episodes (skips any stray non-episode child dirs).
         episode_dirs = [
             d for d in episode_dirs
             if os.path.isfile(os.path.join(d, "poses.csv"))
@@ -138,33 +149,42 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
         if not rows:
             return None
 
+        num_steps = len(rows)
         episode = [
             self._parse_step(
                 row,
+                step_idx,
+                num_steps,
                 images_dir,
-                language_embedding) for row in rows]
+                language_embedding) for step_idx, row in enumerate(rows)]
         return episode_dir, {
             "steps": episode,
             "episode_metadata": {"file_path": episode_dir},
         }
 
-    def _parse_step(self, row, images_dir, language_embedding):
-        image = np.array(
-            Image.open(
-                os.path.join(
-                    images_dir,
-                    f"{int(row['frame']):06d}.png")).convert("RGB"))
+    def _parse_step(self, row, step_idx, num_steps, images_dir,
+                    language_embedding):
+        image_path = os.path.join(images_dir, f"{int(row['frame']):06d}.png")
+        image = np.array(Image.open(image_path).convert("RGB"))
+        assert image.shape == (224, 224, 3), (
+            f"Expected 224x224 RGB image, got {image.shape} at {image_path}")
+        # RLDS demo bookkeeping is derived from the step's position in the
+        # episode, not read from poses.csv: first/last by index, demos are
+        # terminal on the last step with reward 1 there and 0 elsewhere,
+        # discount fixed at 1.
+        is_first = step_idx == 0
+        is_last = step_idx == num_steps - 1
         return {
             "observation": {
                 "image": image,
                 "state": self._parse_state(row),
             },
             "action": self._parse_action(row),
-            "discount": float(row["discount"]),
-            "reward": float(row["reward"]),
-            "is_first": int(row["is_first"]) == 1,
-            "is_last": int(row["is_last"]) == 1,
-            "is_terminal": int(row["is_terminal"]) == 1,
+            "discount": 1.0,
+            "reward": 1.0 if is_last else 0.0,
+            "is_first": is_first,
+            "is_last": is_last,
+            "is_terminal": is_last,
             "language_instruction": LANGUAGE_INSTRUCTION,
             "language_embedding": language_embedding,
         }
@@ -190,6 +210,5 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
         delta_rotvec = Rotation.from_quat(
             delta_quat_xyzw).as_rotvec().astype(np.float32)
         suction_cmd = 1.0 if row["suctionOn"] == "True" else -1.0
-        terminate = float(row["is_terminal"])
-        return np.concatenate([delta_pos, delta_rotvec, [suction_cmd], [
-                              terminate]]).astype(np.float32)
+        return np.concatenate(
+            [delta_pos, delta_rotvec, [suction_cmd]]).astype(np.float32)

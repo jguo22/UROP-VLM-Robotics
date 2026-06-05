@@ -12,8 +12,8 @@ Interpretation:
                             the unnorm_key on the server is wrong.
 
 The target action is reconstructed to match the model's actual training target:
-   ur5_unity_dataset_builder.py: [Δpos, Δrotvec, suction(-1/+1), terminate]
-   ur5_unity_dataset_transform : drop terminate, map suction -> gripper {0,1}
+   ur5_unity_dataset_builder.py: [Δpos, Δrotvec, suction(-1/+1)]  (7D)
+   ur5_unity_dataset_transform : map suction -> gripper {0,1}
                                   (suction on/+1 -> 0 closed, off/-1 -> 1 open)
 
 Usage:
