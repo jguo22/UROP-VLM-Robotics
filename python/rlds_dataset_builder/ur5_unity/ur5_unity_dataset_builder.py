@@ -10,11 +10,15 @@ Hamiltonian xyzw quaternions). No axis remap or handedness flip is applied.
 
 Per-step output (one entry in `steps`):
   observation.image — uint8 RGB, asserted to already be 224x224.
-  observation.state — float32[7] = [joint_0..5 RAD, suction {0.0, 1.0}].
+  observation.state — float32[7] = [joint_0..5 RAD, suction state].
                       Joint angles are converted deg → rad here; CSV stores degrees.
+                      suction state: 1.0 = suction on, 0.0 = suction off.
   action            — float32[7] = [Δpos_xyz (world, m),
                                     Δrot_rotvec_xyz (axis-angle, rad),
-                                    suction_cmd {-1.0, +1.0}].
+                                    suction_cmd].
+                      suction_cmd: +1.0 = suction on, -1.0 = suction off.
+                      (Note the action and state use different off-values:
+                       action off = -1.0, state off = 0.0; both use on = 1.0.)
                       Δrot comes from CSV's quaternion delta via
                       scipy Rotation.from_quat(xyzw).as_rotvec().
                       Episode-end is carried by the separate is_terminal field,
@@ -83,14 +87,15 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
                         "state": tfds.features.Tensor(
                             shape=(7,),
                             dtype=np.float32,
-                            doc="Robot state: [6x joint angles in radians, 1x suction on/off].",
+                            doc="Robot state: [6x joint angles in radians, "
+                                "1x suction state (1.0 = on, 0.0 = off)].",
                         ),
                     }),
                     "action": tfds.features.Tensor(
                         shape=(7,),
                         dtype=np.float32,
                         doc="Robot action: [3x delta EE pos, 3x delta EE rot (rotation vector), "
-                            "1x suction command (-1/1)].",
+                            "1x suction command (+1.0 = on, -1.0 = off)].",
                     ),
                     "discount": tfds.features.Scalar(dtype=np.float32, doc="Discount if provided, default to 1."),
                     "reward": tfds.features.Scalar(dtype=np.float32, doc="Reward if provided, 1 on final step for demos."),
@@ -194,6 +199,7 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
             [float(row[f"joint_{j}"]) * np.pi / 180.0 for j in range(6)],
             dtype=np.float32,
         )
+        # State suction: 1.0 = suction on, 0.0 = suction off.
         suction_on = 1.0 if row["suctionOn"] == "True" else 0.0
         return np.concatenate(
             [joint_angles_rad, [suction_on]]).astype(np.float32)
@@ -209,6 +215,7 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
         ])
         delta_rotvec = Rotation.from_quat(
             delta_quat_xyzw).as_rotvec().astype(np.float32)
+        # Action suction command: +1.0 = suction on, -1.0 = suction off.
         suction_cmd = 1.0 if row["suctionOn"] == "True" else -1.0
         return np.concatenate(
             [delta_pos, delta_rotvec, [suction_cmd]]).astype(np.float32)

@@ -11,10 +11,10 @@ Interpretation:
   - Large per-dim error  -> the fine-tune did not converge on this data, or
                             the unnorm_key on the server is wrong.
 
-The target action is reconstructed to match the model's actual training target:
-   ur5_unity_dataset_builder.py: [Δpos, Δrotvec, suction(-1/+1)]  (7D)
-   ur5_unity_dataset_transform : map suction -> gripper {0,1}
-                                  (suction on/+1 -> 0 closed, off/-1 -> 1 open)
+The target action is reconstructed to match the model's actual training target,
+which is the builder's action format directly:
+   ur5_unity_dataset_builder.py: [Δpos, Δrotvec, suction]  (7D)
+                                  suction: +1.0 = on, -1.0 = off.
 
 Usage:
   # Whole dataset (parent dir containing recording_*/ subdirs):
@@ -36,7 +36,7 @@ import requests
 from PIL import Image
 from scipy.spatial.transform import Rotation
 
-ACTION_DIMS = ["dpos_x", "dpos_y", "dpos_z", "drot_x", "drot_y", "drot_z", "gripper"]
+ACTION_DIMS = ["dpos_x", "dpos_y", "dpos_z", "drot_x", "drot_y", "drot_z", "suction"]
 
 
 def encode_image(img: np.ndarray) -> dict:
@@ -55,8 +55,10 @@ def decode_numpy(d: dict) -> np.ndarray:
 
 def build_state(row: dict) -> list[float]:
     joints_rad = [float(row[f"joint_{j}"]) * np.pi / 180.0 for j in range(6)]
+    # State suction: 1.0 = on, 0.0 = off.
     suction = 1.0 if row["suctionOn"] == "True" else 0.0
-    return joints_rad + [0.0, suction]
+    # state is float32[7] = [joint_0..5 RAD, suction]; no placeholder dim.
+    return joints_rad + [suction]
 
 
 def build_recorded_action(row: dict) -> np.ndarray:
@@ -75,8 +77,9 @@ def build_recorded_action(row: dict) -> np.ndarray:
     )
     rotvec = Rotation.from_quat(quat_xyzw).as_rotvec()
     suction_on = row["suctionOn"] == "True"
-    gripper = 0.0 if suction_on else 1.0
-    return np.concatenate([delta_pos, rotvec, [gripper]]).astype(np.float32)
+    # Action suction command: +1.0 = on, -1.0 = off (matches the builder).
+    suction_cmd = 1.0 if suction_on else -1.0
+    return np.concatenate([delta_pos, rotvec, [suction_cmd]]).astype(np.float32)
 
 
 def parse_response(body_text: str) -> np.ndarray:
@@ -239,9 +242,10 @@ def main() -> None:
 
         errs = preds - recs
         mean_l2 = float(np.linalg.norm(errs, axis=1).mean())
-        gripper_acc = ((preds[:, 6] < 0.5) == (recs[:, 6] < 0.5)).mean() * 100.0
+        # Suction is +1 on / -1 off, so the on/off decision boundary is 0.0.
+        suction_acc = ((preds[:, 6] > 0.0) == (recs[:, 6] > 0.0)).mean() * 100.0
         print(f"  {ep.name:<40}  frames={len(preds):>4}  "
-              f"mean|err|_2={mean_l2:.5f}  gripper={gripper_acc:5.1f}%")
+              f"mean|err|_2={mean_l2:.5f}  suction={suction_acc:5.1f}%")
 
         all_preds.append(preds)
         all_recs.append(recs)
@@ -261,10 +265,11 @@ def main() -> None:
     print_per_dim_table(preds, recs)
     print()
     print(f"Mean |err|_2 (chunk[0])    : {np.linalg.norm(errs, axis=1).mean():.5f}")
-    gripper_acc = ((preds[:, 6] < 0.5) == (recs[:, 6] < 0.5)).mean() * 100.0
-    n_closed = int((recs[:, 6] < 0.5).sum())
-    print(f"Gripper-threshold agreement: {gripper_acc:.1f}%  "
-          f"(recorded closed/grasping on {n_closed}/{len(recs)} frames)")
+    # Suction is +1 on / -1 off, so the on/off decision boundary is 0.0.
+    suction_acc = ((preds[:, 6] > 0.0) == (recs[:, 6] > 0.0)).mean() * 100.0
+    n_on = int((recs[:, 6] > 0.0).sum())
+    print(f"Suction-threshold agreement: {suction_acc:.1f}%  "
+          f"(recorded suction-on on {n_on}/{len(recs)} frames)")
 
     if args.csv is not None:
         args.csv.parent.mkdir(parents=True, exist_ok=True)

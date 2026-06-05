@@ -144,12 +144,13 @@ public class OpenVLAController : MonoBehaviour
 
         ObservationCapture.Observation observation = observationCapture.CaptureState();
         float[] anglesDeg = observation.jointAnglesDeg;
-        float[] state = new float[anglesDeg.Length + 2];
+        // state is float32[7] = [joint_0..5 RAD, suction]; no placeholder dim.
+        float[] state = new float[anglesDeg.Length + 1];
         // OpenVLA-OFT proprio is trained in radians.
         for (int i = 0; i < anglesDeg.Length; i++)
             state[i] = anglesDeg[i] * Mathf.Deg2Rad;
-        state[^2] = 0;
-        state[^1] = observation.suctionOn ? 1 : -1;
+        // State suction: 1 = on, 0 = off (matches ur5_unity_dataset_builder.py).
+        state[^1] = observation.suctionOn ? 1f : 0f;
 
         var payloadDict = new
         {
@@ -256,6 +257,7 @@ public class OpenVLAController : MonoBehaviour
 
         robotController.MoveDelta(deltaPosition, deltaRotation);
 
-        robotController.SetSuction(action[6] < 0.5f);
+        // Action suction command: +1 = on, -1 = off (decision boundary at 0).
+        robotController.SetSuction(action[6] > 0f);
     }
 }
