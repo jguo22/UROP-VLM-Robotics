@@ -158,7 +158,8 @@ public class OpenVLAController : MonoBehaviour
             {
                 __numpy__ = Convert.ToBase64String(imageBytes),
                 dtype = "uint8",
-                shape = new[] { ObservationCapture.ImageWidth, ObservationCapture.ImageHeight, 3 }
+                // Bytes are row-major (H, W, 3); declare the shape in that same order.
+                shape = new[] { ObservationCapture.ImageHeight, ObservationCapture.ImageWidth, 3 }
             },
             state,
             instruction

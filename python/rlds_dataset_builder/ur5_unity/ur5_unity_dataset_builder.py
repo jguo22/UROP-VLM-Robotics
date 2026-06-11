@@ -58,7 +58,7 @@ _DEFAULT_DATASET_DIR = os.path.normpath(
         "Exports",
         "overfit_dataset"))
 DATASET_DIR = os.environ.get("DATASET_DIR", _DEFAULT_DATASET_DIR)
-TRAIN_SPLIT = 0.9
+TRAIN_SPLIT = 1  # change later
 LANGUAGE_INSTRUCTION = "put blue, red, and green gears into planetary gearbox"
 
 
@@ -134,7 +134,7 @@ class Ur5Unity(tfds.core.GeneratorBasedBuilder):
         split_idx = int(len(episode_dirs) * TRAIN_SPLIT)
         return {
             "train": self._generate_examples(episode_dirs[:split_idx], language_embedding),
-            "val": self._generate_examples(episode_dirs[split_idx:], language_embedding),
+            # "val": self._generate_examples(episode_dirs[split_idx:], language_embedding),
         }
 
     def _generate_examples(self, episode_dirs,

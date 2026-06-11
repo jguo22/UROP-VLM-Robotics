@@ -41,10 +41,11 @@ ACTION_DIMS = ["dpos_x", "dpos_y", "dpos_z", "drot_x", "drot_y", "drot_z", "suct
 
 def encode_image(img: np.ndarray) -> dict:
     h, w, _ = img.shape
+    # Bytes are row-major (H, W, 3); declare the shape in that same order.
     return {
         "__numpy__": base64.b64encode(img.tobytes()).decode("ascii"),
         "dtype": "uint8",
-        "shape": [w, h, 3],
+        "shape": [h, w, 3],
     }
 
 
