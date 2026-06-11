@@ -15,23 +15,32 @@ public class OpenVLAController : MonoBehaviour
 {
     private const int ActionDim = 7;
 
-    [Header("OpenVLA Server")] 
+    [Header("OpenVLA Server")]
     private readonly string serverUrl = "http://localhost:8778/act";
 
-    [SerializeField] private string instruction = "put blue, red, and green gears into planetary gearbox";
+    [SerializeField]
+    private string instruction = "put blue, red, and green gears into planetary gearbox";
 
-    [Header("Capture")] [SerializeField] private ObservationCapture observationCapture;
+    [Header("Capture")]
+    [SerializeField]
+    private ObservationCapture observationCapture;
 
-    [Header("Control")] [Tooltip("How often to query the VLA (Hz).")] [SerializeField]
+    [Header("Control")]
+    [Tooltip("How often to query the VLA (Hz).")]
+    [SerializeField]
     private float controlFrequency = 10.0f;
 
     [Tooltip("Automatically query the server every 1/controlFrequency seconds")]
     public bool autoQuery = true;
 
-    [Header("Action Scaling")] [Tooltip("Training control frequency")] [SerializeField]
+    [Header("Action Scaling")]
+    [Tooltip("Training control frequency")]
+    [SerializeField]
     private float trainingFrequency = 10.0f;
 
-    [Header("UI")] [SerializeField] private Rect startButtonRect = new(20f, 20f, 160f, 40f);
+    [Header("UI")]
+    [SerializeField]
+    private Rect startButtonRect = new(20f, 20f, 160f, 40f);
 
     private readonly Queue<float[]> pendingActions = new();
 
@@ -159,10 +168,10 @@ public class OpenVLAController : MonoBehaviour
                 __numpy__ = Convert.ToBase64String(imageBytes),
                 dtype = "uint8",
                 // Bytes are row-major (H, W, 3); declare the shape in that same order.
-                shape = new[] { ObservationCapture.ImageHeight, ObservationCapture.ImageWidth, 3 }
+                shape = new[] { ObservationCapture.ImageHeight, ObservationCapture.ImageWidth, 3 },
             },
             state,
-            instruction
+            instruction,
         };
 
         return JsonConvert.SerializeObject(payloadDict);
@@ -252,9 +261,10 @@ public class OpenVLAController : MonoBehaviour
         // matching ur5_unity_dataset_builder.py. Decode as axis-angle, not Euler.
         var rotVec = new Vector3(action[3], action[4], action[5]);
         float angleRad = rotVec.magnitude;
-        Quaternion deltaRotation = angleRad < 1e-8f
-            ? Quaternion.identity
-            : Quaternion.AngleAxis(angleRad * Mathf.Rad2Deg, rotVec / angleRad);
+        Quaternion deltaRotation =
+            angleRad < 1e-8f
+                ? Quaternion.identity
+                : Quaternion.AngleAxis(angleRad * Mathf.Rad2Deg, rotVec / angleRad);
 
         robotController.MoveDelta(deltaPosition, deltaRotation);
 
@@ -262,3 +272,4 @@ public class OpenVLAController : MonoBehaviour
         robotController.SetSuction(action[6] > 0f);
     }
 }
+

@@ -4789,7 +4789,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a508eb1cc3a584c0bab4c847080bd779, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OpenVLAController
-  serverUrl: http://localhost:8777/act
   instruction: put blue, red, and green gears into planetary gearbox
   observationCapture: {fileID: 1380065265}
   controlFrequency: 5
