@@ -24,7 +24,7 @@ public static class ConstantsUR5
     public const int EndEffectorIndex = 11;
     public const int CoordinateRecordLength = JointCount + 3; //no of joints + end effector + block + platform
 
-    public static readonly float[] StableStartingRotations = new float[] //rotations in radians
+    public static readonly float[] StableStartingRotations =
     {
         Mathf.PI, // Base rotation
         -0.8f, // Shoulder (lowered to better reach cubes)
@@ -36,6 +36,6 @@ public static class ConstantsUR5
 
     // Suction params
 
-    public const float SuctionDistance = 0.01f; //distance from suction cup to object to activate suction
-    public const float SuctionOffsetY = -0.01f; //offset from end effector to suction cup along Y axis
+    // public const float SuctionDistance = 0.01f; //distance from suction cup to object to activate suction
+    // public const float SuctionOffsetY = -0.01f; //offset from end effector to suction cup along Y axis
 }

@@ -48,6 +48,7 @@ public class TeacherController : MonoBehaviour
             episodeSuccess = true;
 
             sceneSetup.ResetSceneState();
+            yield return new WaitForSeconds(1);
             yield return WaitForIdle();
             print(string.Join(", ", controller.GetJointAngles()));
 
@@ -93,8 +94,11 @@ public class TeacherController : MonoBehaviour
             Vector3 initialPosition = gearData[gearName];
             Vector3 goalPosition = GoalGearPositions[gearName];
 
+            print(initialPosition.ToString("F6"));
             yield return MoveArmCR(initialPosition + approachOffset);
             suctionController.SetSuctionState(true);
+            print(controller.GetEndEffectorPoseWorld().position.ToString("F6"));
+            print(initialPosition.ToString("F6"));
             yield return MoveArmCR(initialPosition);
             yield return MoveArmCR(initialPosition + approachOffset);
             yield return MoveArmCR(goalPosition + approachOffset);
@@ -137,7 +141,9 @@ public class TeacherController : MonoBehaviour
 
         var targets = suctionController.targetBlocks;
         foreach (GameObject target in targets)
-            result[target.name] = target.transform.position;
+            // for some reason, the collider center isn't at the transform location
+            // and is offset by like 0.04 on the x axis. very confusing.
+            result[target.name] = target.GetComponent<Collider>().bounds.center;
 
         return result;
     }

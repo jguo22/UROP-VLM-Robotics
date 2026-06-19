@@ -14,6 +14,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
     private readonly object lockObject = new();
 
     private readonly Queue<Action> mainThreadActions = new();
+    private readonly byte[] receiveBuffer = new byte[4096];
     private TcpClient client;
 
     private string hostAddress;
@@ -21,7 +22,6 @@ public abstract class AgenticSocketBase : MonoBehaviour
     private bool isSocketActive = false;
     private TcpListener listener;
     private int portNumber;
-    private readonly byte[] receiveBuffer = new byte[4096];
 
     protected EpisodeRecorder recorder;
     protected RobotArmSetup[] robotArmSetups;
@@ -278,7 +278,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
             }
 
             Transform endEffector = robotArmSetup
-                .robotJoints[robotArmSetup.robotJoints.Length - 1]
+                .robotJoints[^1]
                 .transform;
             robotStates[i] = new RobotStateData
             {

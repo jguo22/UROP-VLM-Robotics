@@ -12,8 +12,8 @@ public class UR5Controller : MonoBehaviour
     private Transform endEffector;
     private UR5IKSolver ikSolver;
 
-    private Transform
-        originTransform; // used to calculate the relative position of the end effector to the base of the robot
+    // used to calculate the relative position of the end effector to the base of the robot
+    private Transform originTransform;
 
     // Component references
     private RobotArmSetup robotArmSetup;
@@ -166,7 +166,7 @@ public class UR5Controller : MonoBehaviour
     public float[] GetJointVelocities()
     {
         float[] vels = new float[JointCount];
-        
+
         // Get the current joint angles from the joint controllers
         for (int i = 0; i < JointCount; i++) vels[i] = robotJoints[i].jointVelocity[0];
 
@@ -198,6 +198,8 @@ public class UR5Controller : MonoBehaviour
     // Get current end effector pose
     public (Vector3 position, Quaternion rotation) GetEndEffectorPoseWorld()
     {
+        print(endEffector);
+        print(endEffector.position);
         return (endEffector.position, endEffector.rotation);
     }
 }

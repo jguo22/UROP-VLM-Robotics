@@ -1,77 +1,45 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using static ConstantsUR5;
 
 [DefaultExecutionOrder(-1)]
 public class SuctionController : MonoBehaviour
 {
-    public bool enableSuction = false;
-    private float suctionDistance = SuctionDistance;
-    private float suctionForce = 10f;
-    private float attractionSpeed = 5f;
-    private bool showDebugInfo = true;
+    private const bool ShowDebugInfo = true;
 
-    [Header("Visual Feedback")]
-    public Material suctionActiveMaterial;
+    private const float SuctionDistance = 0.01f;
+    private const float SuctionOffsetY = -0.01f;
+
+    public bool enableSuction = false;
+
+    [Header("Visual Feedback")] public Material suctionActiveMaterial;
+
     public Material suctionInactiveMaterial;
+
+    [HideInInspector] public GameObject[] targetBlocks;
+
+    // Suction state
+    [HideInInspector] public bool isBlockAttached;
 
     //private BlockSetup blockSetup;
     private ArticulationBody[] articulationChain;
-    private ArticulationBody[] robotJoints;
-
-    [HideInInspector]
-    public GameObject[] targetBlocks;
-    private GameObject targetBlock;
-    private Transform endEffector;
-    private Rigidbody blockRigidbody;
     private Renderer blockRenderer;
-    private Material originalBlockMaterial;
-
-    // Suction state
-    [HideInInspector]
-    public bool isBlockAttached;
-    private bool wasSuctionActive = false;
+    private Rigidbody blockRigidbody;
     private float currentDistance;
-    private List<float> currentDistances = new List<float>();
+    private Transform endEffector;
+    private Material originalBlockMaterial;
+    private ArticulationBody[] robotJoints;
+    private GameObject suctionIndicator;
 
     // Visual feedback
     private LineRenderer suctionLine;
-    private GameObject suctionIndicator;
+    private GameObject targetBlock;
+    private bool wasSuctionActive = false;
 
     private void Start()
     {
         InitializeComponents();
         //SetupVisualFeedback();
-    }
-
-    private void InitializeComponents()
-    {
-        // Get articulation chain and setup joints
-        articulationChain = this.GetComponentsInChildren<ArticulationBody>();
-
-        if (articulationChain == null || articulationChain.Length == 0)
-        {
-            Debug.LogError("Articulation chain is not properly set up in SuctionController.");
-            return;
-        }
-
-        for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
-        {
-            ArticulationBody joint = articulationChain[i];
-            joint.jointFriction = JointFriction;
-            joint.angularDamping = AngularDamping;
-            ArticulationDrive currentDrive = joint.xDrive;
-            currentDrive.forceLimit = ForceLimit;
-            joint.xDrive = currentDrive;
-        }
-
-        robotJoints = new ArticulationBody[JointCount + 1];
-        Array.Copy(articulationChain, BaseIndex, robotJoints, 0, JointCount);
-        robotJoints[JointCount] = articulationChain[EndEffectorIndex];
-
-        // Get end effector transform
-        endEffector = robotJoints[JointCount].transform;
     }
 
     private void Update()
@@ -94,7 +62,7 @@ public class SuctionController : MonoBehaviour
             if (block == null)
                 continue;
 
-            Collider blockCollider = block.GetComponent<Collider>();
+            var blockCollider = block.GetComponent<Collider>();
             if (blockCollider == null)
                 continue;
             // Vector3 blockPosition = blockCollider != null ? blockCollider.bounds.center : block.transform.position;
@@ -134,10 +102,7 @@ public class SuctionController : MonoBehaviour
         // Get block components
         blockRigidbody = targetBlock.GetComponent<Rigidbody>();
         blockRenderer = targetBlock.GetComponent<Renderer>();
-        if (blockRenderer != null)
-        {
-            originalBlockMaterial = blockRenderer.material;
-        }
+        if (blockRenderer != null) originalBlockMaterial = blockRenderer.material;
 
         // Calculate distance to nearest block
         //currentDistance = currentDistances.Min();
@@ -153,13 +118,107 @@ public class SuctionController : MonoBehaviour
         HandleBlockAttachment();
     }
 
+    // Debug information
+    private void OnGUI()
+    {
+        if (!ShowDebugInfo)
+            return;
+
+        float refWidth = 1920f;
+        float refHeight = 1080f;
+        float scaleX = Screen.width / refWidth;
+        float scaleY = Screen.height / refHeight;
+        float scale = Mathf.Min(scaleX, scaleY);
+
+        Matrix4x4 prevMatrix = GUI.matrix;
+        GUI.matrix = Matrix4x4.TRS(
+            Vector3.zero,
+            Quaternion.identity,
+            new Vector3(scale, scale, 1f)
+        );
+
+        var style = new GUIStyle(GUI.skin.label);
+        style.fontSize = 14;
+        style.normal.textColor = Color.white;
+
+        float yOffset = 140f;
+
+        string distanceStatus;
+        Color statusColor;
+        if (currentDistance <= SuctionDistance)
+        {
+            distanceStatus = "IN RANGE";
+            statusColor = Color.green;
+        }
+        else if (currentDistance <= SuctionDistance * 2f)
+        {
+            distanceStatus = "APPROACHING";
+            statusColor = Color.yellow;
+        }
+        else
+        {
+            distanceStatus = "TOO FAR";
+            statusColor = Color.red;
+        }
+
+        style.normal.textColor = statusColor;
+
+        GUI.Label(
+            new Rect(10, yOffset, 400, 20),
+            $"Suction Distance: {currentDistance:F4}m",
+            style
+        );
+        GUI.Label(
+            new Rect(10, yOffset + 20, 400, 20),
+            $"Suction Threshold: {SuctionDistance}m",
+            style
+        );
+        GUI.Label(new Rect(10, yOffset + 40, 400, 20), $"Block Attached: {isBlockAttached}", style);
+        GUI.Label(
+            new Rect(10, yOffset + 60, 400, 20),
+            $"In Range: {IsWithinSuctionRange()}",
+            style
+        );
+        GUI.Label(new Rect(10, yOffset + 80, 400, 20), $"Status: {distanceStatus}", style);
+
+        GUI.matrix = prevMatrix;
+    }
+
+    private void InitializeComponents()
+    {
+        // Get articulation chain and setup joints
+        articulationChain = GetComponentsInChildren<ArticulationBody>();
+
+        if (articulationChain == null || articulationChain.Length == 0)
+        {
+            Debug.LogError("Articulation chain is not properly set up in SuctionController.");
+            return;
+        }
+
+        for (int i = BaseIndex; i < BaseIndex + JointCount; i++)
+        {
+            ArticulationBody joint = articulationChain[i];
+            joint.jointFriction = JointFriction;
+            joint.angularDamping = AngularDamping;
+            ArticulationDrive currentDrive = joint.xDrive;
+            currentDrive.forceLimit = ForceLimit;
+            joint.xDrive = currentDrive;
+        }
+
+        robotJoints = new ArticulationBody[JointCount + 1];
+        Array.Copy(articulationChain, BaseIndex, robotJoints, 0, JointCount);
+        robotJoints[JointCount] = articulationChain[EndEffectorIndex];
+
+        // Get end effector transform
+        endEffector = robotJoints[JointCount].transform;
+    }
+
     private void HandleSuctionState()
     {
-        bool shouldBeActive = enableSuction && currentDistance <= suctionDistance;
+        bool shouldBeActive = enableSuction && currentDistance <= SuctionDistance;
 
         // State change detection
         if (shouldBeActive != wasSuctionActive)
-        {
             // if (shouldBeActive)
             // {
             //     Debug.Log(
@@ -173,7 +232,6 @@ public class SuctionController : MonoBehaviour
             //     );
             // }
             wasSuctionActive = shouldBeActive;
-        }
     }
 
     private void HandleBlockAttachment()
@@ -181,19 +239,14 @@ public class SuctionController : MonoBehaviour
         if (targetBlock == null)
             return;
 
-        bool shouldBeAttached = enableSuction && currentDistance <= suctionDistance;
+        bool shouldBeAttached = enableSuction && currentDistance <= SuctionDistance;
 
         if (shouldBeAttached && !isBlockAttached)
-        {
             AttachBlock();
-        }
-        else if (!shouldBeAttached && isBlockAttached)
-        {
-            DetachBlock();
-        }
+        else if (!shouldBeAttached && isBlockAttached) DetachBlock();
 
         // Apply attraction force when suction is active but block isn't fully attached
-        if (enableSuction && currentDistance <= suctionDistance * 2f && !isBlockAttached)
+        if (enableSuction && currentDistance <= SuctionDistance * 2f && !isBlockAttached)
         {
             // ApplyAttractionForce();
         }
@@ -207,10 +260,7 @@ public class SuctionController : MonoBehaviour
         isBlockAttached = true;
 
         // Make block kinematic and parent to end effector
-        if (blockRigidbody != null)
-        {
-            blockRigidbody.isKinematic = true;
-        }
+        if (blockRigidbody != null) blockRigidbody.isKinematic = true;
 
         // Debug.Log("Can attach block");
 
@@ -219,10 +269,7 @@ public class SuctionController : MonoBehaviour
         //targetBlock.transform.localRotation = Quaternion.identity;
 
         // Change block material to indicate suction
-        if (blockRenderer != null && suctionActiveMaterial != null)
-        {
-            blockRenderer.material = suctionActiveMaterial;
-        }
+        if (blockRenderer != null && suctionActiveMaterial != null) blockRenderer.material = suctionActiveMaterial;
 
         // Debug.Log("Block attached to suction");
         //suctionDistance = 0.1f;
@@ -251,82 +298,31 @@ public class SuctionController : MonoBehaviour
         //targetBlock.transform.SetParent(null);
 
         // Restore original block material
-        if (blockRenderer != null && originalBlockMaterial != null)
-        {
-            blockRenderer.material = originalBlockMaterial;
-        }
+        if (blockRenderer != null && originalBlockMaterial != null) blockRenderer.material = originalBlockMaterial;
 
         // Debug.Log("Block detached from suction");
-    }
-
-    private void ApplyAttractionForce()
-    {
-        if (blockRigidbody == null || blockRigidbody.isKinematic)
-            return;
-
-        Vector3 direction = (endEffector.position - targetBlock.transform.position).normalized;
-        float forceMultiplier = Mathf.Lerp(0f, 1f, 1f - (currentDistance / (suctionDistance * 2f)));
-
-        Vector3 attractionForce = direction * suctionForce * forceMultiplier;
-        blockRigidbody.AddForce(attractionForce, ForceMode.Force);
-
-        // Also apply some damping to prevent oscillation
-        blockRigidbody.linearVelocity *= 0.9f;
-        blockRigidbody.angularVelocity *= 0.9f;
     }
 
     private void UpdateVisualFeedback()
     {
         // Update suction indicator
-        if (suctionIndicator != null)
-        {
-            bool shouldShowIndicator = enableSuction && currentDistance <= suctionDistance * 3f;
-            suctionIndicator.SetActive(shouldShowIndicator);
+        if (suctionIndicator == null) return;
+        bool shouldShowIndicator = enableSuction && currentDistance <= SuctionDistance * 3f;
+        suctionIndicator.SetActive(shouldShowIndicator);
 
-            if (shouldShowIndicator)
-            {
-                // Change color based on suction state
-                Renderer indicatorRenderer = suctionIndicator.GetComponent<Renderer>();
-                if (indicatorRenderer != null)
-                {
-                    if (isBlockAttached)
-                    {
-                        indicatorRenderer.material.color = Color.green;
-                    }
-                    else if (currentDistance <= suctionDistance)
-                    {
-                        indicatorRenderer.material.color = Color.yellow;
-                    }
-                    else
-                    {
-                        indicatorRenderer.material.color = Color.red;
-                    }
-                }
-            }
-        }
+        if (!shouldShowIndicator) return;
 
-        // Update suction line
-        // if (suctionLine != null)
-        // {
-        //     bool shouldShowLine = enableSuction && currentDistance <= suctionDistance * 2f;
-        //     suctionLine.enabled = shouldShowLine;
+        // Change color based on suction state
+        var indicatorRenderer = suctionIndicator.GetComponent<Renderer>();
 
-        //     if (shouldShowLine)
-        //     {
-        //         suctionLine.SetPosition(0, endEffector.position);
-        //         suctionLine.SetPosition(1, targetBlock.transform.position);
+        if (indicatorRenderer == null) return;
 
-        //         // Change line color based on distance
-        //         if (currentDistance <= suctionDistance)
-        //         {
-        //             //suctionLine.color = Color.green;
-        //         }
-        //         else
-        //         {
-        //             //suctionLine.color = Color.yellow;
-        //         }
-        //     }
-        // }
+        if (isBlockAttached)
+            indicatorRenderer.material.color = Color.green;
+        else if (currentDistance <= SuctionDistance)
+            indicatorRenderer.material.color = Color.yellow;
+        else
+            indicatorRenderer.material.color = Color.red;
     }
 
     // Public methods for external control
@@ -342,19 +338,9 @@ public class SuctionController : MonoBehaviour
         //Debug.Log($"Suction set to: {enableSuction}");
     }
 
-    public bool IsBlockAttached()
+    private bool IsWithinSuctionRange()
     {
-        return isBlockAttached;
-    }
-
-    public float GetDistanceToBlock()
-    {
-        return currentDistance;
-    }
-
-    public bool IsWithinSuctionRange()
-    {
-        return currentDistance <= suctionDistance;
+        return currentDistance <= SuctionDistance;
     }
 
     public void ResetSuctionState()
@@ -365,89 +351,21 @@ public class SuctionController : MonoBehaviour
         currentDistance = float.MaxValue;
 
         if (targetBlocks != null)
-        {
             foreach (GameObject target in targetBlocks)
             {
                 if (target == null)
                     continue;
 
-                Rigidbody rb = target.GetComponent<Rigidbody>();
+                var rb = target.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
                 }
             }
-        }
 
         targetBlock = null;
         blockRigidbody = null;
         blockRenderer = null;
-    }
-
-    // Debug information
-    private void OnGUI()
-    {
-        if (!showDebugInfo)
-            return;
-
-        float refWidth = 1920f;
-        float refHeight = 1080f;
-        float scaleX = Screen.width / refWidth;
-        float scaleY = Screen.height / refHeight;
-        float scale = Mathf.Min(scaleX, scaleY);
-
-        Matrix4x4 prevMatrix = GUI.matrix;
-        GUI.matrix = Matrix4x4.TRS(
-            Vector3.zero,
-            Quaternion.identity,
-            new Vector3(scale, scale, 1f)
-        );
-
-        GUIStyle style = new GUIStyle(GUI.skin.label);
-        style.fontSize = 14;
-        style.normal.textColor = Color.white;
-
-        float yOffset = 140f;
-
-        string distanceStatus;
-        Color statusColor;
-        if (currentDistance <= suctionDistance)
-        {
-            distanceStatus = "IN RANGE";
-            statusColor = Color.green;
-        }
-        else if (currentDistance <= suctionDistance * 2f)
-        {
-            distanceStatus = "APPROACHING";
-            statusColor = Color.yellow;
-        }
-        else
-        {
-            distanceStatus = "TOO FAR";
-            statusColor = Color.red;
-        }
-
-        style.normal.textColor = statusColor;
-
-        GUI.Label(
-            new Rect(10, yOffset, 400, 20),
-            $"Suction Distance: {currentDistance:F4}m",
-            style
-        );
-        GUI.Label(
-            new Rect(10, yOffset + 20, 400, 20),
-            $"Suction Threshold: {suctionDistance}m",
-            style
-        );
-        GUI.Label(new Rect(10, yOffset + 40, 400, 20), $"Block Attached: {isBlockAttached}", style);
-        GUI.Label(
-            new Rect(10, yOffset + 60, 400, 20),
-            $"In Range: {IsWithinSuctionRange()}",
-            style
-        );
-        GUI.Label(new Rect(10, yOffset + 80, 400, 20), $"Status: {distanceStatus}", style);
-
-        GUI.matrix = prevMatrix;
     }
 }
