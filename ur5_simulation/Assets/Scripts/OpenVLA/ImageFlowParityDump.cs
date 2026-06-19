@@ -123,9 +123,7 @@ public class ImageFlowParityDump : MonoBehaviour
         if (observationCapture == null)
         {
             Debug.LogError("ImageFlowParityDump: observationCapture not assigned.");
-            return null;
-        }
-
+            return null; }
         observationCapture.Initialize();
 
         // File flow: exactly what EpisodeRecorder writes to images/NNNNNN.png.

@@ -10,31 +10,30 @@ using static ConstantsUR5;
 [DefaultExecutionOrder(100)]
 public abstract class AgenticSocketBase : MonoBehaviour
 {
-    protected TcpListener listener;
-    protected TcpClient client;
-    protected NetworkStream stream;
-    protected byte[] receiveBuffer = new byte[4096];
+    protected const float IdleVelocityThreshold = 0.05f;
+    private readonly object lockObject = new();
 
-    protected string hostAddress;
-    protected int portNumber;
+    private readonly Queue<Action> mainThreadActions = new();
+    private TcpClient client;
+
+    private string hostAddress;
+
+    private bool isSocketActive = false;
+    private TcpListener listener;
+    private int portNumber;
+    private readonly byte[] receiveBuffer = new byte[4096];
 
     protected EpisodeRecorder recorder;
+    protected RobotArmSetup[] robotArmSetups;
+    protected int robotCount;
+    protected GameObject[] robots;
+    protected SceneSetup sceneSetup;
+    private NetworkStream stream;
+    protected SuctionController[] suctionControllers;
+    protected int targetCount;
+    protected GameObject[] targets;
 
     protected UR5Controller[] ur5Controllers;
-    protected SceneSetup sceneSetup;
-    protected GameObject[] robots;
-    protected GameObject[] targets;
-    protected RobotArmSetup[] robotArmSetups;
-    protected SuctionController[] suctionControllers;
-    protected int robotCount;
-    protected int targetCount;
-
-    private Queue<Action> mainThreadActions = new Queue<Action>();
-    private object lockObject = new object();
-
-    protected bool isSocketActive = false;
-
-    protected const float IdleVelocityThreshold = 0.05f;
 
     private void Start()
     {
@@ -49,10 +48,15 @@ public abstract class AgenticSocketBase : MonoBehaviour
         {
             while (mainThreadActions.Count > 0)
             {
-                var action = mainThreadActions.Dequeue();
+                Action action = mainThreadActions.Dequeue();
                 action.Invoke();
             }
         }
+    }
+
+    private void OnApplicationQuit()
+    {
+        closeSocket();
     }
 
     protected void InitializeScene()
@@ -76,10 +80,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
         }
 
         recorder = GetComponent<EpisodeRecorder>();
-        if (recorder == null)
-        {
-            Debug.LogWarning("No EpisodeRecorder");
-        }
+        if (recorder == null) Debug.LogWarning("No EpisodeRecorder");
     }
 
     private void StartSocket()
@@ -107,23 +108,21 @@ public abstract class AgenticSocketBase : MonoBehaviour
     private void ReadEnv()
     {
         string envFile = ProjectPaths.Get("socket.env");
-        if (!System.IO.File.Exists(envFile))
+        if (!File.Exists(envFile))
         {
             Debug.LogError($"socket.env not found at {envFile}");
             return;
         }
-        foreach (var line in File.ReadAllLines(envFile))
-        {
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
-            {
-                continue;
-            }
 
-            var parts = line.Split('=', 2);
+        foreach (string line in File.ReadAllLines(envFile))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+
+            string[] parts = line.Split('=', 2);
             if (parts.Length == 2)
             {
-                var key = parts[0].Trim();
-                var value = parts[1].Trim().Trim('"');
+                string key = parts[0].Trim();
+                string value = parts[1].Trim().Trim('"');
 
                 Environment.SetEnvironmentVariable(key, value);
             }
@@ -184,7 +183,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
                     {
                         success = true,
                         message = "scene_reset",
-                        timestamp = Time.time,
+                        timestamp = Time.time
                     }
                 );
 
@@ -196,7 +195,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
                     {
                         success = true,
                         message = "recording_started",
-                        timestamp = Time.time,
+                        timestamp = Time.time
                     }
                 );
 
@@ -208,7 +207,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
                     {
                         success = true,
                         message = "recording_stopped",
-                        timestamp = Time.time,
+                        timestamp = Time.time
                     }
                 );
 
@@ -219,7 +218,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
                     {
                         success = true,
                         is_idle = idle,
-                        timestamp = Time.time,
+                        timestamp = Time.time
                     }
                 );
 
@@ -228,14 +227,14 @@ public abstract class AgenticSocketBase : MonoBehaviour
         }
     }
 
-    protected string GetSceneStateJson()
+    private string GetSceneStateJson()
     {
         try
         {
             var sceneState = new SceneStateData
             {
                 robots = GetRobotStates(),
-                timestamp = Time.time,
+                timestamp = Time.time
             };
 
             return JsonUtility.ToJson(sceneState);
@@ -247,7 +246,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
                 new AIResponse
                 {
                     success = false,
-                    message = "Error getting scene state: " + e.Message,
+                    message = "Error getting scene state: " + e.Message
                 }
             );
         }
@@ -255,43 +254,43 @@ public abstract class AgenticSocketBase : MonoBehaviour
 
     protected RobotStateData[] GetRobotStates()
     {
-        RobotStateData[] robotStates = new RobotStateData[robotCount];
+        var robotStates = new RobotStateData[robotCount];
 
         for (int i = 0; i < robotCount; i++)
         {
-            var robot = robots[i];
-            var robotArmSetup = robotArmSetups[i];
-            var suctionController = suctionControllers[i];
+            GameObject robot = robots[i];
+            RobotArmSetup robotArmSetup = robotArmSetups[i];
+            SuctionController suctionController = suctionControllers[i];
 
-            GameObject[] targetObjects = suctionController.targetBlocks;
+            var targetObjects = suctionController.targetBlocks;
             var robotTargets = new ObjectStateData[targetObjects.Length];
             for (int j = 0; j < targetObjects.Length; j++)
             {
-                var target = targetObjects[j];
+                GameObject target = targetObjects[j];
                 Vector3 targetPosition = target.GetComponent<Collider>().bounds.center;
 
                 robotTargets[j] = new ObjectStateData
                 {
                     name = target.name,
-                    position = new float[] { targetPosition.x, targetPosition.y, targetPosition.z },
-                    is_attached = target.transform.parent != null,
+                    position = new[] { targetPosition.x, targetPosition.y, targetPosition.z },
+                    is_attached = target.transform.parent != null
                 };
             }
 
-            var endEffector = robotArmSetup
+            Transform endEffector = robotArmSetup
                 .robotJoints[robotArmSetup.robotJoints.Length - 1]
                 .transform;
             robotStates[i] = new RobotStateData
             {
                 name = robot.name,
-                end_effector_position = new float[]
+                end_effector_position = new[]
                 {
                     endEffector.position.x,
                     endEffector.position.y,
-                    endEffector.position.z,
+                    endEffector.position.z
                 },
                 objects = robotTargets,
-                suction_active = suctionController != null && suctionController.enableSuction,
+                suction_active = suctionController != null && suctionController.enableSuction
             };
         }
 
@@ -302,27 +301,24 @@ public abstract class AgenticSocketBase : MonoBehaviour
     {
         float[] angles = new float[JointCount];
 
-        for (int i = 0; i < angles.Length && i < robotJoints.Length; i++)
-        {
-            angles[i] = robotJoints[i].jointPosition[0];
-        }
+        for (int i = 0; i < angles.Length && i < robotJoints.Length; i++) angles[i] = robotJoints[i].jointPosition[0];
         return angles;
     }
 
     protected ObjectStateData[] GetObjectStates()
     {
-        ObjectStateData[] objects = new ObjectStateData[targetCount];
+        var objects = new ObjectStateData[targetCount];
 
         for (int i = 0; i < targetCount; i++)
         {
-            var target = targets[i];
+            GameObject target = targets[i];
             Vector3 targetPosition = target.GetComponent<Collider>().bounds.center;
 
             objects[i] = new ObjectStateData
             {
                 name = target.name,
-                position = new float[] { targetPosition.x, targetPosition.y, targetPosition.z },
-                is_attached = target.transform.parent != null,
+                position = new[] { targetPosition.x, targetPosition.y, targetPosition.z },
+                is_attached = target.transform.parent != null
             };
         }
 
@@ -345,10 +341,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
         if (suctionController == null)
             return false;
 
-        if (suctionController.enableSuction)
-        {
-            suctionController.ToggleSuction();
-        }
+        if (suctionController.enableSuction) suctionController.ToggleSuction();
         return true;
     }
 
@@ -357,7 +350,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
         bool isIdle = true;
         foreach (GameObject robot in robots)
         {
-            RobotArmSetup setup = robot.GetComponent<RobotArmSetup>();
+            var setup = robot.GetComponent<RobotArmSetup>();
             if (setup == null)
                 continue;
 
@@ -369,6 +362,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
                 if (Mathf.Abs(vels[i]) > IdleVelocityThreshold)
                     robotBusy = true;
             }
+
             if (robotBusy)
             {
                 string velStr = string.Join(", ", vels);
@@ -376,6 +370,7 @@ public abstract class AgenticSocketBase : MonoBehaviour
                 isIdle = false;
             }
         }
+
         return isIdle;
     }
 
@@ -388,10 +383,5 @@ public abstract class AgenticSocketBase : MonoBehaviour
             client.Close();
         if (listener != null)
             listener.Stop();
-    }
-
-    private void OnApplicationQuit()
-    {
-        closeSocket();
     }
 }

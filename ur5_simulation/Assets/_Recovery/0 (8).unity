@@ -226,6 +226,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3861005}
   - component: {fileID: 3861006}
+  - component: {fileID: 3861007}
   m_Layer: 0
   m_Name: SceneSetup
   m_TagString: Untagged
@@ -275,6 +276,28 @@ MonoBehaviour:
   allRobotsActive: 1
   agenticSocket: 0
   simulAgenticSocket: 0
+  agenticSocketSetup: {fileID: 0}
+  simulAgenticSocketSetup: {fileID: 0}
+  selectedRobotIndex: 0
+  ur5Controller: {fileID: 0}
+  suctionController: {fileID: 0}
+--- !u!114 &3861007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3861003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 168d6719921d246b5a7930b872036f33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EpisodeRecorder
+  recordOnStart: 0
+  recordingFPS: 10
+  observation: {fileID: 1380065265}
+  sessionName: recording
+  appendTimestamp: 1
 --- !u!1 &71188741
 GameObject:
   m_ObjectHideFlags: 8
@@ -4610,8 +4633,6 @@ GameObject:
   - component: {fileID: 1380065263}
   - component: {fileID: 1380065264}
   - component: {fileID: 1380065265}
-  - component: {fileID: 1380065267}
-  - component: {fileID: 1380065266}
   m_Layer: 0
   m_Name: ur5_left
   m_TagString: robot
@@ -4667,7 +4688,7 @@ MonoBehaviour:
   articulationChain: []
   robotJoints: []
   blockToPickup: {fileID: 0}
-  exportCoordinates: 0
+  exportCoordinates: 1
   exportFilePath: RobotJointCoordinates
   appendTimestamp: 1
   samplingRate: 0.1
@@ -4730,7 +4751,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b4e50cc6be9f4fc0880ee32f8155266, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JointPlayback
-  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset1/recording_20260422_135222
+  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset/recording_20260421_213556
   csvFilePath: 
   blocksFilePath: 
   playbackSpeed: 1
@@ -4744,12 +4765,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380065241}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3e527a7dbac0e45238af2dae8bb26785, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DeltaPlayback
-  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/dataset1/recording_20260422_135222
+  episodeFolderPath: /Users/testing2/Documents/UROP-VLM-Robotics/ur5_simulation/Exports/overfit_dataset/recording_20260422_160427
   csvFilePath: 
   blocksFilePath: 
   playbackSpeed: 1
@@ -4794,38 +4815,6 @@ MonoBehaviour:
   recordingCamera: {fileID: 1662193182}
   suctionController: {fileID: 1380065255}
   robotArmSetup: {fileID: 1380065248}
---- !u!114 &1380065266
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 168d6719921d246b5a7930b872036f33, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EpisodeRecorder
-  recordOnStart: 0
-  recordingFPS: 10
-  observationCapture: {fileID: 1380065265}
-  sessionName: recording
---- !u!114 &1380065267
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1380065241}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a13406a47f94e4512b2870746dee9219, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeacherController
-  recorder: {fileID: 1380065266}
-  controller: {fileID: 1380065261}
-  sceneSetup: {fileID: 3861006}
-  suctionController: {fileID: 1380065255}
 --- !u!1001 &1394512415
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -88,6 +88,10 @@ class UR5IKServer:
                         target_pos, target_rot, current_angles)
 
                 if solution is not None:
+                    # find equivalent angle that is closest to current angles
+                    solution = current_angles + \
+                        (np.mod(solution - current_angles + np.pi, 2 * np.pi) - np.pi)
+
                     response = struct.pack(
                         'B', 1) + struct.pack(f'<{JOINT_ANGLES_COUNT}d', *solution)
                     client_socket.sendall(response)

@@ -32,7 +32,6 @@ public static class ConstantsUR5
         -1.5f, // Wrist 1 (adjusted to position suction cup better)
         -1.57f, // Wrist 2
         0f // Wrist 3
-        ,
     };
 
     // Suction params

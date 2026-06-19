@@ -240,6 +240,7 @@ public class UR5IKSolver : MonoBehaviour
                     solution[i] = (float)reader.ReadDouble();
                 }
 
+                // print("ik solver: " + string.Join(", ", solution));
                 return solution;
             }
             else

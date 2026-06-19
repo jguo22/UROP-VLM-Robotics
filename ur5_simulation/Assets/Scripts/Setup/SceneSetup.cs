@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
+[Serializable]
 public class RobotArms
 {
     public GameObject robot;
@@ -10,38 +11,24 @@ public class RobotArms
 
 public class SceneSetup : MonoBehaviour
 {
-    [Header("Scene References")]
-    [SerializeField]
+    [Header("Scene References")] [SerializeField]
     public RobotArms[] robotArms;
 
-    [HideInInspector]
-    public GameObject[] robots;
+    [HideInInspector] public GameObject[] robots;
 
-    [HideInInspector]
-    public GameObject[] targets;
-    private List<GameObject[]> robotTargetsList = new List<GameObject[]>();
+    [HideInInspector] public GameObject[] targets;
 
-    [Header("Agentic AI")]
-    public bool allRobotsActive = false;
+    [Header("Agentic AI")] public bool allRobotsActive = false;
+
     public bool agenticSocket = false;
     public bool simulAgenticSocket = false;
+    private readonly List<GameObject[]> robotTargetsList = new();
 
-    [HideInInspector]
-    public AgenticSocketSetup agenticSocketSetup;
-
-    [HideInInspector]
-    public SimulAgenticSocketSetup simulAgenticSocketSetup;
-
-    [HideInInspector]
-    public int selectedRobotIndex;
-
-    [HideInInspector]
-    public UR5Controller ur5Controller;
-
-    [HideInInspector]
-    public SuctionController suctionController;
+    private AgenticSocketSetup agenticSocketSetup;
 
     private SceneResetController sceneResetController;
+
+    private int selectedRobotIndex;
 
 
     private void Start()
@@ -75,18 +62,16 @@ public class SceneSetup : MonoBehaviour
 
         targets = new GameObject[targetCount];
         int targetIdx = 0;
-        foreach (GameObject[] targetArray in robotTargetsList)
+        foreach (var targetArray in robotTargetsList)
+        foreach (GameObject target in targetArray)
         {
-            foreach (GameObject target in targetArray)
-            {
-                targets[targetIdx] = target;
-                targetIdx += 1;
-            }
+            targets[targetIdx] = target;
+            targetIdx += 1;
         }
 
-        sceneResetController = this.gameObject.GetComponent<SceneResetController>();
+        sceneResetController = gameObject.GetComponent<SceneResetController>();
         if (sceneResetController == null)
-            sceneResetController = this.gameObject.AddComponent<SceneResetController>();
+            sceneResetController = gameObject.AddComponent<SceneResetController>();
         sceneResetController.Initialize(this);
 
         selectedRobotIndex = 0; // Default to first robot
@@ -94,21 +79,17 @@ public class SceneSetup : MonoBehaviour
         if (agenticSocket)
         {
             if (allRobotsActive)
-                agenticSocketSetup = this.gameObject.AddComponent<AgenticSocketSetup>();
+                agenticSocketSetup = gameObject.AddComponent<AgenticSocketSetup>();
             else
-            {
                 agenticSocket = false;
-            }
             simulAgenticSocket = false;
         }
         else if (simulAgenticSocket)
         {
             if (allRobotsActive)
-                simulAgenticSocketSetup = this.gameObject.AddComponent<SimulAgenticSocketSetup>();
+                gameObject.AddComponent<SimulAgenticSocketSetup>();
             else
-            {
                 simulAgenticSocket = false;
-            }
         }
         else
         {
@@ -124,42 +105,10 @@ public class SceneSetup : MonoBehaviour
         }
     }
 
-    private void RobotSetup(GameObject robot, int idx)
-    {
-        Debug.Log($"RobotSetup: {robot.name}");
-
-        GameObject[] targets = robotTargetsList[idx];
-        foreach (GameObject target in targets)
-        {
-            Collider blockCollider = target.GetComponent<Collider>();
-            Debug.Log(target.name + " Original Position: " + blockCollider.bounds.center);
-        }
-
-        SuctionController suctionController = robot.GetComponent<SuctionController>();
-        if (suctionController != null)
-            suctionController.targetBlocks = targets;
-
-        UR5Controller ur5Controller = robot.GetComponent<UR5Controller>();
-    }
-
-    public void ResetSceneState()
-    {
-        if (sceneResetController == null)
-        {
-            Debug.LogWarning("Scene reset skipped: SceneResetController is missing.");
-            return;
-        }
-
-        sceneResetController.ResetSceneState();
-    }
-
     private void Update()
     {
         bool resetScene = Input.GetKeyDown(KeyCode.R);
-        if (resetScene)
-        {
-            ResetSceneState();
-        }
+        if (resetScene) ResetSceneState();
 
         if (allRobotsActive)
             return;
@@ -179,12 +128,39 @@ public class SceneSetup : MonoBehaviour
         if (allRobotsActive)
             return;
 
-        GUIStyle style = new GUIStyle(GUI.skin.label);
+        var style = new GUIStyle(GUI.skin.label);
         style.fontSize = 16;
         style.normal.textColor = Color.white;
 
         string robotName = robots[selectedRobotIndex].name;
         GUI.Label(new Rect(Screen.width - 250, 10, 300, 30), "Selected Robot: " + robotName, style);
         GUI.Label(new Rect(Screen.width - 250, 35, 300, 20), "Press 'P' to switch", style);
+    }
+
+    private void RobotSetup(GameObject robot, int idx)
+    {
+        Debug.Log($"RobotSetup: {robot.name}");
+
+        var targets = robotTargetsList[idx];
+        foreach (GameObject target in targets)
+        {
+            var blockCollider = target.GetComponent<Collider>();
+            Debug.Log(target.name + " Original Position: " + blockCollider.bounds.center);
+        }
+
+        var suctionController = robot.GetComponent<SuctionController>();
+        if (suctionController != null)
+            suctionController.targetBlocks = targets;
+    }
+
+    public void ResetSceneState()
+    {
+        if (sceneResetController == null)
+        {
+            Debug.LogWarning("Scene reset skipped: SceneResetController is missing.");
+            return;
+        }
+
+        sceneResetController.ResetSceneState();
     }
 }

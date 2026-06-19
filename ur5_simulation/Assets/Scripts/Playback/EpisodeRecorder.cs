@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Serialization;
 using static ConstantsUR5;
 
 // Records per-episode RLDS-compatible data.
@@ -37,27 +38,22 @@ public class EpisodeRecorder : MonoBehaviour
 {
     private static readonly string PoseHeader = BuildPoseHeader();
 
-    [Header("Recording Settings")]
-    public bool recordOnStart = false;
+    [Header("Recording Settings")] public bool recordOnStart = false;
 
     public float recordingFPS = 10f;
 
-    [Header("References")]
-    [SerializeField]
-    private ObservationCapture observation;
+    [Header("References")] [FormerlySerializedAs("observation")] [SerializeField]
+    private ObservationCapture observationCapture;
 
-    [Header("Export Settings")]
-    public string sessionName = "recording";
-
-    public bool appendTimestamp = true;
+    [Header("Export Settings")] public string sessionName = "recording";
 
     // Buffer rows (without deltas) — deltas and is_last/is_terminal/reward applied at flush
     private readonly List<string> frameBuffer = new();
-    private int frameIndex = 0;
 
     // Per-frame pose for delta calculation at flush time
     private readonly List<Vector3> framePositions = new();
     private readonly List<Quaternion> frameRotations = new();
+    private int frameIndex = 0;
     private bool isPaused = false;
 
     // Runtime state
@@ -66,8 +62,6 @@ public class EpisodeRecorder : MonoBehaviour
 
     private SceneSetup sceneSetup;
     private string sessionFolder;
-
-    // -------------------------------------------------------------------------
 
     private void Start()
     {
@@ -102,26 +96,38 @@ public class EpisodeRecorder : MonoBehaviour
         return h;
     }
 
-    // -------------------------------------------------------------------------
-
-    public void StartRecording()
+    // starts recording and returns session folder
+    public string StartRecording()
     {
         if (isRecording)
-            return;
-        if (observation == null)
         {
-            Debug.LogError("EpisodeRecorder: observation not assigned.");
-            return;
+            Debug.LogWarning("EpisodeRecorder: Recording already in progress.");
+            return sessionFolder;
         }
 
-        observation.Initialize();
+        observationCapture.Initialize();
 
-        SetupEpisode();
+        // Create a new episode folder
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        string folderName = $"{sessionName}_{timestamp}";
+        sessionFolder = ProjectPaths.Get(
+            Path.Combine("ur5_simulation", "Exports", "dataset", folderName)
+        );
 
-        isRecording = true;
+        Directory.CreateDirectory(Path.Combine(sessionFolder, "images"));
+
+        // save starting block positions
+        SaveBlockPositions();
+
+        // reset state
+        frameBuffer.Clear();
+        framePositions.Clear();
+        frameRotations.Clear();
+        frameIndex = 0;
         nextSampleTime = Time.time;
+        isRecording = true;
 
-        Debug.Log($"EpisodeRecorder: started recording → {sessionFolder}");
+        return sessionFolder;
     }
 
     public void StopRecording()
@@ -131,11 +137,14 @@ public class EpisodeRecorder : MonoBehaviour
         isRecording = false;
         isPaused = false;
 
-        observation.ReleaseCameraTarget();
-
         FlushBufferToDisk();
 
         Debug.Log($"EpisodeRecorder: stopped. {frameIndex} frames saved → {sessionFolder}");
+    }
+
+    public void DeleteRecording(string folder)
+    {
+        Directory.Delete(folder, true);
     }
 
     /// <summary>Pauses frame capture without ending the episode.</summary>
@@ -151,27 +160,6 @@ public class EpisodeRecorder : MonoBehaviour
             return;
         isPaused = false;
         nextSampleTime = Time.time; // capture immediately on resume
-    }
-
-    // -------------------------------------------------------------------------
-
-    /// <summary>Creates a new episode folder, saves starting block positions, and resets per-episode state.</summary>
-    private void SetupEpisode()
-    {
-        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string folderName = appendTimestamp ? $"{sessionName}_{timestamp}" : sessionName;
-        sessionFolder = ProjectPaths.Get(
-            Path.Combine("ur5_simulation", "Exports", "dataset", folderName)
-        );
-
-        Directory.CreateDirectory(Path.Combine(sessionFolder, "images"));
-
-        SaveBlockPositions();
-
-        frameBuffer.Clear();
-        framePositions.Clear();
-        frameRotations.Clear();
-        frameIndex = 0;
     }
 
     /// <summary>Writes blocks.csv with the name and world position of each target block at episode start.</summary>
@@ -194,7 +182,7 @@ public class EpisodeRecorder : MonoBehaviour
 
     private void CaptureFrame()
     {
-        ObservationCapture.Observation obs = observation.CaptureState();
+        ObservationCapture.Observation obs = observationCapture.CaptureState();
 
         framePositions.Add(obs.endEffectorPosition);
         frameRotations.Add(obs.endEffectorRotation);
@@ -222,7 +210,7 @@ public class EpisodeRecorder : MonoBehaviour
 
     private void WriteScreenshotAsync(int index)
     {
-        byte[] png = observation.CaptureScreenshotPng();
+        byte[] png = observationCapture.CaptureScreenshotPng();
         string imagePath = Path.Combine(sessionFolder, "images", $"{index:D6}.png");
         Task.Run(() => File.WriteAllBytes(imagePath, png));
     }
@@ -278,4 +266,3 @@ public class EpisodeRecorder : MonoBehaviour
         frameRotations.Clear();
     }
 }
-

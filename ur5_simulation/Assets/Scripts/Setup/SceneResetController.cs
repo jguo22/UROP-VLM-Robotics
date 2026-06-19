@@ -3,18 +3,17 @@ using UnityEngine;
 
 public class SceneResetController : MonoBehaviour
 {
-    private class SceneObjectInitialState
-    {
-        public Transform parent;
-        public Vector3 position;
-        public Quaternion rotation;
-    }
+    [SerializeField] private float positionRandomRadius = 0.05f;
 
-    [SerializeField]
-    private float positionRandomRadius = 0.05f;
+    private readonly Dictionary<GameObject, SceneObjectInitialState> initialTargetStates = new();
 
     private SceneSetup sceneSetup;
-    private readonly Dictionary<GameObject, SceneObjectInitialState> initialTargetStates = new();
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+            ResetSceneState();
+    }
 
     public void Initialize(SceneSetup setup)
     {
@@ -34,15 +33,9 @@ public class SceneResetController : MonoBehaviour
             {
                 parent = target.transform.parent,
                 position = target.transform.position,
-                rotation = target.transform.rotation,
+                rotation = target.transform.rotation
             };
         }
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.R))
-            ResetSceneState();
     }
 
     public void ResetSceneState()
@@ -55,19 +48,16 @@ public class SceneResetController : MonoBehaviour
 
         foreach (GameObject robot in sceneSetup.robots)
         {
-            if (robot == null)
+            if (!robot)
                 continue;
 
-            SuctionController robotSuction = robot.GetComponent<SuctionController>();
-            if (robotSuction != null)
-            {
-                robotSuction.ResetSuctionState();
-            }
+            robot.GetComponent<SuctionController>().ResetSuctionState();
+            robot.GetComponent<RobotArmSetup>().ResetArmPosition();
         }
 
         // Collect valid targets and their initial states
-        List<GameObject> validTargets = new List<GameObject>();
-        List<SceneObjectInitialState> states = new List<SceneObjectInitialState>();
+        List<GameObject> validTargets = new();
+        List<SceneObjectInitialState> states = new();
         foreach (GameObject target in sceneSetup.targets)
         {
             if (
@@ -92,7 +82,7 @@ public class SceneResetController : MonoBehaviour
             SceneObjectInitialState state = states[i];
             Vector2 offset = Random.insideUnitCircle * positionRandomRadius;
 
-            Rigidbody rb = validTargets[i].GetComponent<Rigidbody>();
+            var rb = validTargets[i].GetComponent<Rigidbody>();
             if (rb != null)
             {
                 rb.linearVelocity = Vector3.zero;
@@ -109,18 +99,13 @@ public class SceneResetController : MonoBehaviour
                 rb.isKinematic = false; // release physics so attraction force and gravity work
         }
 
-		foreach (GameObject robot in sceneSetup.robots)
-		{
-			if (robot == null)
-				continue;
-
-			RobotArmSetup armSetup = robot.GetComponent<RobotArmSetup>();
-			if (armSetup != null)
-			{
-				armSetup.ResetArmPosition();
-			}
-		}
-
         Debug.Log("Scene reset complete: gears restored and robot arms homed.");
+    }
+
+    private class SceneObjectInitialState
+    {
+        public Transform parent;
+        public Vector3 position;
+        public Quaternion rotation;
     }
 }

@@ -32,7 +32,7 @@ public class ObservationCapture : MonoBehaviour
     private Transform endEffector;
     private RenderTexture renderTexture;
     private Texture2D screenshotBuffer;
-    private bool resourcesAllocated = false;
+    private bool initialized = false;
 
     /// <summary>
     /// Allocates render resources on first call, caches the end-effector transform,
@@ -40,21 +40,14 @@ public class ObservationCapture : MonoBehaviour
     /// </summary>
     public void Initialize()
     {
-        if (!resourcesAllocated)
-        {
-            endEffector = robotArmSetup.robotJoints[^1].transform;
-            renderTexture = new RenderTexture(ImageWidth, ImageHeight, 24);
-            screenshotBuffer = new Texture2D(ImageWidth, ImageHeight, TextureFormat.RGB24, false);
-            resourcesAllocated = true;
-        }
+        if (initialized) return;
+        
+        endEffector = robotArmSetup.robotJoints[^1].transform;
+        renderTexture = new RenderTexture(ImageWidth, ImageHeight, 24);
+        screenshotBuffer = new Texture2D(ImageWidth, ImageHeight, TextureFormat.RGB24, false);
         recordingCamera.targetTexture = renderTexture;
-    }
-
-    /// <summary>Restores the camera's display output between episodes.</summary>
-    public void ReleaseCameraTarget()
-    {
-        if (recordingCamera != null)
-            recordingCamera.targetTexture = null;
+        
+        initialized = true;
     }
 
     public Observation CaptureState()
@@ -98,17 +91,5 @@ public class ObservationCapture : MonoBehaviour
         );
         screenshotBuffer.Apply();
         RenderTexture.active = null;
-    }
-
-    private void OnDestroy()
-    {
-        ReleaseCameraTarget();
-        if (renderTexture != null)
-        {
-            renderTexture.Release();
-            Destroy(renderTexture);
-        }
-        if (screenshotBuffer != null)
-            Destroy(screenshotBuffer);
     }
 }

@@ -6,19 +6,21 @@ using static ConstantsUR5;
 [RequireComponent(typeof(RobotArmSetup))]
 public class UR5Controller : MonoBehaviour
 {
-    [Header("IK Settings")]
-    public float stiffness = 10000f;
+    [Header("IK Settings")] public float stiffness = 10000f;
+
     public float damping = 100f;
+    private Transform endEffector;
+    private UR5IKSolver ikSolver;
+
+    private Transform
+        originTransform; // used to calculate the relative position of the end effector to the base of the robot
 
     // Component references
     private RobotArmSetup robotArmSetup;
-    private SuctionController suctionController;
-    private UR5IKSolver ikSolver;
 
     // Robot references
     private ArticulationBody[] robotJoints; // JointCount joints + end effector
-    private Transform endEffector;
-    private Transform originTransform; // used to calculate the relative position of the end effector to the base of the robot
+    private SuctionController suctionController;
 
     private void Start()
     {
@@ -36,7 +38,7 @@ public class UR5Controller : MonoBehaviour
 
         // End effector is the last element in robotJoints array
         endEffector = robotJoints[JointCount].transform; // last element is the end effector
-        originTransform = this.transform;
+        originTransform = transform;
 
         // Get suction controller (optional)
         suctionController = GetComponent<SuctionController>();
@@ -52,6 +54,41 @@ public class UR5Controller : MonoBehaviour
 
         // Configure joint drives
         ConfigureJointDrives();
+    }
+
+    private void OnGUI()
+    {
+        if (endEffector == null)
+            return;
+
+        string displayText =
+            $"End Effector Position: ({endEffector.position.x:F5}, {endEffector.position.y:F5}, {endEffector.position.z:F5})\n";
+        displayText +=
+            $"End Effector Rotation: ({endEffector.rotation.x:F5}, {endEffector.rotation.y:F5}, {endEffector.rotation.z:F5}, {endEffector.rotation.w:F5})\n";
+        displayText +=
+            $"Euler Angles: ({endEffector.rotation.eulerAngles.x:F2}, {endEffector.rotation.eulerAngles.y:F2}, {endEffector.rotation.eulerAngles.z:F2})";
+
+        const float width = 650;
+        const float height = 80;
+        var rect = new Rect(Screen.width / 2 - width / 2, 10, width, height);
+
+        // Draw black background
+        var blackTexture = new Texture2D(1, 1);
+        blackTexture.SetPixel(0, 0, Color.black);
+        blackTexture.Apply();
+        GUI.DrawTexture(rect, blackTexture);
+
+        // Draw white text
+        var style = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 14,
+            normal =
+            {
+                textColor = Color.white
+            },
+            alignment = TextAnchor.UpperCenter
+        };
+        GUI.Label(rect, displayText, style);
     }
 
     private void ConfigureJointDrives()
@@ -70,13 +107,13 @@ public class UR5Controller : MonoBehaviour
     }
 
     // Move by a delta position and rotation (world coordinates)
-    public void MoveDelta(Vector3 deltaPosition, Quaternion deltaRotation)
+    public bool MoveDelta(Vector3 deltaPosition, Quaternion deltaRotation)
     {
         Vector3 targetPos = endEffector.position + deltaPosition;
         // Apply rotation in world coordinates: deltaRotation * currentRotation
         Quaternion targetRot = deltaRotation * endEffector.rotation;
 
-        MoveToTarget(targetPos, targetRot);
+        return MoveToTarget(targetPos, targetRot);
     }
 
     // Move to target position and rotation using IK
@@ -121,18 +158,25 @@ public class UR5Controller : MonoBehaviour
         float[] angles = new float[JointCount];
 
         // Get the current joint angles from the joint controllers
-        for (int i = 0; i < JointCount; i++)
-        {
-            angles[i] = robotJoints[i].jointPosition[0];
-        }
+        for (int i = 0; i < JointCount; i++) angles[i] = robotJoints[i].jointPosition[0];
 
         return angles;
     }
 
-    // Control gripper/suction
-    public void SetSuction(bool enabled)
+    public float[] GetJointVelocities()
     {
-        suctionController.enableSuction = enabled;
+        float[] vels = new float[JointCount];
+        
+        // Get the current joint angles from the joint controllers
+        for (int i = 0; i < JointCount; i++) vels[i] = robotJoints[i].jointVelocity[0];
+
+        return vels;
+    }
+
+    // Control gripper/suction
+    public void SetSuction(bool enable)
+    {
+        suctionController.enableSuction = enable;
     }
 
     private (Vector3 position, Quaternion rotation) ConvertToRobotCoordinates(
@@ -155,35 +199,5 @@ public class UR5Controller : MonoBehaviour
     public (Vector3 position, Quaternion rotation) GetEndEffectorPoseWorld()
     {
         return (endEffector.position, endEffector.rotation);
-    }
-
-    private void OnGUI()
-    {
-        if (endEffector == null)
-            return;
-
-        string displayText =
-            $"End Effector Position: ({endEffector.position.x:F5}, {endEffector.position.y:F5}, {endEffector.position.z:F5})\n";
-        displayText +=
-            $"End Effector Rotation: ({endEffector.rotation.x:F5}, {endEffector.rotation.y:F5}, {endEffector.rotation.z:F5}, {endEffector.rotation.w:F5})\n";
-        displayText +=
-            $"Euler Angles: ({endEffector.rotation.eulerAngles.x:F2}, {endEffector.rotation.eulerAngles.y:F2}, {endEffector.rotation.eulerAngles.z:F2})";
-
-        float width = 650;
-        float height = 80;
-        Rect rect = new Rect(Screen.width / 2 - width / 2, 10, width, height);
-
-        // Draw black background
-        Texture2D blackTexture = new Texture2D(1, 1);
-        blackTexture.SetPixel(0, 0, Color.black);
-        blackTexture.Apply();
-        GUI.DrawTexture(rect, blackTexture);
-
-        // Draw white text
-        GUIStyle style = new GUIStyle(GUI.skin.label);
-        style.fontSize = 14;
-        style.normal.textColor = Color.white;
-        style.alignment = TextAnchor.UpperCenter;
-        GUI.Label(rect, displayText, style);
     }
 }
