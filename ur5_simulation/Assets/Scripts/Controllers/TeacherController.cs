@@ -12,7 +12,7 @@ public class TeacherController : MonoBehaviour
     private const float IdleVelocityThreshold = 0.005f;
     private const float ApproachDistance = 0.08f;
     private const float CollisionDistance = 0.01f;
-    private const float EndingToleranceDistance = 0.15f;
+    private const float EndingToleranceDistance = 0.02f;
 
     private const float EndYLevel = 0.875f;
 
@@ -23,13 +23,20 @@ public class TeacherController : MonoBehaviour
             { "gear_green", new Vector3(0.83146f, EndYLevel, 0.05706f) },
             { "gear_blue", new Vector3(0.79f, EndYLevel, 0.0f) },
             { "gear_orange", new Vector3(0.89854f, EndYLevel, 0.03527f) },
-            { "gear_red", new Vector3(0.89854f, EndYLevel, -0.03527f) }
+            { "gear_red", new Vector3(0.89854f, EndYLevel, -0.03527f) },
         };
 
-    [SerializeField] private EpisodeRecorder recorder;
-    [SerializeField] private UR5Controller controller;
-    [SerializeField] private SceneSetup sceneSetup;
-    [SerializeField] private SuctionController suctionController;
+    [SerializeField]
+    private EpisodeRecorder recorder;
+
+    [SerializeField]
+    private UR5Controller controller;
+
+    [SerializeField]
+    private SceneSetup sceneSetup;
+
+    [SerializeField]
+    private SuctionController suctionController;
 
     private readonly Vector3 approachOffset = Vector3.up * ApproachDistance;
     private readonly Vector3 collisionOffset = Vector3.up * CollisionDistance;
@@ -59,7 +66,8 @@ public class TeacherController : MonoBehaviour
             yield return RunEpisodeCR();
             recorder.StopRecording();
 
-            if (!episodeSuccess) EpisodeRecorder.DeleteRecording(sessionFolder);
+            if (!episodeSuccess)
+                EpisodeRecorder.DeleteRecording(sessionFolder);
 
             episode++;
         }
@@ -68,7 +76,7 @@ public class TeacherController : MonoBehaviour
     private IEnumerator WaitForIdle()
     {
         yield return new WaitForSeconds(FrameTime);
-        for (int i = 0;; i++)
+        for (int i = 0; ; i++)
         {
             float[] vels = controller.GetJointVelocities();
             bool isIdle = vels.All(vel => vel <= IdleVelocityThreshold);
@@ -112,7 +120,8 @@ public class TeacherController : MonoBehaviour
         {
             float distance = Vector3.Distance(gearPositions[gearName], GoalPositions[gearName]);
             Debug.Log(
-                $"Distance From Goal {gearName}: {distance}, gear position {gearPositions[gearName]}, goal position {GoalPositions[gearName]}");
+                $"Distance From Goal {gearName}: {distance}, gear position {gearPositions[gearName]}, goal position {GoalPositions[gearName]}"
+            );
 
             if (distance > EndingToleranceDistance)
             {
@@ -124,7 +133,7 @@ public class TeacherController : MonoBehaviour
 
     private IEnumerator MoveArmCR(Vector3 targetPosition)
     {
-        for (int i = 0;; i++)
+        for (int i = 0; ; i++)
         {
             Vector3 currentPosition = controller.GetEndEffectorPoseWorld().position;
             Vector3 delta = targetPosition - currentPosition;
@@ -162,3 +171,4 @@ public class TeacherController : MonoBehaviour
         return result;
     }
 }
+
