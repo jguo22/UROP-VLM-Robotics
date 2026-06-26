@@ -1,13 +1,16 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class SceneResetController : MonoBehaviour
 {
-    [SerializeField] private float positionRandomRadius = 0.05f;
+    [SerializeField] private float positionRandomRadius = 0.03f;
+    [SerializeField] private bool permutationRandomization = false;
+    [SerializeField] private bool offsetRandomization = false;
 
-    private readonly Dictionary<GameObject, SceneObjectInitialState> initialTargetStates = new();
-
-    private SceneSetup sceneSetup;
+    private readonly List<SceneObjectInitialState> initialStates = new();
+    private readonly List<RobotArmSetup> robotArmSetups = new();
+    private readonly List<SuctionController> suctionControllers = new();
 
     private void Update()
     {
@@ -15,97 +18,86 @@ public class SceneResetController : MonoBehaviour
             ResetSceneState();
     }
 
-    public void Initialize(SceneSetup setup)
+    public void Initialize(SceneSetup sceneSetup)
     {
-        sceneSetup = setup;
-
-        initialTargetStates.Clear();
-
-        if (sceneSetup == null || sceneSetup.targets == null)
-            return;
-
+        // initialize block locations
         foreach (GameObject target in sceneSetup.targets)
-        {
-            if (target == null)
-                continue;
-
-            initialTargetStates[target] = new SceneObjectInitialState
+            initialStates.Add(new SceneObjectInitialState
             {
+                transform = target.transform,
+                rigidbody = target.GetComponent<Rigidbody>(),
                 parent = target.transform.parent,
                 position = target.transform.position,
                 rotation = target.transform.rotation
-            };
+            });
+
+        // initialize robots
+        foreach (GameObject robot in sceneSetup.robots)
+        {
+            suctionControllers.Add(robot.GetComponent<SuctionController>());
+            robotArmSetups.Add(robot.GetComponent<RobotArmSetup>());
         }
     }
 
     public void ResetSceneState()
     {
-        if (sceneSetup == null || sceneSetup.targets == null || sceneSetup.robots == null)
-        {
-            Debug.LogWarning("Scene reset skipped: scene references are not initialized.");
-            return;
-        }
+        ResetRobots();
+        ResetObjects();
+    }
 
-        foreach (GameObject robot in sceneSetup.robots)
-        {
-            if (!robot)
-                continue;
+    private void ResetRobots()
+    {
+        foreach (SuctionController suctionController in suctionControllers) suctionController.ResetSuctionState();
+        foreach (RobotArmSetup robotArmSetup in robotArmSetups) robotArmSetup.ResetArmPosition();
+    }
 
-            robot.GetComponent<SuctionController>().ResetSuctionState();
-            robot.GetComponent<RobotArmSetup>().ResetArmPosition();
-        }
-
-        // Collect valid targets and their initial states
-        List<GameObject> validTargets = new();
-        List<SceneObjectInitialState> states = new();
-        foreach (GameObject target in sceneSetup.targets)
-        {
-            if (
-                target == null
-                || !initialTargetStates.TryGetValue(target, out SceneObjectInitialState state)
-            )
-                continue;
-            validTargets.Add(target);
-            states.Add(state);
-        }
-
+    // Reset the objects that are being moved around
+    private void ResetObjects()
+    {
+        // assignments for permutation randomization
+        var assignments = Enumerable.Range(0, initialStates.Count).ToList();
         // Fisher-Yates shuffle: permute which gear goes to which initial slot
-        for (int i = states.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            (states[i], states[j]) = (states[j], states[i]);
-        }
-
-        // Place each target at its assigned (shuffled) slot with a random XZ offset
-        for (int i = 0; i < validTargets.Count; i++)
-        {
-            SceneObjectInitialState state = states[i];
-            Vector2 offset = Random.insideUnitCircle * positionRandomRadius;
-
-            var rb = validTargets[i].GetComponent<Rigidbody>();
-            if (rb != null)
+        if (permutationRandomization)
+            for (int i = assignments.Count - 1; i > 0; i--)
             {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                rb.isKinematic = true; // freeze during teleport to prevent physics glitch
+                int j = Random.Range(0, i + 1);
+                (assignments[i], assignments[j]) = (assignments[j], assignments[i]);
             }
 
-            validTargets[i].transform.SetParent(state.parent, true);
-            validTargets[i].transform.position =
-                state.position + new Vector3(offset.x, 0f, offset.y);
-            validTargets[i].transform.rotation = state.rotation;
+        // Place each target at its assigned (shuffled) slot with a random XZ offset
+        for (int i = 0; i < assignments.Count; i++)
+        {
+            SceneObjectInitialState state = initialStates[i];
 
-            if (rb != null)
-                rb.isKinematic = false; // release physics so attraction force and gravity work
+            // stop movement
+            Rigidbody rb = state.rigidbody;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            // rb.isKinematic = true; // freeze during teleport to prevent physics glitch
+
+            // reset parent and rotation
+            Transform objectTransform = state.transform;
+            objectTransform.SetParent(state.parent, true);
+            objectTransform.rotation = state.rotation;
+
+            // reset position to randomized position
+            Vector3 position = initialStates[assignments[i]].position;
+            if (offsetRandomization)
+            {
+                Vector2 offset = Random.insideUnitCircle * positionRandomRadius;
+                position += new Vector3(offset.x, 0f, offset.y);
+            }
+
+            objectTransform.position = position;
         }
-
-        Debug.Log("Scene reset complete: gears restored and robot arms homed.");
     }
 
     private class SceneObjectInitialState
     {
         public Transform parent;
         public Vector3 position;
+        public Rigidbody rigidbody;
         public Quaternion rotation;
+        public Transform transform;
     }
 }

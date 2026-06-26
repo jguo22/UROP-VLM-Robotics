@@ -142,9 +142,10 @@ public class EpisodeRecorder : MonoBehaviour
         Debug.Log($"EpisodeRecorder: stopped. {frameIndex} frames saved → {sessionFolder}");
     }
 
-    public void DeleteRecording(string folder)
+    public static void DeleteRecording(string folder)
     {
         Directory.Delete(folder, true);
+        Debug.Log($"EpisodeRecorder: Deleted trajectory {folder}");
     }
 
     /// <summary>Pauses frame capture without ending the episode.</summary>
@@ -245,8 +246,8 @@ public class EpisodeRecorder : MonoBehaviour
                 string row = frameBuffer[i];
                 int firstComma = row.IndexOf(',');
                 int secondComma = row.IndexOf(',', firstComma + 1);
-                string prefix = row.Substring(0, secondComma + 1);
-                string rest = row.Substring(secondComma + 1);
+                string prefix = row[..(secondComma + 1)];
+                string rest = row[(secondComma + 1)..];
 
                 string deltaStr =
                     $"{deltaPos.x:F5},{deltaPos.y:F5},{deltaPos.z:F5},"

@@ -198,8 +198,6 @@ public class UR5Controller : MonoBehaviour
     // Get current end effector pose
     public (Vector3 position, Quaternion rotation) GetEndEffectorPoseWorld()
     {
-        print(endEffector);
-        print(endEffector.position);
         return (endEffector.position, endEffector.rotation);
     }
 }
